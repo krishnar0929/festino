@@ -1,9 +1,9 @@
 #!/bin/bash
-# Raise the build number, build the iPhone app, and deliver it to App Store Connect (TestFlight)
-# with Transporter. Run from anywhere:
+# Build the iPhone app with a fresh build number and deliver it to App Store Connect (TestFlight).
+# Run from anywhere:
 #
-#   ./scripts/testflight.sh             raise build number, build, deliver
-#   ./scripts/testflight.sh --no-bump   build and deliver with the current build number
+#   ./scripts/testflight.sh             new build number, build, deliver
+#   ./scripts/testflight.sh --no-bump   use the build number in pubspec.yaml instead
 #   ./scripts/testflight.sh --open      build, then open the .ipa in the Transporter app (you click Deliver)
 #   ./scripts/testflight.sh --transporter  upload with Transporter's command-line tool instead of altool
 #
@@ -35,13 +35,14 @@ name=${current%%+*}
 build=${current##*+}
 [ "$name" = "$current" ] && build=0
 if [ "$BUMP" = 1 ]; then
-  build=$((build + 1))
-  sed -i '' -E "s/^version: .*/version: ${name}+${build}/" pubspec.yaml
+  # Year, day of the year, hour and minute (e.g. 263181250 = 2026, day 318, 12:50).
+  # It always goes up, so pubspec.yaml never changes and git stays clean.
+  build=$(date +%y%j%H%M | sed 's/^0*//')
 fi
 echo "==> Hoopla ${name} (${build})"
 
 flutter pub get
-flutter build ipa --release
+flutter build ipa --release --build-number="$build"
 
 ipa=$(ls -t build/ios/ipa/*.ipa | head -1)
 echo "==> Built ${ipa}"
@@ -69,5 +70,3 @@ fi
 
 echo ""
 echo "==> Delivered ${name} (${build}). Apple emails you when it's ready in TestFlight (10-30 min)."
-echo "    Save the new build number to your branch:"
-echo "    git add pubspec.yaml && git commit -m \"Build ${build}\" && git push"
