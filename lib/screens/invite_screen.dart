@@ -465,8 +465,10 @@ class _InviteScreenState extends State<InviteScreen> {
                     ),
                   )
                 else ...[
-                  Container(
-                    decoration: BoxDecoration(color: HC.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: HC.line)),
+                  Material(
+                    color: HC.card,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: const BorderSide(color: HC.line)),
+                    clipBehavior: Clip.antiAlias,
                     child: Column(
                       children: [
                         for (var i = 0; i < list.length; i++) ...[

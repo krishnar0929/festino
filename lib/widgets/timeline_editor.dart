@@ -350,8 +350,9 @@ class _Group extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(color: HC.card, borderRadius: BorderRadius.circular(20), border: Border.all(color: HC.line)),
+    return Material(
+      color: HC.card,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: HC.line)),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
