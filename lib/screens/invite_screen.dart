@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -29,7 +28,9 @@ class _InviteScreenState extends State<InviteScreen> {
   late final TextEditingController messageCtrl;
   final _shareKey = GlobalKey();
 
-  bool get _canPickContacts => !kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android);
+  /// Apple's contact picker (iPhone). Elsewhere, people type numbers or use Share….
+  bool get _canPickContacts => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+  static const _contacts = MethodChannel('hoopla/contacts');
 
   @override
   void initState() {
@@ -176,18 +177,19 @@ class _InviteScreenState extends State<InviteScreen> {
 
   Future<void> _pickContacts() async {
     try {
-      if (!await FlutterContacts.requestPermission(readonly: true)) {
-        if (mounted) toast(context, 'Allow Contacts for Hoopla in Settings, or type numbers instead.');
-        return;
-      }
-      final contacts = await FlutterContacts.getContacts(withProperties: true);
-      if (!mounted) return;
-      final picked = await Navigator.of(context).push<List<Invitee>>(
-        MaterialPageRoute(builder: (_) => _ContactPicker(contacts: contacts)),
-      );
-      await _addInvitees(picked ?? const []);
+      final raw = await _contacts.invokeMethod<List<dynamic>>('pick') ?? const [];
+      final people = <Invitee>[
+        for (final m in raw)
+          if (m is Map)
+            Invitee(
+              name: '${m['name'] ?? ''}'.trim().isEmpty ? '${m['phone'] ?? m['email'] ?? 'Guest'}' : '${m['name']}'.trim(),
+              phone: '${m['phone'] ?? ''}',
+              email: '${m['email'] ?? ''}',
+            ),
+      ];
+      await _addInvitees(people);
     } catch (e) {
-      if (mounted) toast(context, 'Couldn\'t open your contacts.');
+      if (mounted) toast(context, 'Couldn\'t open your contacts. Type numbers instead.');
     }
   }
 
@@ -733,83 +735,6 @@ class _Stat extends StatelessWidget {
         children: [
           Text(value, style: display(24)),
           Text(label, maxLines: 2, style: body(11, color: HC.ink)),
-        ],
-      ),
-    );
-  }
-}
-
-/// Multi-select list of phone contacts with search.
-class _ContactPicker extends StatefulWidget {
-  const _ContactPicker({required this.contacts});
-  final List<Contact> contacts;
-
-  @override
-  State<_ContactPicker> createState() => _ContactPickerState();
-}
-
-class _ContactPickerState extends State<_ContactPicker> {
-  String query = '';
-  final selected = <String>{};
-
-  List<Contact> get _usable =>
-      [for (final c in widget.contacts) if (c.phones.isNotEmpty || c.emails.isNotEmpty) c]..sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
-
-  @override
-  Widget build(BuildContext context) {
-    final q = query.toLowerCase();
-    final list = [
-      for (final c in _usable)
-        if (q.isEmpty || c.displayName.toLowerCase().contains(q) || c.phones.any((p) => p.number.contains(q))) c,
-    ];
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(selected.isEmpty ? 'Pick contacts' : '${selected.length} selected'),
-        actions: [
-          TextButton(
-            onPressed: selected.isEmpty
-                ? null
-                : () {
-                    final out = <Invitee>[
-                      for (final c in _usable)
-                        if (selected.contains(c.id))
-                          Invitee(
-                            name: c.displayName,
-                            phone: c.phones.isEmpty ? '' : c.phones.first.number,
-                            email: c.emails.isEmpty ? '' : c.emails.first.address,
-                          ),
-                    ];
-                    Navigator.pop(context, out);
-                  },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: TextField(
-              onChanged: (v) => setState(() => query = v),
-              decoration: const InputDecoration(prefixIcon: Icon(Icons.search_rounded), hintText: 'Search contacts'),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: list.length,
-              itemBuilder: (context, i) {
-                final c = list[i];
-                final on = selected.contains(c.id);
-                return CheckboxListTile(
-                  value: on,
-                  activeColor: HC.violet,
-                  onChanged: (v) => setState(() => v == true ? selected.add(c.id) : selected.remove(c.id)),
-                  title: Text(c.displayName),
-                  subtitle: Text(c.phones.isNotEmpty ? c.phones.first.number : c.emails.first.address),
-                );
-              },
-            ),
-          ),
         ],
       ),
     );
