@@ -66,6 +66,17 @@ class AppState extends ChangeNotifier {
   List<EventDetails> get activeEvents => [for (final e in events) if (e.isActive) e];
   List<EventDetails> get cancelledEvents => [for (final e in events) if (!e.isActive) e];
 
+  static DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
+  static DateTime get _today => _day(DateTime.now());
+
+  /// Active events from today on, soonest first.
+  List<EventDetails> get upcomingEvents =>
+      [for (final e in activeEvents) if (!_day(e.date).isBefore(_today)) e]..sort((a, b) => a.date.compareTo(b.date));
+
+  /// Active events whose day has passed, most recent first.
+  List<EventDetails> get pastEvents =>
+      [for (final e in activeEvents) if (_day(e.date).isBefore(_today)) e]..sort((a, b) => b.date.compareTo(a.date));
+
   bool get isSignedIn => accounts?.isSignedIn ?? false;
   String? get email => accounts?.user?.email;
 
@@ -435,6 +446,40 @@ class AppState extends ChangeNotifier {
       }
     }
     notifyListeners();
+  }
+
+  /// Deletes an event for good (from Cancelled or Past).
+  Future<void> deleteEvent(String id) async {
+    events.removeWhere((e) => e.id == id);
+    if (event?.id == id) {
+      final rest = activeEvents;
+      event = rest.isEmpty ? null : rest.first;
+    }
+    notifyListeners();
+    try {
+      await store.delete(id);
+    } catch (err) {
+      debugPrint('Could not delete event: $err');
+    }
+  }
+
+  /// "Plan it again": a copy of a past event, a year later (or a week from now),
+  /// with the checklist, guest list and edits reset. Returns the new event.
+  Future<EventDetails> planAgain(EventDetails old) async {
+    final m = old.toMap();
+    var date = DateTime(old.date.year + 1, old.date.month, old.date.day);
+    if (date.isBefore(_today)) date = _today.add(const Duration(days: 30));
+    m
+      ..['id'] = EventDetails.newId()
+      ..['date'] = date.toIso8601String()
+      ..['status'] = 'active'
+      ..['doneTasks'] = <String>[]
+      ..['taskReminders'] = <String, String>{}
+      ..['invitees'] = <Map<String, dynamic>>[]
+      ..['todos'] = <Map<String, dynamic>>[];
+    final copy = EventDetails.fromMap(m);
+    await saveEvent(copy);
+    return copy;
   }
 
   /// Moves an event to Cancelled. Shows the next active event, or the setup screen.

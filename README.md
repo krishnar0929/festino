@@ -242,3 +242,10 @@ Nut allergy and more when they RSVP; the host sees totals to share with the cate
   booked, paid and what's left.
 - **My list:** the host's own to-dos and notes with optional due dates (`todos`); due ones get a
   reminder.
+
+## iPhone build notes
+
+All iPhone plugins use Swift Package Manager, so there is no Podfile. Avoid plugins that only
+support CocoaPods: mixing the two made the app crash on launch. "Pick contacts" in Invites uses
+Apple's own contact picker through the `hoopla/contacts` channel in `AppDelegate.swift` (several
+people at once, no contacts permission needed).
