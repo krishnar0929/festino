@@ -31,7 +31,7 @@ class StarRow extends StatelessWidget {
   }
 }
 
-/// "★ 4.7 (12 reviews)" or "New on Hoopla" for a provider, loaded from the server.
+/// "★ 4.7 (12 reviews)" or "New on Festino" for a provider, loaded from the server.
 class RatingBadge extends StatefulWidget {
   const RatingBadge({super.key, required this.providerUid});
   final String providerUid;
@@ -52,7 +52,7 @@ class _RatingBadgeState extends State<RatingBadge> {
       builder: (context, snap) {
         final s = snap.data;
         if (s == null) return const SizedBox(height: 16);
-        if (s.count == 0) return Text('New on Hoopla', style: body(12, color: HC.muted, weight: FontWeight.w500));
+        if (s.count == 0) return Text('New on Festino', style: body(12, color: HC.muted, weight: FontWeight.w500));
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -267,7 +267,7 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                         StarRow(avg, size: 20),
                         const SizedBox(height: 2),
                         Text(
-                          reviews.isEmpty ? 'No reviews yet' : '${reviews.length} review${reviews.length == 1 ? '' : 's'} on Hoopla',
+                          reviews.isEmpty ? 'No reviews yet' : '${reviews.length} review${reviews.length == 1 ? '' : 's'} on Festino',
                           style: body(13, color: HC.muted),
                         ),
                       ],
@@ -292,7 +292,7 @@ class _ReviewsSectionState extends State<ReviewsSection> {
             if (reviews.isEmpty && widget.ownListing) ...[
               const SizedBox(height: 8),
               Text(
-                'Ask happy customers to find you in Hoopla and leave a review. Listings with reviews are trusted more.',
+                'Ask happy customers to find you in Festino and leave a review. Listings with reviews are trusted more.',
                 style: body(13, color: HC.muted),
               ),
             ],

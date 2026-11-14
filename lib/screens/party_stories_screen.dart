@@ -21,7 +21,7 @@ class _SampleNote extends StatelessWidget {
       children: [
         const SampleTag(),
         const SizedBox(width: 6),
-        Expanded(child: Text('Example stories to show what a Hoopla party looks like.', style: body(11, color: HC.muted))),
+        Expanded(child: Text('Example stories to show what a Festino party looks like.', style: body(11, color: HC.muted))),
       ],
     );
   }
@@ -189,7 +189,7 @@ class _PartyStoriesScreenState extends State<PartyStoriesScreen> {
       initialIndex: widget.initialTab,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Celebrated with Hoopla'),
+          title: const Text('Celebrated with Festino'),
           bottom: TabBar(
             labelColor: HC.ink,
             unselectedLabelColor: HC.muted,

@@ -279,7 +279,7 @@ class InviteInfo {
       'action': 'TEMPLATE',
       'text': title,
       'dates': '${t(start)}/${t(end)}',
-      'details': '${message.isEmpty ? '' : '$message\n\n'}Invited by $hostName on Hoopla',
+      'details': '${message.isEmpty ? '' : '$message\n\n'}Invited by $hostName on Festino',
       'location': venueAddress.isNotEmpty ? venueAddress : venue,
     });
   }

@@ -264,7 +264,7 @@ class _PartyScreenState extends State<PartyScreen> {
             ),
           ),
           const SizedBox(height: 22),
-          Text('Also in Hoopla', style: display(18, color: Colors.white, weight: FontWeight.w600)),
+          Text('Also in Festino', style: display(18, color: Colors.white, weight: FontWeight.w600)),
           const SizedBox(height: 10),
           GridView.count(
             crossAxisCount: 3,

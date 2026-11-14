@@ -118,7 +118,7 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
     try {
       files = await GalleryService.pick(limit: room);
     } catch (e) {
-      if (mounted) toast(context, 'Could not open your photos. Check Hoopla\'s photo access in Settings.');
+      if (mounted) toast(context, 'Could not open your photos. Check Festino\'s photo access in Settings.');
       return;
     }
     if (files.isEmpty || !mounted) return;

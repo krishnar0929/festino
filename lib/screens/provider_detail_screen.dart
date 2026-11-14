@@ -46,7 +46,7 @@ class ProviderDetailScreen extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'This is a sample listing, so you can see how Hoopla works. Real providers near you will look just like this.',
+                          'This is a sample listing, so you can see how Festino works. Real providers near you will look just like this.',
                           style: body(13),
                         ),
                       ),

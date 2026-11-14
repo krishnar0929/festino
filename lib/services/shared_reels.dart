@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../models/event_details.dart';
 
-/// Reels people send to Hoopla from Instagram's share menu ("Share to… → Hoopla").
+/// Reels people send to Festino from Instagram's share menu ("Share to… → Festino").
 ///
 /// iPhone: the HooplaShare extension saves them in the shared App Group.
 /// Android: MainActivity receives the share. Both hand them over on this channel.

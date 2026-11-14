@@ -8,7 +8,7 @@ import '../widgets/common.dart';
 import 'feedback_sheet.dart';
 import 'refer_screen.dart';
 
-/// Help & feedback: contact us, send feedback, rate Hoopla, refer a friend.
+/// Help & feedback: contact us, send feedback, rate Festino, refer a friend.
 class HelpScreen extends StatefulWidget {
   const HelpScreen({super.key});
 
@@ -67,7 +67,7 @@ class _HelpScreenState extends State<HelpScreen> {
               ),
               _Row(
                 icon: Icons.star_outline_rounded,
-                title: 'Rate Hoopla',
+                title: 'Rate Festino',
                 subtitle: 'Stars and a review help other party planners find us',
                 onTap: () => showRateSheet(context),
               ),
@@ -85,7 +85,7 @@ class _HelpScreenState extends State<HelpScreen> {
                         children: [
                           Text('Invite friends', style: display(17)),
                           const SizedBox(height: 2),
-                          Text('Hoopla is free. Share it with friends and with providers you trust.', style: body(13)),
+                          Text('Festino is free. Share it with friends and with providers you trust.', style: body(13)),
                         ],
                       ),
                     ),
@@ -95,7 +95,7 @@ class _HelpScreenState extends State<HelpScreen> {
               ),
               const SizedBox(height: 28),
               if (version.isNotEmpty)
-                Text('Hoopla $version', textAlign: TextAlign.center, style: body(12, color: HC.muted)),
+                Text('Festino $version', textAlign: TextAlign.center, style: body(12, color: HC.muted)),
             ],
           ),
         ),

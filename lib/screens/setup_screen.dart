@@ -279,9 +279,14 @@ class _SetupScreenState extends State<SetupScreen> {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
                     children: [
-                      Text(editing ? 'Update your party' : 'Throw a party.\nWe\'ll bring the fun.', style: display(32)),
+                      Text(editing ? 'Update your party' : 'Plan it. Play it.\nParty!', style: display(32)),
                       const SizedBox(height: 8),
-                      Text('Tell us a little about it — we plan the games, timeline and helpers.', style: body(14, color: HC.muted)),
+                      Text(
+                        editing
+                            ? 'Tell us a little about it — we plan the games, timeline and helpers.'
+                            : 'Make more memories. Tell us about your party — we plan the games, timeline and helpers.',
+                        style: body(14, color: HC.muted),
+                      ),
                       if (!editing && showSampleStories) ...[
                         const SizedBox(height: 14),
                         const StoriesLink(),
@@ -414,7 +419,7 @@ class _SetupScreenState extends State<SetupScreen> {
                               builder: (_) => const SignInScreen(initialRole: UserRole.provider),
                             )),
                             child: const Text(
-                              'Photographer, baker, DJ, decorator or panthulu? List your business on Hoopla free',
+                              'Photographer, baker, DJ, decorator or panthulu? List your business on Festino free',
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -470,7 +475,7 @@ class _Logo extends StatelessWidget {
           child: const Icon(Icons.celebration_outlined, color: HC.lime, size: 20),
         ),
         const SizedBox(width: 10),
-        Text('Hoopla', style: display(22)),
+        Text('Festino', style: display(22)),
       ],
     );
   }

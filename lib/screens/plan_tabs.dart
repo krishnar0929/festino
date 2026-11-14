@@ -141,7 +141,7 @@ class ChecklistFooter extends StatelessWidget {
 // ============================================================ budget
 
 /// Your budget: total, each line's planned amount, who's doing it (your own vendor or one
-/// from Hoopla), the real cost and whether it's paid.
+/// from Festino), the real cost and whether it's paid.
 class BudgetTab extends StatefulWidget {
   const BudgetTab({super.key});
 

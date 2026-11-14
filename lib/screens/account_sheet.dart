@@ -273,19 +273,19 @@ class _AccountSheet extends StatelessWidget {
         ],
 
         const SizedBox(height: 18),
-        _Group(title: 'Hoopla', rows: [
+        _Group(title: 'Festino', rows: [
           _Row(
             icon: Icons.celebration_outlined,
             color: HC.coral,
             title: 'Party stories',
-            subtitle: 'Celebrations planned with Hoopla, with photos and games',
+            subtitle: 'Celebrations planned with Festino, with photos and games',
             onTap: () => open(const PartyStoriesScreen()),
           ),
           _Row(
             icon: Icons.card_giftcard_rounded,
             color: const Color(0xFF2EC4B6),
             title: 'Invite friends',
-            subtitle: 'Share Hoopla with friends and providers you trust',
+            subtitle: 'Share Festino with friends and providers you trust',
             onTap: () => open(const ReferScreen()),
           ),
           _Row(
@@ -298,7 +298,7 @@ class _AccountSheet extends StatelessWidget {
           _Row(
             icon: Icons.star_outline_rounded,
             color: const Color(0xFFF5B400),
-            title: 'Rate Hoopla',
+            title: 'Rate Festino',
             onTap: () {
               nav.pop();
               showRateSheet(nav.context);

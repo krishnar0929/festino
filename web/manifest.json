@@ -1,11 +1,11 @@
 {
-    "name": "Hoopla",
-    "short_name": "Hoopla",
+    "name": "Festino",
+    "short_name": "Festino",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#17142B",
     "theme_color": "#17142B",
-    "description": "Plan your party: timeline, games and nearby helpers.",
+    "description": "Plan it. Play it. Party! Make more memories.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

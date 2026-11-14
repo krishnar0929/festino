@@ -324,7 +324,7 @@ class TimelineFooter extends StatelessWidget {
                       context: context,
                       builder: (ctx) => AlertDialog(
                         title: const Text('Reset the timeline?'),
-                        content: const Text('Your edits to the timeline go away and Hoopla builds it fresh. Your games stay.'),
+                        content: const Text('Your edits to the timeline go away and Festino builds it fresh. Your games stay.'),
                         actions: [
                           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep my edits')),
                           FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Reset')),

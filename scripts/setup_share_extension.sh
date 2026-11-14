@@ -1,6 +1,6 @@
 #!/bin/bash
 # One-time, after you add the "HooplaShare" Share Extension target in Xcode:
-# copies Hoopla's share code and settings into it.
+# copies Festino's share code and settings into it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -11,4 +11,4 @@ if [ ! -d "$TARGET_DIR" ]; then
 fi
 cp ios/share_extension/ShareViewController.swift "$TARGET_DIR/ShareViewController.swift"
 cp ios/share_extension/Info.plist "$TARGET_DIR/Info.plist"
-echo "Share to Hoopla is set up. Finish the remaining Xcode steps (App Groups, version, minimum iOS)."
+echo "Share to Festino is set up. Finish the remaining Xcode steps (App Groups, version, minimum iOS)."

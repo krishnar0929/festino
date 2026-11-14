@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Hoopla colors, taken from the approved design.
+/// Festino colors, taken from the approved design.
 class HC {
   static const ink = Color(0xFF17142B);
   static const violet = Color(0xFF6C4CF5);

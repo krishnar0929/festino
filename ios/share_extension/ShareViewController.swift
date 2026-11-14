@@ -2,15 +2,15 @@ import Social
 import UIKit
 import UniformTypeIdentifiers
 
-/// "Share to Hoopla": saves a reel link from Instagram, TikTok or YouTube for the next party.
-/// The Hoopla app picks it up from the shared App Group the next time it opens.
+/// "Share to Festino": saves a reel link from Instagram, TikTok or YouTube for the next party.
+/// The Festino app picks it up from the shared App Group the next time it opens.
 class ShareViewController: SLComposeServiceViewController {
   static let appGroup = "group.com.northbitapps.hoopla"
   private var sharedURL: String?
 
   override func viewDidLoad() {
     super.viewDidLoad()
-    title = "Save to Hoopla"
+    title = "Save to Festino"
     placeholder = "Name this game (optional)"
     let sharedText = contentText
     textView.text = ""

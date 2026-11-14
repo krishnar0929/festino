@@ -10,7 +10,7 @@ import UserNotifications
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    // Lets party reminders show as banners even while Hoopla is open.
+    // Lets party reminders show as banners even while Festino is open.
     UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
@@ -18,7 +18,7 @@ import UserNotifications
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
 
-    // Hands reels saved by the "Share to Hoopla" extension to the Flutter app.
+    // Hands reels saved by the "Share to Festino" extension to the Flutter app.
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "HooplaSharedReels") {
       let channel = FlutterMethodChannel(name: "hoopla/share", binaryMessenger: registrar.messenger())
       channel.setMethodCallHandler { call, result in

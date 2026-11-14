@@ -82,7 +82,7 @@ class _SignInScreenState extends State<SignInScreen> {
       await state.afterSignIn(role, carry);
       final notice = state.takeReferralNotice();
       if (notice != null && notice.startsWith('Friend')) {
-        Celebration.show(overlay, title: 'Welcome to Hoopla!', message: 'Your friend\'s invite code is saved. Happy planning!', emoji: '🎁');
+        Celebration.show(overlay, title: 'Welcome to Festino!', message: 'Your friend\'s invite code is saved. Happy planning!', emoji: '🎁');
       } else if (notice != null) {
         messenger.showSnackBar(SnackBar(content: Text(notice)));
       }

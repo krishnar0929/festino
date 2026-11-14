@@ -1,5 +1,5 @@
-// Sample party stories shown as "Celebrated with Hoopla", so new users can see
-// what a Hoopla party looks like. They are examples, not real customers: every
+// Sample party stories shown as "Celebrated with Festino", so new users can see
+// what a Festino party looks like. They are examples, not real customers: every
 // screen that shows them says so. Replace them with real stories (with the
 // hosts' permission) as parties happen, or turn them off with [showSampleStories].
 
@@ -84,7 +84,7 @@ const partyStories = <PartyStory>[
     indoor: false,
     host: 'Priya S.',
     stars: 5,
-    review: 'Hoopla planned 6 games that fit perfectly in 3 hours. The dinosaur treasure hunt was the hit of the year.',
+    review: 'Festino planned 6 games that fit perfectly in 3 hours. The dinosaur treasure hunt was the hit of the year.',
     highlight: 'Twelve kids digging for "fossils" in the sandbox.',
     gameIds: ['treasure_hunt', 'balloon_stomp', 'freeze_dance'],
     helpers: ['Party Pop Decor', 'Kids Party DJ Sam', 'Snapshot Sisters'],
@@ -132,7 +132,7 @@ const partyStories = <PartyStory>[
     indoor: true,
     host: 'Neha K.',
     stars: 5,
-    review: 'We surprised my parents and Hoopla kept the secret plan on track. The couple quiz was hilarious.',
+    review: 'We surprised my parents and Festino kept the secret plan on track. The couple quiz was hilarious.',
     highlight: 'Dad got every question about Mom right. Mom got two.',
     gameIds: ['couple_quiz', 'antakshari', 'musical_chairs'],
     helpers: ['Emcee Arjun', 'DJ Bollywood Beats', 'Grand Stage Events'],
@@ -196,7 +196,7 @@ const partyStories = <PartyStory>[
     indoor: true,
     host: 'Arjun T.',
     stars: 5,
-    review: 'Simple, sweet and on time. Hoopla even reminded us to book the photographer for the cradle ceremony.',
+    review: 'Simple, sweet and on time. Festino even reminded us to book the photographer for the cradle ceremony.',
     highlight: 'Grandma whispering the name in Diya\'s ear.',
     gameIds: ['guess_the_baby', 'antakshari'],
     helpers: ['Pandit Sharma Ji', 'Snapshot Sisters', 'The Cake Chowk'],
@@ -260,7 +260,7 @@ const partyStories = <PartyStory>[
     indoor: true,
     host: 'Emily J.',
     stars: 5,
-    review: 'Our first time hosting the street. Hoopla split the potluck list and the kids\' games kept everyone busy.',
+    review: 'Our first time hosting the street. Festino split the potluck list and the kids\' games kept everyone busy.',
     highlight: 'Secret Santa with a surprise visit from "Santa" (Mr. Patel).',
     gameIds: ['hot_potato', 'musical_chairs', 'dumb_charades'],
     helpers: ['Sparkle After Party', 'Inkwell Invites'],
@@ -292,7 +292,7 @@ const partyStories = <PartyStory>[
     indoor: true,
     host: 'Madhavi K.',
     stars: 5,
-    review: 'Compared three decorators and two photographers on Hoopla by reviews and price. The stage looked like a movie set.',
+    review: 'Compared three decorators and two photographers on Festino by reviews and price. The stage looked like a movie set.',
     highlight: 'Ring exchange under a floral arch.',
     gameIds: ['couple_quiz', 'antakshari'],
     helpers: ['Mandap Magic', 'Story Reel Studio', 'Studio Sundari'],
@@ -308,7 +308,7 @@ const partyStories = <PartyStory>[
     indoor: true,
     host: 'Harpreet B.',
     stars: 5,
-    review: 'The choreographer, DJ and anchor all came from Hoopla. Quote requests were answered in a day.',
+    review: 'The choreographer, DJ and anchor all came from Festino. Quote requests were answered in a day.',
     highlight: 'Bride\'s side vs groom\'s side dance battle.',
     gameIds: ['antakshari', 'dumb_charades'],
     helpers: ['Nritya Dance Crew', 'Mic Drop Events', 'Bhangra Bros'],
@@ -356,7 +356,7 @@ const partyStories = <PartyStory>[
     indoor: true,
     host: 'Alex & Sam',
     stars: 5,
-    review: 'Small apartment, big party. Hoopla picked games that fit the space, and the cup stack tournament went on till midnight.',
+    review: 'Small apartment, big party. Festino picked games that fit the space, and the cup stack tournament went on till midnight.',
     highlight: 'House tour followed by a pizza and games night.',
     gameIds: ['cup_stack', 'who_am_i', 'hot_potato'],
     helpers: ['FreshNest Cleaning', 'Pastel & Print'],

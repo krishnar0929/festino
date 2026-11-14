@@ -94,7 +94,7 @@ class _HooplaAppState extends State<HooplaApp> with WidgetsBindingObserver {
     if (s == AppLifecycleState.resumed) _collectSharedReels();
   }
 
-  /// Picks up reels shared to Hoopla from Instagram (or TikTok, YouTube) while the app was closed.
+  /// Picks up reels shared to Festino from Instagram (or TikTok, YouTube) while the app was closed.
   Future<void> _collectSharedReels() async {
     final reels = await SharedReels.take();
     final added = await state.addReels(reels);
@@ -120,7 +120,7 @@ class _HooplaAppState extends State<HooplaApp> with WidgetsBindingObserver {
         listenable: state,
         builder: (context, _) => MaterialApp(
           scaffoldMessengerKey: _messenger,
-          title: 'Hoopla',
+          title: 'Festino',
           debugShowCheckedModeBanner: false,
           theme: buildTheme(),
           home: _inviteId != null

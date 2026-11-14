@@ -97,7 +97,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
   Future<List<ProviderProfile>>? _providers;
   String? _providersFor;
 
-  /// Hoopla providers for the selected service, fetched once per category.
+  /// Festino providers for the selected service, fetched once per category.
   Future<List<ProviderProfile>> _providersFuture(AppState state) {
     if (_providers == null || _providersFor != selected) {
       _providersFor = selected;
@@ -362,13 +362,13 @@ class _NearbyScreenState extends State<NearbyScreen> {
                   : const <ProviderProfile>[];
               if (withinBudget && list.isEmpty && samples.isEmpty && budgetCap != null) {
                 return Text(
-                  'No ${selected.toLowerCase()} on Hoopla fit ${money.format(budgetCap)} yet. Turn off the budget filter or raise the budget in your plan.',
+                  'No ${selected.toLowerCase()} on Festino fit ${money.format(budgetCap)} yet. Turn off the budget filter or raise the budget in your plan.',
                   style: body(13, color: HC.muted),
                 );
               }
               if (list.isEmpty && samples.isEmpty) {
                 return Text(
-                  'No ${selected.toLowerCase()} have joined Hoopla yet. Use the map above meanwhile.',
+                  'No ${selected.toLowerCase()} have joined Festino yet. Use the map above meanwhile.',
                   style: body(13, color: HC.muted),
                 );
               }
@@ -381,8 +381,8 @@ class _NearbyScreenState extends State<NearbyScreen> {
                       padding: EdgeInsets.only(top: list.isEmpty ? 0 : 8, bottom: 8),
                       child: Text(
                         list.isEmpty
-                            ? 'Sample listings: this is how ${selected.toLowerCase()} will look once they join Hoopla near you.'
-                            : 'More sample listings, to show how Hoopla works:',
+                            ? 'Sample listings: this is how ${selected.toLowerCase()} will look once they join Festino near you.'
+                            : 'More sample listings, to show how Festino works:',
                         style: body(12, color: HC.muted),
                       ),
                     ),
@@ -514,7 +514,7 @@ class _SmallButton extends StatelessWidget {
   }
 }
 
-/// A provider who joined Hoopla, with one-tap contact.
+/// A provider who joined Festino, with one-tap contact.
 class _ProviderCard extends StatelessWidget {
   const _ProviderCard({required this.provider, required this.tile, this.miles});
   final ProviderProfile provider;
@@ -530,7 +530,7 @@ class _ProviderCard extends StatelessWidget {
     final p = provider;
     final digits = p.phoneDigits;
     final hasPhone = digits.isNotEmpty;
-    final quote = 'Hi ${p.businessName}, I found you on Hoopla. I\'m planning "${e.title}" on ${DateFormat('EEE, MMM d').format(e.date)} '
+    final quote = 'Hi ${p.businessName}, I found you on Festino. I\'m planning "${e.title}" on ${DateFormat('EEE, MMM d').format(e.date)} '
         'at ${clockAmPm(e.startMinutes)} for about ${e.guests} guests (${e.indoor ? 'indoor' : 'outdoor'}). '
         'Are you available, and could you share a quote?';
     final saved = e.shortlist.any((v) => v.id == p.uid);

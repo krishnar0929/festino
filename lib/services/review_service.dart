@@ -30,7 +30,7 @@ class Review {
         reviewerUid: id,
         stars: (m['stars'] as num?)?.toInt() ?? 0,
         comment: m['comment'] as String? ?? '',
-        name: m['name'] as String? ?? 'Hoopla user',
+        name: m['name'] as String? ?? 'Festino user',
         eventType: m['eventType'] as String? ?? '',
         createdAt: (m['createdAt'] as Timestamp?)?.toDate(),
         reply: m['reply'] as String? ?? '',
@@ -52,7 +52,7 @@ String shortName(String? displayName, String? email) {
     return parts.length == 1 ? parts.first : '${parts.first} ${parts.last[0].toUpperCase()}.';
   }
   final e = (email ?? '').split('@').first.replaceAll(RegExp(r'[^A-Za-z]'), '');
-  if (e.isEmpty) return 'Hoopla user';
+  if (e.isEmpty) return 'Festino user';
   return e[0].toUpperCase() + e.substring(1).toLowerCase();
 }
 

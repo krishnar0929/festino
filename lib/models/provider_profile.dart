@@ -78,7 +78,7 @@ class ProviderProfile {
   /// A built-in sample listing (lib/data/sample_providers.dart), not a real business.
   bool get isSample => uid.startsWith('sample-');
 
-  /// True when the listing links anywhere outside Hoopla.
+  /// True when the listing links anywhere outside Festino.
   bool get hasSocial => [instagramUrl, facebookUrl, youtubeUrl, tiktokUrl, reviewsUrl, websiteUrl].any((u) => u != null);
 
   /// Digits only, for call and WhatsApp links.

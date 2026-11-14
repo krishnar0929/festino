@@ -100,7 +100,7 @@ class _PhotoViewerState extends State<_PhotoViewer> {
   }
 }
 
-const sampleContactNote = 'This is a sample listing to show how Hoopla works. Real providers near you will appear here as they join.';
+const sampleContactNote = 'This is a sample listing to show how Festino works. Real providers near you will appear here as they join.';
 
 /// Small "SAMPLE" label on demo listings.
 class SampleTag extends StatelessWidget {

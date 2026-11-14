@@ -12,7 +12,7 @@ import 'sign_in_screen.dart';
 
 // ============================================================ customer side
 
-/// "Request a quote": the event details go to the provider inside Hoopla.
+/// "Request a quote": the event details go to the provider inside Festino.
 /// Needs a free account so the provider can reply.
 Future<void> requestQuote(BuildContext context, ProviderProfile provider) async {
   if (provider.isSample) {
@@ -107,7 +107,7 @@ class _RequestSheetState extends State<_RequestSheet> {
         Celebration.show(
           overlay,
           title: 'Quote request sent!',
-          message: '${widget.provider.businessName} will reply in Hoopla${phoneCtrl.text.trim().isEmpty ? '' : ' or contact you'}. '
+          message: '${widget.provider.businessName} will reply in Festino${phoneCtrl.text.trim().isEmpty ? '' : ' or contact you'}. '
               'Track it under "Your quote requests" in Nearby.',
           emoji: '📨',
         );
@@ -494,13 +494,13 @@ class _LeadInboxScreenState extends State<LeadInboxScreen> {
                             if (q.phoneDigits.isNotEmpty) ...[
                               TextButton(onPressed: () => openLink(context, Uri(scheme: 'tel', path: q.phoneDigits)), child: const Text('Call')),
                               TextButton(
-                                onPressed: () => openLink(context, Uri.https('wa.me', '/${q.phoneDigits}', {'text': 'Hi ${q.customerName}, this is about your quote request on Hoopla.'})),
+                                onPressed: () => openLink(context, Uri.https('wa.me', '/${q.phoneDigits}', {'text': 'Hi ${q.customerName}, this is about your quote request on Festino.'})),
                                 child: const Text('WhatsApp'),
                               ),
                             ],
                             if (q.customerEmail.isNotEmpty)
                               TextButton(
-                                onPressed: () => openLink(context, Uri(scheme: 'mailto', path: q.customerEmail, query: 'subject=${Uri.encodeComponent('Your Hoopla quote request: ${q.eventTitle}')}')),
+                                onPressed: () => openLink(context, Uri(scheme: 'mailto', path: q.customerEmail, query: 'subject=${Uri.encodeComponent('Your Festino quote request: ${q.eventTitle}')}')),
                                 child: const Text('Email'),
                               ),
                             TextButton(onPressed: () => _reply(q), child: Text(q.reply.isEmpty ? 'Reply' : 'Edit reply')),

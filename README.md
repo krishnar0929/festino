@@ -1,4 +1,4 @@
-# Hoopla
+# Festino
 
 Plan an event in a minute, find nearby helpers, and play games people remember.
 One Flutter codebase for **iPhone, Android and the web**, with Firebase for saving.
@@ -61,7 +61,7 @@ firebase deploy --only firestore:rules
 ## Next ideas
 
 - Real vendor listings with Google Places
-- Share-sheet integration so a reel can be sent straight from Instagram to Hoopla
+- Share-sheet integration so a reel can be sent straight from Instagram to Festino
 - AI-written plans and game ideas through a Cloud Function
 - Sign in with Google/Apple so events follow you across devices
 - Shared photo album for guests
@@ -108,7 +108,7 @@ Yearly: $29.99 / $79.99. Prices and features live in `planOffers` in `lib/screen
 
 - **Give someone a plan:** Firestore → `users/{uid}` → add `plan` = `basic` or `pro` (string). Payments come later.
 - **Free trial:** 3 days, one per account (`trialPlan`, `trialStartedAt`, `trialCancelled` on `users/{uid}`, protected by the rules). Cancel from Account. When payments go live, Apple's and Google's 3-day trials take over and renew automatically.
-- **Saved reels (free):** in Instagram/TikTok/YouTube tap Share → Hoopla (iPhone share extension `ios/share_extension`, Android share target in `MainActivity.kt`), or paste a link in Games. Reels saved before an event exists join the next event.
+- **Saved reels (free):** in Instagram/TikTok/YouTube tap Share → Festino (iPhone share extension `ios/share_extension`, Android share target in `MainActivity.kt`), or paste a link in Games. Reels saved before an event exists join the next event.
 - **Test plans locally:** debug builds show a "Developer: test a plan" picker at the bottom of the plans page.
 - **Sign in:** Email (everywhere), Google (web), Apple (iPhone). Guests are linked to their new account, so their event comes along.
 - **Roles:** customers plan events; providers publish a listing at `providers/{uid}` shown in Nearby.
@@ -128,14 +128,14 @@ Every extra friend adds another week on the end.
 - Invite links look like `https://hoopla-894ca.web.app/?ref=CODE`. The web app keeps the code
   and applies it after sign-up. In the phone app, friends type the code on the sign-up screen.
 
-**Help & feedback** (Account → Help, feedback & rate Hoopla):
+**Help & feedback** (Account → Help, feedback & rate Festino):
 
 - Email us opens mail to northbitapps@gmail.com.
 - Send feedback / Report a problem saves type, star rating and comments to the `feedback`
   collection. Read it in the Firebase console (Firestore → feedback). The app can't read it back.
-- Rate Hoopla: 4–5 stars opens Apple's review pop-up (or the App Store page), 1–3 stars opens the
+- Rate Festino: 4–5 stars opens Apple's review pop-up (or the App Store page), 1–3 stars opens the
   feedback form so you hear about problems first.
-- After a couple of party-mode games finish, Hoopla asks "Enjoying Hoopla?" once.
+- After a couple of party-mode games finish, Festino asks "Enjoying Festino?" once.
 
 Deploy the rules after pulling: `firebase deploy --only firestore:rules`.
 
@@ -167,26 +167,26 @@ Photos are stored in Firebase Storage at `providers/{uid}/gallery/`. One-time se
 ## Reminders (free, phone app)
 
 Scheduled on the phone with `flutter_local_notifications`: no server, works offline, shows even
-when Hoopla is closed. The website shows a note instead.
+when Festino is closed. The website shows a note instead.
 
 - Each unchecked checklist task reminds at 9 AM (changeable) on its due day; same-day tasks are
   grouped. Overdue tasks get one catch-up reminder. Ticking a task off cancels it.
 - Countdown: 1 week before, 6 PM the evening before, and the morning of the party.
 - The bell on a task sets your own date and time for it (saved on the event as `taskReminders`).
-- Hoopla asks "Want reminders?" once, right after the first party is planned. The switch above
+- Festino asks "Want reminders?" once, right after the first party is planned. The switch above
   the checklist turns them on or off.
 - Everything is recalculated whenever an event changes (`AppState.syncReminders`), keeping the
   soonest 60 (iOS allows 64). Rules live in `lib/services/reminder_plan.dart` (tested).
 
 ## Business model: free for users, providers pay later
 
-Hoopla is free for people planning events (`AppState.userPlansEnabled = false` hides the old
+Festino is free for people planning events (`AppState.userPlansEnabled = false` hides the old
 Basic/Pro plans; the code stays for a possible one-time Event Pass later). A free sign-in is only
 needed for the checklist, budget, more than one event, quote requests and reviews.
 
 **Quote requests** (`quotes/{customerUid}_{providerUid}_{eventId}`): customers tap "Get quote" on
 a provider, the event details are filled in, and the request lands in the provider's inbox. The
-provider replies in Hoopla, calls/WhatsApps the customer, or marks it booked / not available. The
+provider replies in Festino, calls/WhatsApps the customer, or marks it booked / not available. The
 customer sees the status and reply under Nearby → Your quote requests.
 
 **Lead counts**: taps on Call, WhatsApp, Instagram, website and other links are saved in

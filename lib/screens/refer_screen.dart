@@ -11,7 +11,7 @@ import 'sign_in_screen.dart';
 
 /// Invite friends: share your code with friends planning parties and with providers
 /// you know. Friends who join with it are counted. Also where you type a friend's code.
-/// (While Hoopla is free for users there is no reward; the counts are kept for later.)
+/// (While Festino is free for users there is no reward; the counts are kept for later.)
 class ReferScreen extends StatefulWidget {
   const ReferScreen({super.key});
 
@@ -98,7 +98,7 @@ class _ReferScreenState extends State<ReferScreen> {
     if (err == null) {
       friendCtrl.clear();
       await state.setPendingRefCode(null);
-      Celebration.show(overlay, title: 'Welcome to Hoopla!', message: 'Your friend\'s code is saved. Happy planning!', emoji: '🎁');
+      Celebration.show(overlay, title: 'Welcome to Festino!', message: 'Your friend\'s code is saved. Happy planning!', emoji: '🎁');
     }
   }
 
@@ -133,13 +133,13 @@ class _ReferScreenState extends State<ReferScreen> {
               Text('Parties are better\nwith friends', style: display(26)),
               const SizedBox(height: 8),
               Text(
-                'Hoopla is free. Share your code with friends planning a party, and with the photographers, '
+                'Festino is free. Share your code with friends planning a party, and with the photographers, '
                 'decorators, panthulu and cooks you trust, so they can get listed too. Everyone who joins with your code is counted here.',
                 style: body(14, color: HC.muted),
               ),
               const SizedBox(height: 20),
               if (!state.usingCloud)
-                Text('Invites turn on once Hoopla is connected to the internet.', style: body(14, color: HC.muted))
+                Text('Invites turn on once Festino is connected to the internet.', style: body(14, color: HC.muted))
               else if (!state.isSignedIn)
                 SizedBox(
                   height: 52,
@@ -161,7 +161,7 @@ class _ReferScreenState extends State<ReferScreen> {
               const SizedBox(height: 24),
               const SectionLabel('How it works'),
               const _Step(n: '1', text: 'Share your code or link with friends and with providers you trust.'),
-              const _Step(n: '2', text: 'They download Hoopla and enter your code when they sign up.'),
+              const _Step(n: '2', text: 'They download Festino and enter your code when they sign up.'),
               const _Step(n: '3', text: 'They show up here as friends who joined. Planning stays free for everyone.'),
               if (r.usedCode == null && state.usingCloud) ...[
                 const SizedBox(height: 20),

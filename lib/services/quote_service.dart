@@ -103,7 +103,7 @@ class QuoteRequest {
   factory QuoteRequest.fromDoc(String id, Map<String, dynamic> m) => QuoteRequest(
         id: id,
         customerUid: m['customerUid'] as String? ?? '',
-        customerName: m['customerName'] as String? ?? 'Hoopla user',
+        customerName: m['customerName'] as String? ?? 'Festino user',
         customerEmail: m['customerEmail'] as String? ?? '',
         customerPhone: m['customerPhone'] as String? ?? '',
         providerUid: m['providerUid'] as String? ?? '',
@@ -182,7 +182,7 @@ class QuoteService {
     }
     await ref.set({
       'customerUid': u.uid,
-      'customerName': name.trim().isEmpty ? 'Hoopla user' : name.trim(),
+      'customerName': name.trim().isEmpty ? 'Festino user' : name.trim(),
       'customerEmail': u.email ?? '',
       'customerPhone': phone.trim(),
       'providerUid': provider.uid,

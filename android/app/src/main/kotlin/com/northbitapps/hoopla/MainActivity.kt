@@ -7,7 +7,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-    // Links shared to Hoopla (Instagram → Share → Hoopla) waiting for the Flutter app.
+    // Links shared to Festino (Instagram → Share → Festino) waiting for the Flutter app.
     private val pending = mutableListOf<Map<String, String>>()
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

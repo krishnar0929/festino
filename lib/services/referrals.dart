@@ -21,7 +21,7 @@ String newReferralCode([Random? random]) {
   return List.generate(codeLength, (_) => _alphabet[r.nextInt(_alphabet.length)]).join();
 }
 
-/// "  abc-123 " → "ABC123". Null when it can't be a Hoopla code.
+/// "  abc-123 " → "ABC123". Null when it can't be a Festino code.
 String? normalizeCode(String? input) {
   if (input == null) return null;
   final c = input.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
@@ -38,7 +38,7 @@ String? codeFromUri(Uri uri) => normalizeCode(uri.queryParameters['ref']);
 String inviteLink(String code) => 'https://hoopla-894ca.web.app/?ref=$code';
 
 String inviteMessage(String code) =>
-    'Planning a party? I use Hoopla for the plan, the games and finding helpers nearby. '
+    'Planning a party? I use Festino for the plan, the games and finding helpers nearby. '
     'It\'s free! Join with my code $code: ${inviteLink(code)}';
 
 /// When the free Pro runs out, given the dates each bonus week was earned.

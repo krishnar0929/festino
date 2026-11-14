@@ -39,7 +39,7 @@ if [ "$BUMP" = 1 ]; then
   # It always goes up, so pubspec.yaml never changes and git stays clean.
   build=$(date +%y%j%H%M | sed 's/^0*//')
 fi
-echo "==> Hoopla ${name} (${build})"
+echo "==> Festino ${name} (${build})"
 
 flutter pub get
 flutter build ipa --release --build-number="$build"

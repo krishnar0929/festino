@@ -45,7 +45,7 @@ class RemindersCard extends StatelessWidget {
   Future<void> _toggle(BuildContext context, AppState state, bool on) async {
     final ok = await state.setReminders(on);
     if (!ok && context.mounted) {
-      toast(context, 'Notifications are off for Hoopla. Turn them on in your phone\'s Settings → Hoopla → Notifications.');
+      toast(context, 'Notifications are off for Festino. Turn them on in your phone\'s Settings → Festino → Notifications.');
     }
   }
 
@@ -68,7 +68,7 @@ class RemindersCard extends StatelessWidget {
           children: [
             const Icon(Icons.notifications_none_rounded, size: 18, color: HC.muted),
             const SizedBox(width: 6),
-            Expanded(child: Text('Get reminders for these on your phone with the Hoopla app.', style: body(12, color: HC.muted))),
+            Expanded(child: Text('Get reminders for these on your phone with the Festino app.', style: body(12, color: HC.muted))),
           ],
         ),
       );
@@ -142,7 +142,7 @@ class TaskReminderButton extends StatelessWidget {
     if (!state.remindersOn) {
       final ok = await state.setReminders(true);
       if (!ok) {
-        if (context.mounted) toast(context, 'Turn on notifications for Hoopla in your phone\'s Settings to get reminders.');
+        if (context.mounted) toast(context, 'Turn on notifications for Festino in your phone\'s Settings to get reminders.');
         return;
       }
     }
