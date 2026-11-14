@@ -222,3 +222,10 @@ Plan → **Invite guests**:
   tap to use it as the plan's guest count.
 
 Firestore: `invites/{id}` (public card, written by the host) and `invites/{id}/rsvps/{guestUid}`.
+
+**🧺 Pitch In** (`invites/{id}/pitchIn/{item}`): the host makes a list of things to bring and ways to
+help (or taps "Suggest a list from my plan"). Guests claim one on the RSVP page ("I'll bring it" /
+"I'll help"); the host sees "9 of 12 covered" and who's on what.
+
+**🥗 Food preferences**: guests tick Vegetarian, Jain, Vegan, Eggless, No onion-garlic, Gluten-free,
+Nut allergy and more when they RSVP; the host sees totals to share with the caterer.

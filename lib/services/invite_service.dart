@@ -60,8 +60,20 @@ extension RsvpStatusLabel on RsvpStatus {
 }
 
 class Rsvp {
-  const Rsvp({required this.uid, required this.name, required this.status, this.adults = 1, this.kids = 0, this.note = '', this.updatedAt});
+  const Rsvp({
+    required this.uid,
+    required this.name,
+    required this.status,
+    this.adults = 1,
+    this.kids = 0,
+    this.note = '',
+    this.diet = const [],
+    this.updatedAt,
+  });
   final String uid;
+
+  /// Food preferences, from [foodPreferences].
+  final List<String> diet;
   final String name;
   final RsvpStatus status;
   final int adults;
@@ -78,8 +90,111 @@ class Rsvp {
         adults: (m['adults'] as num?)?.toInt() ?? 1,
         kids: (m['kids'] as num?)?.toInt() ?? 0,
         note: m['note'] as String? ?? '',
+        diet: [for (final d in (m['diet'] as List? ?? const [])) if (d is String) d],
         updatedAt: (m['updatedAt'] as Timestamp?)?.toDate(),
       );
+}
+
+/// 🥗 Food preferences guests can tick on the RSVP page.
+const foodPreferences = ['Vegetarian', 'Non-veg', 'Jain', 'Vegan', 'Eggless', 'No onion-garlic', 'Gluten-free', 'Nut allergy'];
+
+const foodEmoji = {
+  'Vegetarian': '🥦',
+  'Non-veg': '🍗',
+  'Jain': '🌿',
+  'Vegan': '🌱',
+  'Eggless': '🥚',
+  'No onion-garlic': '🧄',
+  'Gluten-free': '🌾',
+  'Nut allergy': '🥜',
+};
+
+/// How many going guests picked each food preference (most first).
+List<MapEntry<String, int>> foodSummary(List<Rsvp> list) {
+  final counts = <String, int>{};
+  for (final r in list) {
+    if (r.status == RsvpStatus.no) continue;
+    for (final d in r.diet) {
+      counts[d] = (counts[d] ?? 0) + 1;
+    }
+  }
+  return counts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+}
+
+/// 🧺 Pitch In: one thing to bring, or one way to help. One guest claims it.
+class PitchItem {
+  const PitchItem({
+    required this.id,
+    required this.label,
+    required this.emoji,
+    this.help = false,
+    this.order = 0,
+    this.claimedBy = '',
+    this.claimedName = '',
+  });
+
+  final String id;
+  final String label;
+  final String emoji;
+
+  /// A way to help (setup, cleanup) rather than something to bring.
+  final bool help;
+  final int order;
+  final String claimedBy;
+  final String claimedName;
+
+  bool get claimed => claimedBy.isNotEmpty;
+
+  Map<String, dynamic> toMap() => {
+        'label': label,
+        'emoji': emoji,
+        'help': help,
+        'order': order,
+        'claimedBy': claimedBy,
+        'claimedName': claimedName,
+        'claimedAt': null,
+      };
+
+  factory PitchItem.fromDoc(String id, Map<String, dynamic> m) => PitchItem(
+        id: id,
+        label: m['label'] as String? ?? '',
+        emoji: m['emoji'] as String? ?? '🧺',
+        help: m['help'] as bool? ?? false,
+        order: (m['order'] as num?)?.toInt() ?? 0,
+        claimedBy: m['claimedBy'] as String? ?? '',
+        claimedName: m['claimedName'] as String? ?? '',
+      );
+}
+
+/// Ideas for the Pitch In list, from the party's occasion, size and place.
+List<PitchItem> suggestPitchIn(EventDetails e) {
+  final big = e.guests >= 40;
+  var n = 0;
+  PitchItem item(String emoji, String label, {bool help = false}) =>
+      PitchItem(id: 'i${n++}', label: label, emoji: emoji, help: help, order: n);
+  final drinks = (e.guests / 12).ceil().clamp(1, 20);
+  return [
+    item('🥤', 'Drinks ($drinks case${drinks == 1 ? '' : 's'})'),
+    item('🧊', 'Ice (${big ? 4 : 2} bags)'),
+    item('🍉', 'Fruit platter'),
+    item('🍿', 'Snacks & chips'),
+    item('🍮', 'Dessert or sweets'),
+    if (e.occasion == 'Pooja' || e.occasion == 'Housewarming') ...[
+      item('🌼', 'Flowers & garlands'),
+      item('🥥', 'Coconuts & fruits for pooja'),
+    ],
+    if (e.occasion == 'Birthday') ...[
+      item('🎈', 'Balloons & decorations'),
+      item('🎁', 'Return gift bags'),
+    ],
+    if (e.occasion == 'Baby shower') item('🧸', 'Games prizes'),
+    item('🍽️', 'Plates, cups & napkins'),
+    if (!e.indoor) item('🪑', 'Extra chairs or a canopy'),
+    item('🔊', 'Speaker for music'),
+    item('🛠️', 'Setup help (1 hour before)', help: true),
+    if (e.audience != Audience.adults) item('🎲', 'Kids\' games helper', help: true),
+    item('🧹', 'Cleanup crew (after the party)', help: true),
+  ];
 }
 
 /// Headcount from RSVPs.
@@ -259,7 +374,15 @@ class InviteService {
     }
   }
 
-  static Future<void> reply(String inviteId, {required String name, required RsvpStatus status, int adults = 1, int kids = 0, String note = ''}) async {
+  static Future<void> reply(
+    String inviteId, {
+    required String name,
+    required RsvpStatus status,
+    int adults = 1,
+    int kids = 0,
+    String note = '',
+    List<String> diet = const [],
+  }) async {
     var uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
       await FirebaseAuth.instance.signInAnonymously();
@@ -271,9 +394,57 @@ class InviteService {
       'adults': status == RsvpStatus.no ? 0 : adults,
       'kids': status == RsvpStatus.no ? 0 : kids,
       'note': note.trim(),
+      'diet': status == RsvpStatus.no ? const <String>[] : diet.take(8).toList(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
+
+  // ---------- 🧺 Pitch In ----------
+
+  static CollectionReference<Map<String, dynamic>> _items(String inviteId) => _doc(inviteId).collection('pitchIn');
+
+  static Future<List<PitchItem>> pitchItems(String inviteId) async {
+    final snap = await _items(inviteId).limit(100).get();
+    final list = [for (final d in snap.docs) PitchItem.fromDoc(d.id, d.data())];
+    list.sort((a, b) => a.order.compareTo(b.order));
+    return list;
+  }
+
+  /// Host: adds items (keeps what's already there).
+  static Future<void> addItems(String inviteId, List<PitchItem> items, {int startOrder = 0}) async {
+    final batch = _db.batch();
+    var i = startOrder;
+    for (final it in items) {
+      final ref = _items(inviteId).doc();
+      batch.set(ref, {...it.toMap(), 'order': i++});
+    }
+    await batch.commit();
+  }
+
+  static Future<void> removeItem(String inviteId, String itemId) => _items(inviteId).doc(itemId).delete();
+
+  /// Guest: "I'll bring this". Returns false when someone else just took it.
+  static Future<bool> claim(String inviteId, String itemId, String name) async {
+    var uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      await FirebaseAuth.instance.signInAnonymously();
+      uid = FirebaseAuth.instance.currentUser!.uid;
+    }
+    try {
+      await _items(inviteId).doc(itemId).update({
+        'claimedBy': uid,
+        'claimedName': name.trim(),
+        'claimedAt': FieldValue.serverTimestamp(),
+      });
+      return true;
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') return false;
+      rethrow;
+    }
+  }
+
+  static Future<void> unclaim(String inviteId, String itemId) =>
+      _items(inviteId).doc(itemId).update({'claimedBy': '', 'claimedName': '', 'claimedAt': null});
 
   /// Text-message link to many numbers at once (iPhone and Android differ).
   static Uri smsTo(List<String> numbers, String body) {

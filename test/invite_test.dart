@@ -69,4 +69,25 @@ void main() {
     expect(x.invitees.single.name, 'Priya');
     expect(x.inviteMessage, 'Yay');
   });
+
+  test('Pitch In ideas fit the party', () {
+    final items = suggestPitchIn(e);
+    final labels = [for (final i in items) i.label];
+    expect(labels, contains('Drinks (4 cases)'));
+    expect(labels, contains('Balloons & decorations'));
+    expect(labels, contains("Kids' games helper"));
+    expect(items.where((i) => i.help), isNotEmpty);
+    expect(labels.any((l) => l.contains('canopy')), isFalse, reason: 'indoor party');
+  });
+
+  test('food preferences are counted for people who are coming', () {
+    final f = foodSummary(const [
+      Rsvp(uid: 'a', name: 'A', status: RsvpStatus.going, diet: ['Vegetarian', 'Nut allergy']),
+      Rsvp(uid: 'b', name: 'B', status: RsvpStatus.maybe, diet: ['Vegetarian']),
+      Rsvp(uid: 'c', name: 'C', status: RsvpStatus.no, diet: ['Vegan']),
+    ]);
+    expect(f.first.key, 'Vegetarian');
+    expect(f.first.value, 2);
+    expect(f.any((x) => x.key == 'Vegan'), isFalse);
+  });
 }

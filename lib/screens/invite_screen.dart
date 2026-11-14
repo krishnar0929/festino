@@ -25,6 +25,7 @@ class InviteScreen extends StatefulWidget {
 class _InviteScreenState extends State<InviteScreen> {
   Future<String>? publishing;
   Future<List<Rsvp>>? replies;
+  Future<List<PitchItem>>? pitch;
   late final TextEditingController messageCtrl;
   final _shareKey = GlobalKey();
 
@@ -74,7 +75,60 @@ class _InviteScreenState extends State<InviteScreen> {
     setState(() {
       publishing = InviteService.publish(e, hostName: _hostName(state), message: messageCtrl.text);
       replies = publishing!.then(InviteService.rsvps);
+      pitch = publishing!.then(InviteService.pitchItems);
     });
+  }
+
+  void _reloadPitch(String id) => setState(() => pitch = InviteService.pitchItems(id));
+
+  Future<void> _suggestPitch(String id, EventDetails e, int have) async {
+    try {
+      await InviteService.addItems(id, suggestPitchIn(e), startOrder: have);
+      _reloadPitch(id);
+      if (mounted) toast(context, 'Added ideas from your plan. Remove any you don\'t need.');
+    } catch (err) {
+      if (mounted) toast(context, 'Couldn\'t add the list: $err');
+    }
+  }
+
+  Future<void> _addPitchItem(String id, int have) async {
+    final ctrl = TextEditingController();
+    var help = false;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          title: const Text('Add to Pitch In'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: ctrl,
+                autofocus: true,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(hintText: 'e.g. Samosas (40) or Parking helper'),
+              ),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('This is a way to help, not an item'),
+                value: help,
+                onChanged: (v) => setD(() => help = v),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            FilledButton(style: FilledButton.styleFrom(backgroundColor: HC.violet), onPressed: () => Navigator.pop(ctx, true), child: const Text('Add')),
+          ],
+        ),
+      ),
+    );
+    final label = ctrl.text.trim();
+    ctrl.dispose();
+    if (ok != true || label.isEmpty) return;
+    await InviteService.addItems(id, [PitchItem(id: '', label: label, emoji: help ? '🙌' : '🧺', help: help)], startOrder: have);
+    _reloadPitch(id);
   }
 
   Future<void> _saveMessage() async {
@@ -360,6 +414,98 @@ class _InviteScreenState extends State<InviteScreen> {
           ),
         ],
 
+        // ---- 🧺 Pitch In
+        const SizedBox(height: 24),
+        FutureBuilder<List<PitchItem>>(
+          future: pitch,
+          builder: (context, snap) {
+            final list = snap.data ?? const <PitchItem>[];
+            final taken = list.where((i) => i.claimed).length;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: Text('🧺 Pitch In', style: display(18))),
+                    if (list.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(color: HC.lime, borderRadius: BorderRadius.circular(20)),
+                        child: Text('$taken of ${list.length} covered', style: body(12, weight: FontWeight.w700)),
+                      ),
+                    IconButton(tooltip: 'Refresh', onPressed: () => _reloadPitch(id), icon: const Icon(Icons.refresh_rounded)),
+                  ],
+                ),
+                Text('Guests pick what to bring or how to help, right on the invite page.', style: body(12, color: HC.muted)),
+                const SizedBox(height: 10),
+                if (snap.connectionState != ConnectionState.done)
+                  const Center(child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(strokeWidth: 2.5)))
+                else if (list.isEmpty)
+                  CardBox(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Let guests chip in: drinks, desserts, setup help, cleanup crew…', style: body(14)),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            FilledButton.icon(
+                              style: FilledButton.styleFrom(backgroundColor: HC.violet),
+                              onPressed: () => _suggestPitch(id, e, 0),
+                              icon: const Icon(Icons.auto_awesome_rounded, size: 18, color: HC.lime),
+                              label: const Text('Suggest a list from my plan'),
+                            ),
+                            OutlinedButton(onPressed: () => _addPitchItem(id, 0), child: const Text('Add my own')),
+                          ],
+                        ),
+                      ],
+                    ),
+                  )
+                else ...[
+                  Container(
+                    decoration: BoxDecoration(color: HC.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: HC.line)),
+                    child: Column(
+                      children: [
+                        for (var i = 0; i < list.length; i++) ...[
+                          if (i > 0) const Divider(height: 1, color: HC.line),
+                          ListTile(
+                            leading: Text(list[i].emoji, style: const TextStyle(fontSize: 22)),
+                            title: Text(list[i].label, style: body(14, weight: FontWeight.w600)),
+                            subtitle: Text(
+                              list[i].claimed ? '✅ ${list[i].claimedName}' : (list[i].help ? 'Helping hand · open' : 'Open'),
+                              style: body(12, color: list[i].claimed ? const Color(0xFF1F8A4C) : HC.muted, weight: FontWeight.w600),
+                            ),
+                            trailing: IconButton(
+                              tooltip: 'Remove',
+                              icon: const Icon(Icons.close_rounded, size: 18, color: HC.muted),
+                              onPressed: () async {
+                                await InviteService.removeItem(id, list[i].id);
+                                _reloadPitch(id);
+                              },
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => _addPitchItem(id, list.length),
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      label: const Text('Add item or helper'),
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
+        ),
+
         // ---- RSVPs
         const SizedBox(height: 24),
         Row(
@@ -397,6 +543,33 @@ class _InviteScreenState extends State<InviteScreen> {
                     ],
                   ],
                 ),
+                if (foodSummary(list).isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  CardBox(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('🥗 Food preferences', style: body(14, weight: FontWeight.w700)),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final f in foodSummary(list))
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(color: HC.track, borderRadius: BorderRadius.circular(20)),
+                                child: Text('${foodEmoji[f.key] ?? ''} ${f.value} ${f.key}', style: body(12, weight: FontWeight.w600)),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text('Share this with your caterer when you ask for a quote.', style: body(11, color: HC.muted)),
+                      ],
+                    ),
+                  ),
+                ],
                 if (sum.people > 0 && sum.people != e.guests) ...[
                   const SizedBox(height: 10),
                   OutlinedButton.icon(
@@ -433,6 +606,8 @@ class _InviteScreenState extends State<InviteScreen> {
                                         : '${r.status.label} · ${r.adults} adult${r.adults == 1 ? '' : 's'}${r.kids > 0 ? ', ${r.kids} kid${r.kids == 1 ? '' : 's'}' : ''}',
                                     style: body(12, color: HC.muted),
                                   ),
+                                  if (r.diet.isNotEmpty)
+                                    Text(r.diet.map((d) => '${foodEmoji[d] ?? ''} $d').join('  '), style: body(12, color: HC.violet)),
                                   if (r.note.isNotEmpty) ...[
                                     const SizedBox(height: 4),
                                     Text('"${r.note}"', style: body(13)),

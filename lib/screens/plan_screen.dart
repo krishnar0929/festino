@@ -147,7 +147,7 @@ class _PlanScreenState extends State<PlanScreen> {
                           Text('Invite guests', style: body(15, color: Colors.white, weight: FontWeight.w700)),
                           Text(
                             state.event!.invitees.isEmpty
-                                ? 'WhatsApp, iMessage, text or email · track RSVPs'
+                                ? 'WhatsApp, iMessage, text or email · RSVPs · Pitch In'
                                 : '${state.event!.invitees.length} on your list · see who\'s coming',
                             style: body(12, color: const Color(0xFFE4DDFF)),
                           ),

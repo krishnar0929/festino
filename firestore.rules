@@ -207,7 +207,8 @@ service cloud.firestore {
           || (signedIn() && get(/databases/$(database)/documents/invites/$(inviteId)).data.hostUid == request.auth.uid);
         allow create, update: if isOwner(guestUid)
           && exists(/databases/$(database)/documents/invites/$(inviteId))
-          && request.resource.data.keys().hasOnly(['name', 'status', 'adults', 'kids', 'note', 'updatedAt'])
+          && request.resource.data.keys().hasOnly(['name', 'status', 'adults', 'kids', 'note', 'diet', 'updatedAt'])
+          && (!('diet' in request.resource.data) || (request.resource.data.diet is list && request.resource.data.diet.size() <= 8))
           && request.resource.data.status in ['going', 'maybe', 'no']
           && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 60
           && request.resource.data.adults is int && request.resource.data.adults >= 0 && request.resource.data.adults <= 50
@@ -215,6 +216,26 @@ service cloud.firestore {
           && request.resource.data.note is string && request.resource.data.note.size() <= 300
           && request.resource.data.updatedAt == request.time;
         allow delete: if isOwner(guestUid);
+      }
+
+      // 🧺 Pitch In: things to bring and ways to help. The host manages the list;
+      // a guest can only claim a free item for themselves, or give back their own.
+      match /pitchIn/{itemId} {
+        function isHost() {
+          return signedIn() && get(/databases/$(database)/documents/invites/$(inviteId)).data.hostUid == request.auth.uid;
+        }
+        allow read: if signedIn();
+        allow create, delete: if isHost();
+        allow update: if isHost()
+          || (signedIn()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimedBy', 'claimedName', 'claimedAt'])
+            && ((resource.data.claimedBy == ''
+                  && request.resource.data.claimedBy == request.auth.uid
+                  && request.resource.data.claimedName is string
+                  && request.resource.data.claimedName.size() > 0 && request.resource.data.claimedName.size() <= 60)
+              || (resource.data.claimedBy == request.auth.uid
+                  && request.resource.data.claimedBy == ''
+                  && request.resource.data.claimedName == '')));
       }
     }
 

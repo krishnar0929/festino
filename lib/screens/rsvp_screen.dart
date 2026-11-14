@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -27,6 +28,9 @@ class _RsvpScreenState extends State<RsvpScreen> {
   RsvpStatus? status;
   int adults = 1;
   int kids = 0;
+  final diet = <String>{};
+  late Future<List<PitchItem>> items = InviteService.pitchItems(widget.inviteId);
+  String? myUid;
   bool busy = false;
   bool sent = false;
   String? error;
@@ -40,6 +44,7 @@ class _RsvpScreenState extends State<RsvpScreen> {
 
   Future<void> _restore() async {
     final prev = await InviteService.mine(widget.inviteId);
+    myUid = FirebaseAuth.instance.currentUser?.uid;
     String? savedName;
     try {
       savedName = (await SharedPreferences.getInstance()).getString(_nameKey);
@@ -52,6 +57,9 @@ class _RsvpScreenState extends State<RsvpScreen> {
         status = prev.status;
         adults = prev.adults == 0 ? 1 : prev.adults;
         kids = prev.kids;
+        diet
+          ..clear()
+          ..addAll(prev.diet);
         sent = true;
       } else if (savedName != null) {
         nameCtrl.text = savedName;
@@ -82,7 +90,8 @@ class _RsvpScreenState extends State<RsvpScreen> {
       error = null;
     });
     try {
-      await InviteService.reply(info.id, name: nameCtrl.text, status: s, adults: adults, kids: kids, note: noteCtrl.text);
+      await InviteService.reply(info.id, name: nameCtrl.text, status: s, adults: adults, kids: kids, note: noteCtrl.text, diet: diet.toList());
+      myUid = FirebaseAuth.instance.currentUser?.uid;
       try {
         await (await SharedPreferences.getInstance()).setString(_nameKey, nameCtrl.text.trim());
       } catch (_) {}
@@ -102,6 +111,67 @@ class _RsvpScreenState extends State<RsvpScreen> {
         });
       }
     }
+  }
+
+  Future<void> _claim(InviteInfo info, PitchItem it) async {
+    if (nameCtrl.text.trim().isEmpty) {
+      toast(context, 'Add your name above first, so ${info.hostName} knows who\'s bringing it.');
+      return;
+    }
+    final ok = await InviteService.claim(info.id, it.id, nameCtrl.text);
+    if (!mounted) return;
+    myUid = FirebaseAuth.instance.currentUser?.uid;
+    toast(context, ok ? 'Thank you! You\'re on ${it.label.toLowerCase()}. 🙌' : 'Someone just picked that one. Choose another?');
+    setState(() => items = InviteService.pitchItems(info.id));
+  }
+
+  Future<void> _unclaim(InviteInfo info, PitchItem it) async {
+    await InviteService.unclaim(info.id, it.id);
+    if (mounted) setState(() => items = InviteService.pitchItems(info.id));
+  }
+
+  /// 🧺 Pitch In: things to bring and ways to help. Hidden when the host made no list.
+  Widget _pitchIn(InviteInfo info) {
+    return FutureBuilder<List<PitchItem>>(
+      future: items,
+      builder: (context, snap) {
+        final list = snap.data ?? const <PitchItem>[];
+        if (list.isEmpty) return const SizedBox.shrink();
+        final taken = list.where((i) => i.claimed).length;
+        return Padding(
+          padding: const EdgeInsets.only(top: 22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(child: Text('🧺 Pitch In', style: display(22))),
+                  _Badge('$taken of ${list.length} covered'),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text('Want to help ${info.hostName}? Pick something to bring or a way to help.', style: body(13, color: HC.muted)),
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(value: taken / list.length, minHeight: 8, backgroundColor: HC.track, color: HC.violet),
+              ),
+              const SizedBox(height: 12),
+              for (final it in list)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _PitchRow(
+                    item: it,
+                    mine: it.claimedBy == myUid && it.claimed,
+                    onClaim: () => _claim(info, it),
+                    onUndo: () => _unclaim(info, it),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -193,6 +263,26 @@ class _RsvpScreenState extends State<RsvpScreen> {
                       _Counter(label: 'Adults', value: adults, min: 1, onChanged: (v) => setState(() => adults = v)),
                       const SizedBox(height: 8),
                       _Counter(label: 'Kids', value: kids, min: 0, onChanged: (v) => setState(() => kids = v)),
+                      const SizedBox(height: 14),
+                      Text('🥗 Food preferences (optional)', style: body(14, weight: FontWeight.w700)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final f in foodPreferences)
+                            FilterChip(
+                              label: Text('${foodEmoji[f] ?? ''} $f'),
+                              selected: diet.contains(f),
+                              showCheckmark: false,
+                              selectedColor: HC.lime,
+                              backgroundColor: HC.card,
+                              side: BorderSide(color: diet.contains(f) ? HC.ink : HC.line),
+                              shape: const StadiumBorder(),
+                              onSelected: (v) => setState(() => v ? diet.add(f) : diet.remove(f)),
+                            ),
+                        ],
+                      ),
                     ],
                     const SizedBox(height: 12),
                     TextField(
@@ -214,6 +304,7 @@ class _RsvpScreenState extends State<RsvpScreen> {
                       ),
                     ),
                   ],
+                  _pitchIn(info),
                   const SizedBox(height: 28),
                   Center(
                     child: TextButton(
@@ -346,6 +437,80 @@ class _Counter extends StatelessWidget {
           IconButton(onPressed: value > min ? () => onChanged(value - 1) : null, icon: const Icon(Icons.remove_circle_outline_rounded)),
           SizedBox(width: 28, child: Text('$value', textAlign: TextAlign.center, style: display(18))),
           IconButton(onPressed: value < 50 ? () => onChanged(value + 1) : null, icon: const Icon(Icons.add_circle_outline_rounded, color: HC.violet)),
+        ],
+      ),
+    );
+  }
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: HC.lime, borderRadius: BorderRadius.circular(20)),
+      child: Text(text, style: body(12, weight: FontWeight.w700)),
+    );
+  }
+}
+
+/// One Pitch In item: free ("I'll bring it"), yours ("You're on it · Undo") or taken by someone.
+class _PitchRow extends StatelessWidget {
+  const _PitchRow({required this.item, required this.mine, required this.onClaim, required this.onUndo});
+  final PitchItem item;
+  final bool mine;
+  final VoidCallback onClaim;
+  final VoidCallback onUndo;
+
+  @override
+  Widget build(BuildContext context) {
+    final it = item;
+    final taken = it.claimed && !mine;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+      decoration: BoxDecoration(
+        color: mine ? const Color(0xFFF1FBD9) : (taken ? HC.ground : HC.card),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: mine ? HC.lime : HC.line, width: mine ? 2 : 1),
+      ),
+      child: Row(
+        children: [
+          Text(it.emoji, style: const TextStyle(fontSize: 22)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  it.label,
+                  style: body(14, weight: FontWeight.w600, color: taken ? HC.muted : HC.ink)
+                      .copyWith(decoration: taken ? TextDecoration.lineThrough : null),
+                ),
+                if (it.help) Text('Helping hand', style: body(11, color: HC.violet, weight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          if (mine)
+            TextButton(onPressed: onUndo, child: const Text('You\'re on it · Undo'))
+          else if (taken)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(color: HC.track, borderRadius: BorderRadius.circular(12)),
+              child: Text(it.claimedName, style: body(12, weight: FontWeight.w600)),
+            )
+          else
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: HC.ink,
+                visualDensity: VisualDensity.compact,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: onClaim,
+              child: Text(it.help ? 'I\'ll help' : 'I\'ll bring it'),
+            ),
         ],
       ),
     );
