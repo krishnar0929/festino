@@ -115,3 +115,130 @@ Yearly: $29.99 / $79.99. Prices and features live in `planOffers` in `lib/screen
 - **Verified badge:** set `providers/{uid}.verified = true` in the console.
 - **Events:** ⋯ menu on the plan → Start new event, My events, Cancel this event (restorable).
 - **Delete account:** Account → Delete account (Apple requires this).
+
+## Refer a friend, feedback and ratings
+
+**Refer a friend** (Account → Refer a friend, also on the Plans page). Each signed-in person gets a
+6-character invite code. When a friend signs up and enters it, you **both get 1 week of Pro free**.
+Every extra friend adds another week on the end.
+
+- `refCodes/{CODE}` says who owns a code. `users/{uid}.refCode` holds your own code.
+- `referrals/{friendUid}` is written once per account when a friend joins with a code.
+  Its `createdAt` is server time, so the free week can't be faked.
+- Invite links look like `https://hoopla-894ca.web.app/?ref=CODE`. The web app keeps the code
+  and applies it after sign-up. In the phone app, friends type the code on the sign-up screen.
+
+**Help & feedback** (Account → Help, feedback & rate Hoopla):
+
+- Email us opens mail to northbitapps@gmail.com.
+- Send feedback / Report a problem saves type, star rating and comments to the `feedback`
+  collection. Read it in the Firebase console (Firestore → feedback). The app can't read it back.
+- Rate Hoopla: 4–5 stars opens Apple's review pop-up (or the App Store page), 1–3 stars opens the
+  feedback form so you hear about problems first.
+- After a couple of party-mode games finish, Hoopla asks "Enjoying Hoopla?" once.
+
+Deploy the rules after pulling: `firebase deploy --only firestore:rules`.
+
+## Provider photo gallery
+
+Providers add up to 12 photos of their work (plus their Instagram and website) when they set up
+or edit their listing. Customers see the photos on each provider in Nearby and on the provider's
+full page, and can open them full screen.
+
+Photos are stored in Firebase Storage at `providers/{uid}/gallery/`. One-time setup:
+
+1. Firebase console → Build → Storage → Get started (needs the Blaze plan on new projects).
+2. `firebase deploy --only storage`
+3. For the web app to show photos: `gsutil cors set cors.json gs://BUCKET` (the bucket name is
+   `storageBucket` in `lib/firebase_options.dart`).
+
+## Social links and ratings & reviews
+
+- Providers can add Instagram, Facebook, YouTube, TikTok, a link to their reviews elsewhere
+  (Google, Yelp, WeddingWire) and a website, plus up to 6 featured reel/video links.
+  Customers see them as buttons on the provider's page; each opens in its app.
+- Customers rate providers 1–5 stars with a comment at `providers/{uid}/reviews/{reviewerUid}`
+  (one review per customer per provider, editable). The average shows on every provider in Nearby.
+  Providers can reply to reviews from their home screen.
+- Instagram doesn't let other apps show someone's photos without that person connecting their
+  account (Meta's Instagram API, needs app review), so the in-app gallery uses photos providers
+  upload, and Instagram opens in the Instagram app.
+
+## Reminders (free, phone app)
+
+Scheduled on the phone with `flutter_local_notifications`: no server, works offline, shows even
+when Hoopla is closed. The website shows a note instead.
+
+- Each unchecked checklist task reminds at 9 AM (changeable) on its due day; same-day tasks are
+  grouped. Overdue tasks get one catch-up reminder. Ticking a task off cancels it.
+- Countdown: 1 week before, 6 PM the evening before, and the morning of the party.
+- The bell on a task sets your own date and time for it (saved on the event as `taskReminders`).
+- Hoopla asks "Want reminders?" once, right after the first party is planned. The switch above
+  the checklist turns them on or off.
+- Everything is recalculated whenever an event changes (`AppState.syncReminders`), keeping the
+  soonest 60 (iOS allows 64). Rules live in `lib/services/reminder_plan.dart` (tested).
+
+## Business model: free for users, providers pay later
+
+Hoopla is free for people planning events (`AppState.userPlansEnabled = false` hides the old
+Basic/Pro plans; the code stays for a possible one-time Event Pass later). A free sign-in is only
+needed for the checklist, budget, more than one event, quote requests and reviews.
+
+**Quote requests** (`quotes/{customerUid}_{providerUid}_{eventId}`): customers tap "Get quote" on
+a provider, the event details are filled in, and the request lands in the provider's inbox. The
+provider replies in Hoopla, calls/WhatsApps the customer, or marks it booked / not available. The
+customer sees the status and reply under Nearby → Your quote requests.
+
+**Lead counts**: taps on Call, WhatsApp, Instagram, website and other links are saved in
+`leadTaps`. The provider home shows "Your leads this month": quote requests plus taps. This is
+what a future Provider Pro plan or pay-per-lead pricing will be based on.
+
+## Venue, weather and "near" search
+
+- Each event has a **venue** (`EventDetails.venue`): the current location by default (when
+  location access was already allowed) or any address, venue or city the user searches for.
+  Addresses come from OpenStreetMap's free Nominatim service; location from `geolocator`.
+- The Plan screen shows the **weather** at the venue for party day from Open-Meteo (free, no key):
+  summary, high/low, chance of rain during the party hours, and advice (tent, shade, heaters).
+  Forecasts appear 16 days before the party.
+- **Find nearby** searches near the venue, the current location or an address. Providers are sorted
+  by distance ("3.2 mi"); a provider's city is placed on the map when they save their listing.
+- **Budget**: each line (Food, Decor, Photography, Cake, Games) links to matching providers, and
+  Nearby has a "Within my budget" filter. Price ranges like "$15–$30 per plate" or "$25/hour"
+  are estimated for the guest count and hours.
+
+## Invites and RSVPs
+
+Plan → **Invite guests**:
+- **Send to everyone:** Share… (system share sheet: WhatsApp groups, iMessage, Instagram, anything),
+  WhatsApp (pick chats or groups), Text (one message to all numbers on the list), Email (BCC to all),
+  Copy, Preview.
+- **Guest list:** pick from phone contacts (`flutter_contacts`, never uploaded) or paste numbers and
+  emails. Each person has quick WhatsApp / text / email buttons.
+- **RSVP page:** the invite link `https://hoopla-894ca.web.app/?invite={hostUid}_{eventId}` opens a
+  card with date, venue (map link) and the host's note. Guests reply Going / Maybe / Can't go with
+  adults and kids, add a note, and get "Add to calendar". No app or account needed.
+- **Who's coming:** going / maybe / can't go / no reply yet, headcount of adults and kids, and one
+  tap to use it as the plan's guest count.
+
+Firestore: `invites/{id}` (public card, written by the host) and `invites/{id}/rsvps/{guestUid}`.
+
+**🧺 Pitch In** (`invites/{id}/pitchIn/{item}`): the host makes a list of things to bring and ways to
+help (or taps "Suggest a list from my plan"). Guests claim one on the RSVP page ("I'll bring it" /
+"I'll help"); the host sees "9 of 12 covered" and who's on what.
+
+**🥗 Food preferences**: guests tick Vegetarian, Jain, Vegan, Eggless, No onion-garlic, Gluten-free,
+Nut allergy and more when they RSVP; the host sees totals to share with the caterer.
+
+## Make the plan your own
+
+- **Timeline:** tap any step to see more (how to play, what you need, video), edit its name,
+  details or length, swap a game, move it earlier/later, or remove it. Add activities or games.
+  The first edit saves the host's own timeline (`customTimeline`); **Reset to suggested** goes back.
+- **Checklist:** edit any task or its due date, remove tasks, add your own (`customTasks`,
+  `hiddenTasks`); removed ones can be brought back.
+- **Budget:** change amounts, add expenses, and record who's doing each part (your own
+  photographer, cook...), the real cost and whether it's paid (`budgetItems`). Shows planned,
+  booked, paid and what's left.
+- **My list:** the host's own to-dos and notes with optional due dates (`todos`); due ones get a
+  reminder.

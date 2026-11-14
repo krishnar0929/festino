@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../models/provider_profile.dart';
 import '../services/account_service.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/gallery.dart';
+import '../widgets/reviews.dart';
 import 'account_sheet.dart';
 import 'provider_setup_screen.dart';
+import 'quotes_screens.dart';
 
 /// Home for service providers: their listing and how customers reach them.
 class ProviderHomeScreen extends StatelessWidget {
@@ -43,6 +47,8 @@ class ProviderHomeScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 18),
+                const LeadSummaryCard(),
+                const SizedBox(height: 12),
                 CardBox(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -63,6 +69,48 @@ class ProviderHomeScreen extends StatelessWidget {
                         onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ProviderSetupScreen(existing: p))),
                         icon: const Icon(Icons.edit_outlined, size: 18, color: HC.ink),
                         label: Text('Edit listing', style: body(14, weight: FontWeight.w600)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                CardBox(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(child: Text('Your work', style: display(18, weight: FontWeight.w600))),
+                          Text('${p.photos.length}/${ProviderProfile.maxPhotos}', style: body(12, color: HC.muted)),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      if (p.photos.isEmpty)
+                        Text(
+                          'Listings with photos get far more calls. Add photos of your best work so customers can see your style.',
+                          style: body(13, color: HC.muted),
+                        )
+                      else
+                        PhotoGrid(photos: p.photos),
+                      if (p.hasSocial) ...[
+                        const SizedBox(height: 12),
+                        SocialLinks(provider: p),
+                      ],
+                      if (p.featured.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        FeaturedPosts(links: p.featured),
+                      ],
+                      const SizedBox(height: 6),
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: HC.violet,
+                          minimumSize: const Size(0, 44),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ProviderSetupScreen(existing: p))),
+                        icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
+                        label: Text(p.photos.isEmpty ? 'Add photos & social links' : 'Edit photos & links', style: body(14, color: Colors.white, weight: FontWeight.w600)),
                       ),
                     ],
                   ),
@@ -91,11 +139,10 @@ class ProviderHomeScreen extends StatelessWidget {
                   text: 'We check each listing before adding the Verified badge. Verified providers are shown first.',
                 ),
                 const SizedBox(height: 12),
-                const _InfoCard(
-                  icon: Icons.inbox_outlined,
-                  title: 'Quote inbox and reviews',
-                  text: 'Coming soon. For now, requests come to you by call and WhatsApp.',
-                ),
+                Text('Ratings & reviews', style: display(18, weight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                ReviewsSection(provider: p, ownListing: true),
+
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () => state.setRole(UserRole.customer),

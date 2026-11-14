@@ -1,7 +1,6 @@
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../services/plan_generator.dart';
@@ -9,9 +8,14 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/locked.dart';
+import '../widgets/reminder_ui.dart';
+import '../widgets/timeline_editor.dart';
+import '../widgets/weather_card.dart';
 import 'account_sheet.dart';
 import 'event_actions.dart';
 import 'setup_screen.dart';
+import 'invite_screen.dart';
+import 'plan_tabs.dart';
 
 /// The generated plan: timeline, checklist and budget.
 class PlanScreen extends StatefulWidget {
@@ -33,7 +37,6 @@ class _PlanScreenState extends State<PlanScreen> {
     final e = state.event!;
     final plan = state.plan;
     final days = e.daysToGo;
-    final access = state.access;
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -119,29 +122,87 @@ class _PlanScreenState extends State<PlanScreen> {
           ),
         ),
         Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+          child: WeatherCard(event: state.event!),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+          child: Material(
+            color: HC.violet,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const InviteScreen())),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+                child: Row(
+                  children: [
+                    const Text('💌', style: TextStyle(fontSize: 26)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Invite guests', style: body(15, color: Colors.white, weight: FontWeight.w700)),
+                          Text(
+                            state.event!.invitees.isEmpty
+                                ? 'WhatsApp, iMessage, text or email · RSVPs · Pitch In'
+                                : '${state.event!.invitees.length} on your list · see who\'s coming',
+                            style: body(12, color: const Color(0xFFE4DDFF)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right_rounded, color: Colors.white),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Padding(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
-          child: Segmented(options: const ['Timeline', 'Checklist', 'Budget'], selected: tab, height: 40, onChanged: (i) => setState(() => tab = i)),
+          child: Segmented(options: const ['Timeline', 'Checklist', 'Budget', 'My list'], selected: tab, height: 40, onChanged: (i) => setState(() => tab = i)),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: switch (tab) {
-            0 => _Timeline(plan: plan, showOnly: access == Access.guest ? 3 : null),
-            1 => access == Access.guest
+            0 => _Timeline(plan: plan, showOnly: state.limitedGuest ? 3 : null),
+            1 => state.limitedGuest
                 ? const LockedCard(
                     needs: Access.member,
                     title: 'Your checklist',
                     message: 'Sign in free to get a to-do list with due dates for invites, bookings and supplies.',
                   )
                 : const _Checklist(),
-            _ => access == Access.premium
-                ? const _Budget()
+            3 => const MyListTab(),
+            _ => !state.limitedGuest
+                ? const BudgetTab()
                 : const LockedCard(
-                    needs: Access.premium,
+                    needs: Access.member,
                     title: 'Budget planner',
-                    message: 'Basic and up split your budget into food, decor, photos, cake and return gifts.',
+                    message: 'Sign in free to split your budget into food, decor, photos, cake and return gifts.',
                   ),
           },
         ),
+        // Everything is free; signing in just keeps the plan safe on every device.
+        if (!state.isSignedIn && state.usingCloud)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            child: CardBox(
+              padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+              child: Row(
+                children: [
+                  const Icon(Icons.cloud_done_outlined, color: HC.violet),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text('Sign in free to keep this plan on all your devices.', style: body(13)),
+                  ),
+                  TextButton(onPressed: () => openUnlock(context, Access.member), child: const Text('Sign in')),
+                ],
+              ),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
           child: CardBox(
@@ -224,14 +285,14 @@ class _Timeline extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final s in steps.take(limit)) _row(s),
+          for (final s in steps.take(limit)) _row(s, null),
           ClipRect(
             child: ImageFiltered(
               imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
               child: IgnorePointer(
                 child: Opacity(
                   opacity: 0.6,
-                  child: Column(children: [for (final s in steps.skip(limit).take(2)) _row(s)]),
+                  child: Column(children: [for (final s in steps.skip(limit).take(2)) _row(s, null)]),
                 ),
               ),
             ),
@@ -248,17 +309,18 @@ class _Timeline extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final s in steps) _row(s),
+        for (final s in steps) _row(s, context),
         if (plan.backupGames.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(left: 80, top: 4),
             child: Text('Backup games if there\'s time: ${plan.backupGames.map((g) => g.name).join(', ')}', style: body(12, color: HC.muted)),
           ),
+        const TimelineFooter(),
       ],
     );
   }
 
-  Widget _row(TimelineStep s) {
+  Widget _row(TimelineStep s, BuildContext? context) {
     return IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -283,13 +345,21 @@ class _Timeline extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: CardBox(
                       radius: 14,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      onTap: context == null ? null : () => openStepSheet(context, s),
+                      padding: const EdgeInsets.fromLTRB(12, 10, 6, 10),
+                      child: Row(
                         children: [
-                          Text(s.title, style: body(14, weight: FontWeight.w600)),
-                          const SizedBox(height: 2),
-                          Text(s.subtitle, style: body(12, color: HC.muted)),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(s.title, style: body(14, weight: FontWeight.w600)),
+                                const SizedBox(height: 2),
+                                Text(s.subtitle, style: body(12, color: HC.muted)),
+                              ],
+                            ),
+                          ),
+                          if (context != null) const Icon(Icons.more_horiz_rounded, color: HC.muted, size: 20),
                         ],
                       ),
                     ),
@@ -312,6 +382,7 @@ class _Checklist extends StatelessWidget {
     final fmt = DateFormat('MMM d');
     return Column(
       children: [
+        const RemindersCard(),
         for (final t in tasks)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -334,78 +405,27 @@ class _Checklist extends StatelessWidget {
                     style: body(14, weight: FontWeight.w500, color: e.doneTasks.contains(t.id) ? HC.muted : HC.ink).copyWith(
                       decoration: e.doneTasks.contains(t.id) ? TextDecoration.lineThrough : null,
                     )),
-                secondary: Text('By ${fmt.format(e.date.subtract(Duration(days: t.daysBefore)))}', style: body(12, color: HC.muted)),
+                secondary: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('By ${fmt.format(e.date.subtract(Duration(days: t.daysBefore)))}', style: body(12, color: HC.muted)),
+                    if (!e.doneTasks.contains(t.id)) TaskReminderButton(task: t, event: e),
+                    PopupMenuButton<String>(
+                      tooltip: 'Edit or remove',
+                      icon: const Icon(Icons.more_vert_rounded, size: 20, color: HC.muted),
+                      onSelected: (v) => v == 'edit' ? editTask(context, t) : removeTask(context, t),
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(value: 'edit', child: Text('Edit task or due date')),
+                        PopupMenuItem(value: 'remove', child: Text('Remove')),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
+        const ChecklistFooter(),
       ],
-    );
-  }
-}
-
-class _Budget extends StatefulWidget {
-  const _Budget();
-
-  @override
-  State<_Budget> createState() => _BudgetState();
-}
-
-class _BudgetState extends State<_Budget> {
-  TextEditingController? _ctrl;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_ctrl == null) {
-      final b = AppScope.of(context).event?.budget;
-      _ctrl = TextEditingController(text: b == null ? '' : b.toStringAsFixed(0));
-    }
-  }
-
-  @override
-  void dispose() {
-    _ctrl?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final state = AppScope.of(context);
-    final total = state.event!.budget;
-    final money = NumberFormat.decimalPattern();
-    return CardBox(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Your total budget', style: body(12, color: HC.muted)),
-          const SizedBox(height: 6),
-          TextField(
-            controller: _ctrl,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            style: display(24),
-            decoration: const InputDecoration(hintText: 'Enter an amount'),
-            onChanged: (v) => state.update((e) => e.budget = double.tryParse(v)),
-          ),
-          const SizedBox(height: 12),
-          Text('Suggested split', style: overline()),
-          for (final line in state.plan.budget)
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFF0EEF7)))),
-              child: Row(
-                children: [
-                  Expanded(child: Text(line.label, style: body(14))),
-                  Text(
-                    total == null ? '${(line.share * 100).round()}%' : money.format((total * line.share).round()),
-                    style: body(14, color: HC.muted, weight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
     );
   }
 }

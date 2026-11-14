@@ -8,13 +8,22 @@ import '../services/plan_generator.dart';
 import '../services/search_log.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
+import '../widgets/celebration.dart';
+import '../widgets/reminder_ui.dart';
 import '../widgets/common.dart';
 import 'account_sheet.dart';
 import 'sign_in_screen.dart';
+import '../services/location_service.dart';
+import '../widgets/place_picker.dart';
+import '../data/party_stories.dart';
+import 'party_stories_screen.dart';
 
 /// "Tell us about your event" — used to create a new event or edit one.
 class SetupScreen extends StatefulWidget {
-  const SetupScreen({super.key, this.existing, this.replaceId});
+  const SetupScreen({super.key, this.existing, this.replaceId, this.preset});
+
+  /// "Plan a party like this": starts from a story's occasion, guests and place.
+  final PartyStory? preset;
 
   /// When set, the screen edits this event instead of creating a new one.
   final EventDetails? existing;
@@ -36,6 +45,10 @@ class _SetupScreenState extends State<SetupScreen> {
   late int guests;
   late Audience audience;
   late int energy;
+
+  /// The party venue. New events start at the current location when allowed.
+  Place? venue;
+  bool locating = false;
   bool saving = false;
   final describeCtrl = TextEditingController();
   String? describeNote;
@@ -44,15 +57,39 @@ class _SetupScreenState extends State<SetupScreen> {
   void initState() {
     super.initState();
     final e = widget.existing;
-    occasion = e?.occasion ?? occasions.first;
+    final preset = widget.preset;
+    occasion = e?.occasion ?? (preset != null && occasions.contains(preset.occasion) ? preset.occasion : occasions.first);
     titleCtrl = TextEditingController(text: e?.title ?? '');
-    date = e?.date ?? DateTime.now().add(const Duration(days: 30));
+    date = e?.date ?? _sampleDate();
     startMinutes = e?.startMinutes ?? 16 * 60;
     hours = e?.hours ?? 3;
-    indoor = e?.indoor ?? true;
-    guests = e?.guests ?? 30;
+    indoor = e?.indoor ?? preset?.indoor ?? true;
+    guests = e?.guests ?? preset?.guests ?? 30;
     audience = e?.audience ?? Audience.kids;
     energy = e?.energy ?? 1;
+    venue = e?.venue;
+    if (e == null) {
+      locating = true;
+      LocationService.currentIfAllowed().then((p) {
+        if (!mounted) return;
+        setState(() {
+          locating = false;
+          venue ??= p;
+        });
+      });
+    }
+  }
+
+  Future<void> _pickVenue() async {
+    final p = await pickPlace(context);
+    if (p != null && mounted) setState(() => venue = p);
+  }
+
+  /// New parties start on the next Feb 26 (at 4 PM, the default start time).
+  static DateTime _sampleDate() {
+    final now = DateTime.now();
+    final thisYear = DateTime(now.year, 2, 26);
+    return thisYear.isAfter(now) ? thisYear : DateTime(now.year + 1, 2, 26);
   }
 
   @override
@@ -136,6 +173,9 @@ class _SetupScreenState extends State<SetupScreen> {
   Future<void> _save() async {
     setState(() => saving = true);
     final state = AppScope.of(context);
+    final overlay = Celebration.overlayOf(context);
+    final rootNav = Navigator.of(context, rootNavigator: true);
+    final isNew = widget.existing == null;
     final previous = state.event;
     final title = titleCtrl.text.trim().isEmpty ? '$occasion party' : titleCtrl.text.trim();
     final e = widget.existing ??
@@ -162,7 +202,8 @@ class _SetupScreenState extends State<SetupScreen> {
       ..indoor = indoor
       ..guests = guests
       ..audience = audience
-      ..energy = energy;
+      ..energy = energy
+      ..venue = venue;
     e.gameIds = PlanGenerator.suggestGameIds(e);
     await state.saveEvent(e);
     final replaceId = widget.replaceId;
@@ -176,6 +217,15 @@ class _SetupScreenState extends State<SetupScreen> {
       'energy': energyLevels[energy],
       'date': date.toIso8601String().substring(0, 10),
     });
+    if (isNew) {
+      Celebration.show(
+        overlay,
+        title: 'Party planned!',
+        message: '"$title" is all set: your timeline, checklist, budget and games are ready.',
+        emoji: '🎈',
+      );
+      askForReminders(rootNav, state);
+    }
     if (!mounted) return;
     final nav = Navigator.of(context);
     if (nav.canPop()) nav.pop();
@@ -232,6 +282,10 @@ class _SetupScreenState extends State<SetupScreen> {
                       Text(editing ? 'Update your party' : 'Throw a party.\nWe\'ll bring the fun.', style: display(32)),
                       const SizedBox(height: 8),
                       Text('Tell us a little about it — we plan the games, timeline and helpers.', style: body(14, color: HC.muted)),
+                      if (!editing && showSampleStories) ...[
+                        const SizedBox(height: 14),
+                        const StoriesLink(),
+                      ],
                       const SizedBox(height: 22),
                       if (!editing) ...[
                         CardBox(
@@ -255,7 +309,7 @@ class _SetupScreenState extends State<SetupScreen> {
                                 style: body(14),
                                 decoration: const InputDecoration(
                                   fillColor: HC.ground,
-                                  hintText: "e.g. My son's 1st birthday, about 40 people in our backyard, Saturday Dec 12 at 4pm",
+                                  hintText: "e.g. Vir's 1st birthday, about 40 people in our backyard, Feb 26 at 4pm",
                                 ),
                               ),
                               const SizedBox(height: 10),
@@ -294,7 +348,7 @@ class _SetupScreenState extends State<SetupScreen> {
                         controller: titleCtrl,
                         textCapitalization: TextCapitalization.sentences,
                         style: body(15, weight: FontWeight.w500),
-                        decoration: const InputDecoration(hintText: "e.g. Aarav's 1st birthday"),
+                        decoration: const InputDecoration(hintText: "e.g. Vir's 1st birthday"),
                       ),
                       const SizedBox(height: 12),
                       Row(
@@ -304,6 +358,8 @@ class _SetupScreenState extends State<SetupScreen> {
                           Expanded(child: _InfoTile(label: 'Start time', value: clockAmPm(startMinutes), onTap: _pickTime)),
                         ],
                       ),
+                      const SizedBox(height: 10),
+                      _VenueTile(venue: venue, locating: locating, onTap: _pickVenue),
                       const SizedBox(height: 20),
                       const SectionLabel('How long?'),
                       Wrap(
@@ -357,10 +413,14 @@ class _SetupScreenState extends State<SetupScreen> {
                             onPressed: () => Navigator.of(context).push(MaterialPageRoute<bool>(
                               builder: (_) => const SignInScreen(initialRole: UserRole.provider),
                             )),
-                            child: const Text('Photographer, decorator or panthulu? Join as a provider', textAlign: TextAlign.center),
+                            child: const Text(
+                              'Photographer, baker, DJ, decorator or panthulu? List your business on Hoopla free',
+                              textAlign: TextAlign.center,
+                            ),
                           ),
                         ),
                       ],
+
                     ],
                   ),
                 ),
@@ -459,6 +519,54 @@ class _StepButton extends StatelessWidget {
           message: label,
           child: SizedBox(width: 46, height: 46, child: Icon(icon, color: dark ? Colors.white : HC.ink)),
         ),
+      ),
+    );
+  }
+}
+
+/// "📍 Venue" tile: current location or the address the user picked.
+class _VenueTile extends StatelessWidget {
+  const _VenueTile({required this.venue, required this.locating, required this.onTap});
+  final Place? venue;
+  final bool locating;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final v = venue;
+    return CardBox(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      radius: 14,
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(color: HC.violet.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+            child: const Icon(Icons.place_outlined, color: HC.violet, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Venue', style: body(12, color: HC.muted)),
+                const SizedBox(height: 2),
+                Text(
+                  v == null
+                      ? (locating ? 'Finding your location…' : 'Current location or an address')
+                      : (v.address.isNotEmpty ? v.address : v.label),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: body(15, weight: FontWeight.w600, color: v == null ? HC.muted : HC.ink),
+                ),
+                Text(v == null ? 'For the weather forecast and helpers nearby' : 'Tap to change', style: body(11, color: HC.muted)),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right_rounded, color: HC.muted),
+        ],
       ),
     );
   }

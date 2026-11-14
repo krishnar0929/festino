@@ -2,10 +2,21 @@ import '../data/games.dart';
 import '../data/helpers.dart';
 import '../models/event_details.dart';
 
-enum StepKind { welcome, game, moment, food, wrap, free }
+enum StepKind { welcome, game, moment, food, wrap, free, custom }
 
 class TimelineStep {
-  const TimelineStep({required this.start, required this.minutes, required this.title, required this.subtitle, required this.kind, this.game});
+  const TimelineStep({
+    required this.start,
+    required this.minutes,
+    required this.title,
+    required this.subtitle,
+    required this.kind,
+    this.game,
+    this.key = '',
+  });
+
+  /// Stable id, used when the host edits the timeline.
+  final String key;
 
   /// Minutes after midnight.
   final int start;
@@ -152,7 +163,8 @@ class PlanGenerator {
     var t = e.startMinutes;
 
     void add(int minutes, String title, String subtitle, StepKind kind, [Game? game]) {
-      steps.add(TimelineStep(start: t, minutes: minutes, title: title, subtitle: subtitle, kind: kind, game: game));
+      final key = game != null ? 'game_${game.id}' : kind.name;
+      steps.add(TimelineStep(start: t, minutes: minutes, title: title, subtitle: subtitle, kind: kind, game: game, key: key));
       t += minutes;
     }
 
@@ -167,7 +179,7 @@ class PlanGenerator {
     var used = 0;
     for (final g in games) {
       if (used + g.minutes <= budget) {
-        add(g.minutes, g.name, '${g.audienceLabel} · ${g.minutes} min${g.needs.isEmpty ? '' : ' · ${g.needs.first}'}', StepKind.game, g);
+        add(g.minutes, g.name, _gameLine(g), StepKind.game, g);
         used += g.minutes;
       } else {
         backup.add(g);
@@ -185,6 +197,18 @@ class PlanGenerator {
     add(wrapMinutes, e.audience == Audience.kids ? 'Return gifts + goodbyes' : 'Thank-yous + goodbyes',
         'Hand out return gifts and thank everyone for coming.', StepKind.wrap);
 
+    final custom = e.customTimeline;
+    if (custom != null) {
+      return Plan(
+        timeline: customSteps(e),
+        backupGames: const [],
+        tasks: _tasks(e, games),
+        helpers: helpersByOccasion[e.occasion] ?? helpersByOccasion['Get-together']!,
+        budget: _budgetSplit,
+        gamesMinutes: budget,
+      );
+    }
+
     return Plan(
       timeline: steps,
       backupGames: backup,
@@ -194,6 +218,46 @@ class PlanGenerator {
       gamesMinutes: budget,
     );
   }
+
+  /// The host's edited timeline, kept in step with the Games tab: games removed there
+  /// disappear, games added there go in before the food (or the big moment).
+  static List<TimelineStep> customSteps(EventDetails e) {
+    final list = [for (final c in e.customTimeline!) if (c.gameId == null || e.gameIds.contains(c.gameId)) c];
+    final have = {for (final c in list) c.gameId};
+    final missing = [for (final id in e.gameIds) if (!have.contains(id)) gameById(id)].whereType<Game>();
+    if (missing.isNotEmpty) {
+      var at = list.indexWhere((c) => c.kind == 'food' || c.kind == 'wrap');
+      if (at < 0) at = list.length;
+      for (final g in missing) {
+        list.insert(at++, CustomStep(key: 'game_${g.id}', title: g.name, subtitle: _gameLine(g), minutes: g.minutes, kind: 'game', gameId: g.id));
+      }
+    }
+    var t = e.startMinutes;
+    return [
+      for (final c in list)
+        () {
+          final step = TimelineStep(
+            start: t,
+            minutes: c.minutes,
+            title: c.title,
+            subtitle: c.subtitle,
+            kind: StepKind.values.firstWhere((k) => k.name == c.kind, orElse: () => StepKind.custom),
+            game: c.gameId == null ? null : gameById(c.gameId!),
+            key: c.key,
+          );
+          t += c.minutes;
+          return step;
+        }(),
+    ];
+  }
+
+  static String _gameLine(Game g) => '${g.audienceLabel} · ${g.minutes} min${g.needs.isEmpty ? '' : ' · ${g.needs.first}'}';
+
+  /// Starting point for editing: the timeline as it is now.
+  static List<CustomStep> toCustom(Plan plan) => [
+        for (final s in plan.timeline)
+          CustomStep(key: s.key, title: s.title, subtitle: s.subtitle, minutes: s.minutes, kind: s.kind.name, gameId: s.game?.id),
+      ];
 
   static List<PlanTask> _tasks(EventDetails e, List<Game> games) {
     final helpers = helpersByOccasion[e.occasion] ?? const <String>[];
@@ -209,8 +273,34 @@ class PlanGenerator {
       tasks.add(PlanTask('supplies', 'Game supplies: ${needs.take(4).join(', ')}${needs.length > 4 ? '…' : ''}', 3));
     }
     if (!e.indoor) tasks.add(const PlanTask('weather', 'Check the weather + backup shade', 2));
-    tasks.sort((a, b) => b.daysBefore.compareTo(a.daysBefore));
-    return tasks;
+    return applyTaskEdits(tasks, e);
+  }
+
+  /// The host's checklist changes: removed tasks go, edited ones change, added ones join.
+  static List<PlanTask> applyTaskEdits(List<PlanTask> suggested, EventDetails e) {
+    final edits = {for (final c in e.customTasks) c.id: c};
+    final out = <PlanTask>[
+      for (final t in suggested)
+        if (!e.hiddenTasks.contains(t.id))
+          edits.containsKey(t.id) ? PlanTask(t.id, edits[t.id]!.label, edits[t.id]!.daysBefore) : t,
+    ];
+    final have = {for (final t in out) t.id};
+    for (final c in e.customTasks) {
+      if (!have.contains(c.id) && !e.hiddenTasks.contains(c.id)) out.add(PlanTask(c.id, c.label, c.daysBefore));
+    }
+    out.sort((a, b) => b.daysBefore.compareTo(a.daysBefore));
+    return out;
+  }
+
+  /// The budget lines to show: the host's own, or the suggested split of the total.
+  static List<BudgetItem> budgetItems(EventDetails e) {
+    final own = e.budgetItems;
+    if (own != null) return own;
+    final total = e.budget ?? 0;
+    return [
+      for (final l in _budgetSplit)
+        BudgetItem(id: 'b_${l.label.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '')}', label: l.label, planned: (total * l.share).roundToDouble()),
+    ];
   }
 
   static String _singular(String h) => switch (h) {

@@ -8,6 +8,18 @@ service cloud.firestore {
     function isOwner(uid) {
       return signedIn() && request.auth.uid == uid;
     }
+    function validReview(d) {
+      return d.keys().hasOnly(['stars', 'comment', 'name', 'eventType', 'createdAt', 'updatedAt', 'reply'])
+        && d.stars is int && d.stars >= 1 && d.stars <= 5
+        && d.comment is string && d.comment.size() <= 1000
+        && d.name is string && d.name.size() <= 60
+        && d.eventType is string && d.eventType.size() <= 40
+        && d.updatedAt == request.time;
+    }
+    // A real account, not an anonymous guest.
+    function hasAccount() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
 
     // Free trial fields: trialPlan, trialStartedAt (server time), trialCancelled.
     function sameTrial(before, after) {
@@ -59,6 +71,172 @@ service cloud.firestore {
       allow create: if isOwner(uid) && request.resource.data.get('verified', false) == false;
       allow update: if isOwner(uid)
         && request.resource.data.get('verified', false) == resource.data.get('verified', false);
+
+      // Ratings & reviews: one per customer per provider (doc id = reviewer's uid).
+      // Anyone using the app can read them. Only the reviewer writes stars and
+      // comment; only the provider writes the reply.
+      match /reviews/{reviewerUid} {
+        allow read: if signedIn();
+        allow create: if isOwner(reviewerUid) && hasAccount()
+          && reviewerUid != uid
+          && validReview(request.resource.data)
+          && request.resource.data.reply == ''
+          && request.resource.data.createdAt == request.time;
+        allow update: if (isOwner(reviewerUid)
+            && validReview(request.resource.data)
+            && request.resource.data.reply == resource.data.get('reply', '')
+            && request.resource.data.createdAt == resource.data.createdAt)
+          || (isOwner(uid)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reply', 'repliedAt'])
+            && request.resource.data.reply is string
+            && request.resource.data.reply.size() <= 500
+            && request.resource.data.repliedAt == request.time);
+        allow delete: if isOwner(reviewerUid);
+      }
+    }
+
+    // Feedback and ratings from the app (Help & feedback). Guests can send it too.
+    // The app can add feedback but never read, change or delete it. Read it in the console.
+    match /feedback/{id} {
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'type', 'rating', 'message', 'email', 'plan', 'platform', 'appVersion', 'createdAt'])
+        && request.resource.data.type in ['idea', 'problem', 'praise', 'other']
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 0 && request.resource.data.rating <= 5
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0 && request.resource.data.message.size() <= 2000
+        && (request.resource.data.email == null || (request.resource.data.email is string && request.resource.data.email.size() <= 200))
+        && request.resource.data.createdAt == request.time;
+      allow read, update, delete: if false;
+    }
+
+    // Refer a friend: who owns each invite code. Codes are never changed or reused.
+    match /refCodes/{code} {
+      allow read: if signedIn();
+      allow create: if hasAccount()
+        && code.matches('^[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{6}$')
+        && request.resource.data.keys().hasOnly(['uid', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    // One per account, ever: "I joined with this friend's code". Both people get
+    // a week of Pro from createdAt (server time). The friend who shared the code
+    // can see who joined with it.
+    match /referrals/{friendUid} {
+      allow read: if isOwner(friendUid)
+        || (signedIn() && resource.data.referrerUid == request.auth.uid);
+      allow create: if isOwner(friendUid) && hasAccount()
+        && request.resource.data.keys().hasOnly(['code', 'referrerUid', 'createdAt'])
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.referrerUid != request.auth.uid
+        && get(/databases/$(database)/documents/refCodes/$(request.resource.data.code)).data.uid
+             == request.resource.data.referrerUid;
+      allow update, delete: if false;
+    }
+
+    // Quote requests: a customer asks a provider for a quote, with event details.
+    // Doc id = {customerUid}_{providerUid}_{eventId}: one per event and provider.
+    // Only that customer and that provider can read it. The provider sets
+    // seen / replied / booked / declined and writes the reply; the customer can
+    // cancel, or send it again after it was cancelled or declined.
+    match /quotes/{id} {
+      function q() { return request.resource.data; }
+      allow read: if signedIn()
+        && (resource.data.customerUid == request.auth.uid || resource.data.providerUid == request.auth.uid);
+      allow create: if hasAccount()
+        && q().customerUid == request.auth.uid
+        && q().providerUid != request.auth.uid
+        && id == q().customerUid + '_' + q().providerUid + '_' + q().eventId
+        && exists(/databases/$(database)/documents/providers/$(q().providerUid))
+        && q().keys().hasOnly(['customerUid', 'customerName', 'customerEmail', 'customerPhone', 'providerUid',
+             'providerName', 'serviceType', 'eventId', 'eventTitle', 'occasion', 'eventDate', 'startMinutes',
+             'guests', 'indoor', 'message', 'status', 'reply', 'createdAt', 'updatedAt'])
+        && q().status == 'new'
+        && q().reply == ''
+        && q().message is string && q().message.size() > 0 && q().message.size() <= 1500
+        && q().customerName is string && q().customerName.size() <= 80
+        && q().customerPhone is string && q().customerPhone.size() <= 30
+        && q().createdAt == request.time
+        && q().updatedAt == request.time;
+      allow update: if signedIn() && q().updatedAt == request.time && (
+        (resource.data.providerUid == request.auth.uid
+          && q().diff(resource.data).affectedKeys().hasOnly(['status', 'reply', 'repliedAt', 'updatedAt'])
+          && q().status in ['seen', 'replied', 'booked', 'declined']
+          && q().reply is string && q().reply.size() <= 1000)
+        || (resource.data.customerUid == request.auth.uid
+          && q().diff(resource.data).affectedKeys().hasOnly(['status', 'message', 'reply', 'updatedAt'])
+          && (q().status == 'cancelled'
+            || (q().status == 'new' && q().reply == '' && resource.data.status in ['cancelled', 'declined']
+                && q().message is string && q().message.size() > 0 && q().message.size() <= 1500))));
+      allow delete: if false;
+    }
+
+    // Taps on a provider's Call / WhatsApp / Instagram / website buttons, so providers
+    // can see how many people reached out. Anyone using the app (guests too) adds them;
+    // only that provider reads them.
+    match /leadTaps/{id} {
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'providerUid', 'kind', 'createdAt'])
+        && request.resource.data.providerUid is string && request.resource.data.providerUid.size() < 128
+        && request.resource.data.providerUid != request.auth.uid
+        && request.resource.data.kind in ['call', 'whatsapp', 'instagram', 'facebook', 'youtube', 'tiktok', 'reviews', 'website']
+        && request.resource.data.createdAt == request.time;
+      allow read: if signedIn() && resource.data.providerUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // Party invites: the public card guests open from the invite link, and their RSVPs.
+    // Invite id = {hostUid}_{eventId}. Anyone with the link can read the card and reply
+    // (guests get an anonymous login on the website); only the host sees all replies.
+    match /invites/{inviteId} {
+      allow read: if signedIn();
+      allow create, update: if hasAccount()
+        && request.resource.data.hostUid == request.auth.uid
+        && inviteId == request.auth.uid + '_' + request.resource.data.eventId
+        && request.resource.data.message is string && request.resource.data.message.size() <= 300
+        && request.resource.data.title is string && request.resource.data.title.size() <= 120
+        && request.resource.data.hostName is string && request.resource.data.hostName.size() <= 80;
+      allow delete: if signedIn() && resource.data.hostUid == request.auth.uid;
+
+      match /rsvps/{guestUid} {
+        allow read: if isOwner(guestUid)
+          || (signedIn() && get(/databases/$(database)/documents/invites/$(inviteId)).data.hostUid == request.auth.uid);
+        allow create, update: if isOwner(guestUid)
+          && exists(/databases/$(database)/documents/invites/$(inviteId))
+          && request.resource.data.keys().hasOnly(['name', 'status', 'adults', 'kids', 'note', 'diet', 'updatedAt'])
+          && (!('diet' in request.resource.data) || (request.resource.data.diet is list && request.resource.data.diet.size() <= 8))
+          && request.resource.data.status in ['going', 'maybe', 'no']
+          && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 60
+          && request.resource.data.adults is int && request.resource.data.adults >= 0 && request.resource.data.adults <= 50
+          && request.resource.data.kids is int && request.resource.data.kids >= 0 && request.resource.data.kids <= 50
+          && request.resource.data.note is string && request.resource.data.note.size() <= 300
+          && request.resource.data.updatedAt == request.time;
+        allow delete: if isOwner(guestUid);
+      }
+
+      // 🧺 Pitch In: things to bring and ways to help. The host manages the list;
+      // a guest can only claim a free item for themselves, or give back their own.
+      match /pitchIn/{itemId} {
+        function isHost() {
+          return signedIn() && get(/databases/$(database)/documents/invites/$(inviteId)).data.hostUid == request.auth.uid;
+        }
+        allow read: if signedIn();
+        allow create, delete: if isHost();
+        allow update: if isHost()
+          || (signedIn()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimedBy', 'claimedName', 'claimedAt'])
+            && ((resource.data.claimedBy == ''
+                  && request.resource.data.claimedBy == request.auth.uid
+                  && request.resource.data.claimedName is string
+                  && request.resource.data.claimedName.size() > 0 && request.resource.data.claimedName.size() <= 60)
+              || (resource.data.claimedBy == request.auth.uid
+                  && request.resource.data.claimedBy == ''
+                  && request.resource.data.claimedName == '')));
+      }
     }
 
     // Search history. The app can add an entry for its own user but can never
