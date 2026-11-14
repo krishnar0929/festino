@@ -70,6 +70,11 @@ class EventDetails {
     List<SavedLink>? savedLinks,
     Map<String, DateTime>? taskReminders,
     List<Invitee>? invitees,
+    this.customTimeline,
+    List<CustomTask>? customTasks,
+    List<String>? hiddenTasks,
+    this.budgetItems,
+    List<TodoItem>? todos,
     this.inviteMessage = '',
     this.budget,
     this.venue,
@@ -81,6 +86,9 @@ class EventDetails {
         savedLinks = savedLinks ?? [],
         taskReminders = taskReminders ?? {},
         invitees = invitees ?? [],
+        customTasks = customTasks ?? [],
+        hiddenTasks = hiddenTasks ?? [],
+        todos = todos ?? [],
         updatedAt = updatedAt ?? DateTime.now();
 
   final String id;
@@ -101,6 +109,22 @@ class EventDetails {
   List<String> doneTasks;
   List<ShortlistVendor> shortlist;
   List<SavedLink> savedLinks;
+
+  /// The host's own timeline (after editing, moving or removing steps).
+  /// Null means Hoopla's suggested timeline.
+  List<CustomStep>? customTimeline;
+
+  /// Checklist tasks the host added, or suggested ones they edited (same id).
+  List<CustomTask> customTasks;
+
+  /// Suggested checklist tasks the host removed.
+  List<String> hiddenTasks;
+
+  /// The host's own budget (amounts, vendors, paid). Null = Hoopla's suggested split.
+  List<BudgetItem>? budgetItems;
+
+  /// "My list": the host's own to-dos and notes.
+  List<TodoItem> todos;
 
   /// People the host invited (their RSVPs live in invites/{hostUid}_{id}/rsvps).
   List<Invitee> invitees;
@@ -147,6 +171,11 @@ class EventDetails {
         'shortlist': shortlist.map((v) => v.toMap()).toList(),
         'savedLinks': savedLinks.map((l) => l.toMap()).toList(),
         'invitees': invitees.map((i) => i.toMap()).toList(),
+        'customTimeline': customTimeline?.map((c) => c.toMap()).toList(),
+        'customTasks': customTasks.map((c) => c.toMap()).toList(),
+        'hiddenTasks': hiddenTasks,
+        'budgetItems': budgetItems?.map((b) => b.toMap()).toList(),
+        'todos': todos.map((t) => t.toMap()).toList(),
         'inviteMessage': inviteMessage,
         'taskReminders': {for (final r in taskReminders.entries) r.key: r.value.toUtc().toIso8601String()},
         'budget': budget,
@@ -174,6 +203,11 @@ class EventDetails {
       shortlist: maps(m['shortlist']).map(ShortlistVendor.fromMap).toList(),
       savedLinks: maps(m['savedLinks']).map(SavedLink.fromMap).toList(),
       invitees: maps(m['invitees']).map(Invitee.fromMap).toList(),
+      customTimeline: m['customTimeline'] is List ? maps(m['customTimeline']).map(CustomStep.fromMap).toList() : null,
+      customTasks: maps(m['customTasks']).map(CustomTask.fromMap).toList(),
+      hiddenTasks: List<String>.from(m['hiddenTasks'] as List? ?? const []),
+      budgetItems: m['budgetItems'] is List ? maps(m['budgetItems']).map(BudgetItem.fromMap).toList() : null,
+      todos: maps(m['todos']).map(TodoItem.fromMap).toList(),
       inviteMessage: m['inviteMessage'] as String? ?? '',
       taskReminders: {
         for (final r in (m['taskReminders'] as Map? ?? const {}).entries)
@@ -185,4 +219,108 @@ class EventDetails {
       updatedAt: DateTime.tryParse(m['updatedAt'] as String? ?? '')?.toLocal(),
     );
   }
+}
+
+/// One step of a timeline the host edited.
+class CustomStep {
+  CustomStep({required this.key, required this.title, required this.subtitle, required this.minutes, required this.kind, this.gameId});
+
+  /// Stable id for the step ("game_freeze_dance", "food", "custom_1700000000").
+  final String key;
+  String title;
+  String subtitle;
+  int minutes;
+
+  /// welcome, game, moment, food, wrap, free or custom.
+  final String kind;
+  final String? gameId;
+
+  Map<String, dynamic> toMap() => {'key': key, 'title': title, 'subtitle': subtitle, 'minutes': minutes, 'kind': kind, 'gameId': gameId};
+
+  factory CustomStep.fromMap(Map<String, dynamic> m) => CustomStep(
+        key: m['key'] as String? ?? '',
+        title: m['title'] as String? ?? '',
+        subtitle: m['subtitle'] as String? ?? '',
+        minutes: (m['minutes'] as num?)?.toInt() ?? 10,
+        kind: m['kind'] as String? ?? 'free',
+        gameId: m['gameId'] as String?,
+      );
+}
+
+/// A checklist task the host added or edited. [daysBefore] = due that many days before the party.
+class CustomTask {
+  CustomTask({required this.id, required this.label, required this.daysBefore});
+  final String id;
+  String label;
+  int daysBefore;
+
+  Map<String, dynamic> toMap() => {'id': id, 'label': label, 'daysBefore': daysBefore};
+
+  factory CustomTask.fromMap(Map<String, dynamic> m) =>
+      CustomTask(id: m['id'] as String? ?? '', label: m['label'] as String? ?? '', daysBefore: (m['daysBefore'] as num?)?.toInt() ?? 7);
+}
+
+/// One line of the host's budget: what it's for, the planned amount, and (once booked)
+/// who's doing it, what it actually costs and whether it's paid.
+class BudgetItem {
+  BudgetItem({
+    required this.id,
+    required this.label,
+    this.planned = 0,
+    this.vendor = '',
+    this.vendorPhone = '',
+    this.actual,
+    this.paid = false,
+  });
+
+  final String id;
+  String label;
+  double planned;
+
+  /// Their own photographer, cook, decorator... (or one found on Hoopla).
+  String vendor;
+  String vendorPhone;
+  double? actual;
+  bool paid;
+
+  /// What it really costs if known, otherwise the plan.
+  double get cost => actual ?? planned;
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'label': label,
+        'planned': planned,
+        'vendor': vendor,
+        'vendorPhone': vendorPhone,
+        'actual': actual,
+        'paid': paid,
+      };
+
+  factory BudgetItem.fromMap(Map<String, dynamic> m) => BudgetItem(
+        id: m['id'] as String? ?? '',
+        label: m['label'] as String? ?? '',
+        planned: (m['planned'] as num?)?.toDouble() ?? 0,
+        vendor: m['vendor'] as String? ?? '',
+        vendorPhone: m['vendorPhone'] as String? ?? '',
+        actual: (m['actual'] as num?)?.toDouble(),
+        paid: m['paid'] as bool? ?? false,
+      );
+}
+
+/// A to-do on "My list".
+class TodoItem {
+  TodoItem({required this.id, required this.text, this.done = false, this.due});
+  final String id;
+  String text;
+  bool done;
+  DateTime? due;
+
+  Map<String, dynamic> toMap() => {'id': id, 'text': text, 'done': done, 'due': due?.toIso8601String()};
+
+  factory TodoItem.fromMap(Map<String, dynamic> m) => TodoItem(
+        id: m['id'] as String? ?? '',
+        text: m['text'] as String? ?? '',
+        done: m['done'] as bool? ?? false,
+        due: DateTime.tryParse(m['due'] as String? ?? ''),
+      );
 }

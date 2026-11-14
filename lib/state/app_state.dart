@@ -401,6 +401,22 @@ class AppState extends ChangeNotifier {
     await _persist(e);
   }
 
+  /// Edit the timeline. The first edit saves the current timeline as the host's own;
+  /// the event's game list follows the games left in it.
+  Future<void> editTimeline(void Function(List<CustomStep> steps) change) => update((e) {
+        final steps = PlanGenerator.toCustom(PlanGenerator.build(e));
+        change(steps);
+        e.customTimeline = steps;
+        final ids = <String>[];
+        for (final c in steps) {
+          if (c.gameId != null && !ids.contains(c.gameId)) ids.add(c.gameId!);
+        }
+        e.gameIds = ids;
+      });
+
+  /// Back to Hoopla's suggested timeline (keeps the chosen games).
+  Future<void> resetTimeline() => update((e) => e.customTimeline = null);
+
   /// Change the current event in place, then save it.
   Future<void> update(void Function(EventDetails e) change) async {
     final e = event;

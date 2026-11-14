@@ -88,6 +88,19 @@ List<ReminderSpec> planReminders({
     ));
   }
 
+  // "My list" to-dos with a due date: at [hour] that day.
+  for (final t in e.todos) {
+    final due = t.due;
+    if (t.done || due == null) continue;
+    out.add(ReminderSpec(
+      eventId: e.id,
+      key: 'todo_${t.id}',
+      when: at(due),
+      title: '📝 ${t.text}',
+      body: 'From your list for $name.',
+    ));
+  }
+
   // Countdown.
   out.add(ReminderSpec(
     eventId: e.id,

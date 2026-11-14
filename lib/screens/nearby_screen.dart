@@ -67,10 +67,10 @@ class _NearbyScreenState extends State<NearbyScreen> {
 
   /// This service's share of the budget (null when no budget or not a budget line).
   double? _budgetFor(AppState state) {
-    final total = state.event?.budget;
-    if (total == null || total <= 0) return null;
-    for (final line in state.plan.budget) {
-      if (budgetServices[line.label] == selected) return total * line.share;
+    final e = state.event;
+    if (e == null) return null;
+    for (final b in PlanGenerator.budgetItems(e)) {
+      if (budgetServices[b.label] == selected && b.planned > 0) return b.planned;
     }
     return null;
   }

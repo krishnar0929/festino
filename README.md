@@ -229,3 +229,16 @@ help (or taps "Suggest a list from my plan"). Guests claim one on the RSVP page 
 
 **🥗 Food preferences**: guests tick Vegetarian, Jain, Vegan, Eggless, No onion-garlic, Gluten-free,
 Nut allergy and more when they RSVP; the host sees totals to share with the caterer.
+
+## Make the plan your own
+
+- **Timeline:** tap any step to see more (how to play, what you need, video), edit its name,
+  details or length, swap a game, move it earlier/later, or remove it. Add activities or games.
+  The first edit saves the host's own timeline (`customTimeline`); **Reset to suggested** goes back.
+- **Checklist:** edit any task or its due date, remove tasks, add your own (`customTasks`,
+  `hiddenTasks`); removed ones can be brought back.
+- **Budget:** change amounts, add expenses, and record who's doing each part (your own
+  photographer, cook...), the real cost and whether it's paid (`budgetItems`). Shows planned,
+  booked, paid and what's left.
+- **My list:** the host's own to-dos and notes with optional due dates (`todos`); due ones get a
+  reminder.
