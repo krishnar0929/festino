@@ -44,6 +44,9 @@ void main() {
 
     test('reset goes back to the suggested timeline', () {
       final e = party()..customTimeline = [CustomStep(key: 'custom_1', title: 'Only this', subtitle: '', minutes: 30, kind: 'custom')];
+      // The two chosen games join the edited timeline (the Games tab stays in charge of games).
+      expect([for (final s in PlanGenerator.build(e).timeline) s.key], ['custom_1', 'game_bubble_chase', 'game_pass_the_parcel']);
+      e.gameIds = [];
       expect(PlanGenerator.build(e).timeline, hasLength(1));
       e.customTimeline = null;
       expect(PlanGenerator.build(e).timeline.length, greaterThan(3));
