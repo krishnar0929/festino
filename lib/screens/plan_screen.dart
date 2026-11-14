@@ -76,7 +76,7 @@ class _PlanScreenState extends State<PlanScreen> {
                       },
                       itemBuilder: (_) => [
                         _menuItem('new', Icons.add_rounded, 'Start new event'),
-                        _menuItem('events', Icons.event_note_outlined, 'My events (${state.events.length})'),
+                        _menuItem('events', Icons.event_note_outlined, 'My events · ${state.upcomingEvents.length} upcoming'),
                         _menuItem('cancel', Icons.event_busy_outlined, 'Cancel this event', danger: true),
                       ],
                     ),

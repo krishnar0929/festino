@@ -13,6 +13,9 @@ abstract class EventStore {
   Future<List<EventDetails>> loadAll();
   Future<void> save(EventDetails event);
 
+  /// Deletes one event for good.
+  Future<void> delete(String id);
+
   /// Removes every event (used when an account is deleted).
   Future<void> deleteAll();
 }
@@ -40,6 +43,9 @@ class FirestoreEventStore implements EventStore {
 
   @override
   Future<void> save(EventDetails event) => _events.doc(event.id).set(event.toMap());
+
+  @override
+  Future<void> delete(String id) => _events.doc(id).delete();
 
   @override
   Future<void> deleteAll() async {
@@ -84,6 +90,14 @@ class LocalEventStore implements EventStore {
     final all = await loadAll();
     all.removeWhere((e) => e.id == event.id);
     all.insert(0, event);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_key, jsonEncode([for (final e in all) e.toMap()]));
+  }
+
+  @override
+  Future<void> delete(String id) async {
+    final all = await loadAll();
+    all.removeWhere((e) => e.id == id);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_key, jsonEncode([for (final e in all) e.toMap()]));
   }
