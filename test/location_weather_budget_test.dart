@@ -72,6 +72,53 @@ void main() {
       expect(weatherAdvice(code: 0, rainChance: 0, temp: 22, fahrenheit: false, indoor: false), contains('Great weather'));
     });
 
+    EventWeather day({int code = 0, int rain = 0, double temp = 72, double wind = 5, List<HourWeather> hours = const []}) => EventWeather(
+          code: code,
+          high: temp + 4,
+          low: temp - 8,
+          rainChance: rain,
+          partyTemp: temp,
+          fahrenheit: true,
+          windMax: wind,
+          hours: hours,
+          sunset: DateTime(2027, 2, 26, 18, 10),
+        );
+
+    test('rain, storms and wind make an outdoor party risky', () {
+      expect(assessWeather(day(code: 61, rain: 70), indoor: false).level, WeatherLevel.risky);
+      expect(assessWeather(day(code: 61, rain: 70), indoor: false).title, contains('70% chance of rain'));
+      expect(assessWeather(day(code: 95, rain: 30), indoor: false).level, WeatherLevel.risky);
+      expect(assessWeather(day(wind: 30), indoor: false).level, WeatherLevel.risky);
+      expect(assessWeather(day(code: 2, hours: const [HourWeather(hour: 17, code: 96, temp: 70, rainChance: 20, wind: 5)]), indoor: false).level, WeatherLevel.risky);
+      expect(assessWeather(day(rain: 30), indoor: false).level, WeatherLevel.watch);
+    });
+
+    test('indoors, rain is just a heads-up', () {
+      expect(assessWeather(day(code: 61, rain: 70), indoor: true).level, WeatherLevel.watch);
+      expect(assessWeather(day(code: 95, rain: 80), indoor: true).message, contains('indoors'));
+    });
+
+    test('a nice day gets a happy message', () {
+      final v = assessWeather(day(), indoor: false);
+      expect(v.level, WeatherLevel.good);
+      expect(v.title, contains('Perfect party weather'));
+      expect(v.message, contains('6:10 PM'));
+      expect(assessWeather(day(), indoor: true).level, WeatherLevel.good);
+    });
+
+    test('usual weather averages past years', () {
+      Map<String, dynamic> year(List<num> hi, List<num> lo, List<num> rain) =>
+          {'daily': {'temperature_2m_max': hi, 'temperature_2m_min': lo, 'precipitation_sum': rain}};
+      final t = summarizeTypical([
+        year([60, 62], [40, 42], [0, 5]),
+        year([58, 60], [38, 40], [2, 0]),
+      ], fahrenheit: true)!;
+      expect((t.high, t.low, t.rainyShare, t.years), (60.0, 40.0, 0.5, 2));
+      expect(t.verdict(indoor: false).level, WeatherLevel.watch);
+      expect(t.verdict(indoor: true).level, WeatherLevel.good);
+      expect(summarizeTypical(const [], fahrenheit: true), isNull);
+    });
+
     test('the forecast shows up 16 days before', () {
       expect(forecastFrom(DateTime(2026, 12, 14)), DateTime(2026, 11, 29));
     });

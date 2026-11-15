@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart' show ImagePicker, ImageSource;
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/event_details.dart';
 import '../models/photo_frame.dart';
@@ -424,6 +425,62 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
     }
   }
 
+  /// Hoopla's own share menu: WhatsApp, Instagram, Facebook, Messages, Gmail, …
+  Future<void> _openSharePicker(BuildContext from, {Uint8List? png}) async {
+    await _ready();
+    if (!mounted) return;
+    final image = png ?? await capturePng(_cardKey) ?? await capturePng(_sendCardKey);
+    if (!mounted) return;
+    final pick = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: HC.ground,
+      builder: (ctx) => _SharePicker(hasImage: image != null),
+    );
+    if (pick == null || !mounted) return;
+    final state = AppScope.of(context);
+    final text = _text(state);
+    final url = inviteUrl(inviteId!);
+    final subject = 'You\'re invited: ${state.event!.inviteHeadline}';
+    switch (pick) {
+      case 'all':
+        await _shareCard(from, png: image);
+      case 'whatsapp':
+        openLink(context, Uri.parse('https://wa.me/?text=${Uri.encodeComponent(text)}'));
+      case 'instagram':
+        toast(context, 'Pick Instagram in the list, then post it to your story or send it in a message.');
+        await _shareCard(from, png: image, withText: false);
+      case 'facebook':
+        openLink(context, Uri.https('www.facebook.com', '/sharer/sharer.php', {'u': url}));
+      case 'messages':
+        openLink(context, InviteService.smsTo(const [], text));
+      case 'gmail':
+        await _openGmail(subject, text);
+      case 'email':
+        openLink(context, InviteService.emailTo(const [], subject, text));
+      case 'telegram':
+        openLink(context, Uri.https('t.me', '/share/url', {'url': url, 'text': text.replaceAll(url, '').trim()}));
+      case 'x':
+        openLink(context, Uri.https('twitter.com', '/intent/tweet', {'text': text}));
+      case 'copy':
+        await _copy(state);
+      case 'save':
+        await _shareCard(from, png: image, withText: false);
+    }
+  }
+
+  /// Gmail app on iPhone if it's installed, Gmail on the web otherwise.
+  Future<void> _openGmail(String subject, String body) async {
+    if (!kIsWeb) {
+      final app = Uri.parse('googlegmail:///co?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}');
+      try {
+        if (await launchUrl(app, mode: LaunchMode.externalApplication)) return;
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    openLink(context, Uri.https('mail.google.com', '/mail/', {'view': 'cm', 'fs': '1', 'su': subject, 'body': body}));
+  }
+
   Future<void> _shareText(BuildContext from) async {
     await _ready();
     if (!mounted) return;
@@ -505,7 +562,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
       fullscreenDialog: true,
       builder: (_) => _InvitePreview(
         card: (key) => _card(e, state, key: key),
-        onShareCard: (from, png) => _shareCard(from, png: png),
+        onShareCard: (from, png) => _openSharePicker(from, png: png),
         onSaveImage: (from, png) => _shareCard(from, png: png, withText: false),
         onWhatsApp: _whatsApp,
         onText: _textAll,
@@ -947,7 +1004,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
                   Builder(
                     builder: (b) => FilledButton.icon(
                       style: FilledButton.styleFrom(backgroundColor: HC.violet, minimumSize: const Size(0, 44)),
-                      onPressed: () => _shareCard(b),
+                      onPressed: () => _openSharePicker(b),
                       icon: const Icon(Icons.ios_share_rounded, size: 18),
                       label: const Text('Share the card'),
                     ),
@@ -1627,11 +1684,93 @@ class _InviteStatusLineState extends State<InviteStatusLine> {
       builder: (context, snap) {
         final list = snap.data ?? const <Rsvp>[];
         if (e.invitees.isEmpty && list.isEmpty) {
-          return Text('Design a card, send on WhatsApp, iMessage or email, track RSVPs', style: widget.style);
+          return Text('Design · Share · Track RSVPs', style: widget.style);
         }
         final b = groupGuests(e.invitees, list);
         return Text('🎉 ${b.going.length} going · ⏳ ${b.pending.length} pending · 😢 ${b.cantGo.length} can\'t go', style: widget.style);
       },
+    );
+  }
+}
+
+
+/// The share menu: big "all apps" button plus a grid of favourite places to send.
+class _SharePicker extends StatelessWidget {
+  const _SharePicker({required this.hasImage});
+  final bool hasImage;
+
+  static const _apps = <(String, String, Color, IconData?, String?)>[
+    ('whatsapp', 'WhatsApp', Color(0xFF25D366), Icons.chat_rounded, null),
+    ('instagram', 'Instagram', Color(0xFFE1306C), Icons.camera_alt_rounded, null),
+    ('facebook', 'Facebook', Color(0xFF1877F2), null, 'f'),
+    ('messages', 'Messages', Color(0xFF34C759), Icons.sms_rounded, null),
+    ('gmail', 'Gmail', Color(0xFFEA4335), Icons.mail_rounded, null),
+    ('email', 'Email', Color(0xFF5E5A72), Icons.alternate_email_rounded, null),
+    ('telegram', 'Telegram', Color(0xFF29A9EB), Icons.send_rounded, null),
+    ('x', 'X', Color(0xFF111111), null, '𝕏'),
+    ('copy', 'Copy link', HC.violet, Icons.link_rounded, null),
+    ('save', 'Save image', HC.ink, Icons.download_rounded, null),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Share your invitation', style: display(22)),
+            const SizedBox(height: 4),
+            Text('Guests open the link to see your card and RSVP. No app needed.', style: body(13, color: HC.muted)),
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(backgroundColor: HC.violet, minimumSize: const Size(0, 52)),
+              onPressed: () => Navigator.pop(context, 'all'),
+              icon: const Icon(Icons.ios_share_rounded, size: 20),
+              label: Text(hasImage ? 'Picture + link to any app' : 'Share to any app'),
+            ),
+            const SizedBox(height: 16),
+            GridView.count(
+              crossAxisCount: 5,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 14,
+              crossAxisSpacing: 6,
+              childAspectRatio: 0.78,
+              children: [
+                for (final a in _apps)
+                  if (hasImage || (a.$1 != 'save' && a.$1 != 'instagram'))
+                    InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => Navigator.pop(context, a.$1),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(color: a.$3, shape: BoxShape.circle),
+                            alignment: Alignment.center,
+                            child: a.$4 != null
+                                ? Icon(a.$4, color: Colors.white, size: 24)
+                                : Text(a.$5!, style: display(24, color: Colors.white)),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(a.$2, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: body(11, weight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'WhatsApp, Messages and email send the link. To send the picture too, use "Picture + link to any app" and pick the app.',
+              style: body(11, color: HC.muted),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
