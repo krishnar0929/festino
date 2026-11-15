@@ -91,6 +91,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
   void initState() {
     super.initState();
     tabs.addListener(() {
+      _hideKeyboard();
       if (!tabs.indexIsChanging && tabs.index != 0 && dirty) _saveDesign(quiet: true);
       setState(() {});
     });
@@ -153,6 +154,9 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
   /// "Hosted by" on the invitation, as the host typed it.
   String get _host => hostCtrl.text.trim();
 
+  /// Closes the keyboard so it can't pop up over sheets and share menus.
+  static void _hideKeyboard() => FocusManager.instance.primaryFocus?.unfocus();
+
   // ---------------------------------------------------------------- design
 
   void _changed(VoidCallback f) => setState(() {
@@ -188,6 +192,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
   }
 
   Future<void> _pickPhoto() async {
+    _hideKeyboard();
     final camera = !kIsWeb;
     ImageSource? source = ImageSource.gallery;
     if (camera) {
@@ -253,6 +258,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
 
   /// Crop the photo: pick a shape, drag to choose what shows, pinch or slide to zoom.
   Future<void> _adjustPhoto() async {
+    _hideKeyboard();
     var f = frame;
     var startZoom = f.zoom;
     final result = await showModalBottomSheet<PhotoFrame>(
@@ -397,11 +403,13 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
   }
 
   Future<void> _ready() async {
+    _hideKeyboard();
     if (dirty) await _saveDesign(quiet: true);
   }
 
   /// Shares the card picture plus the RSVP link (WhatsApp, iMessage, Mail, Instagram, …).
   Future<void> _shareCard(BuildContext from, {Uint8List? png, bool withText = true}) async {
+    _hideKeyboard();
     await _ready();
     if (!mounted) return;
     final state = AppScope.of(context);
@@ -427,16 +435,21 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
 
   /// Hoopla's own share menu: WhatsApp, Instagram, Facebook, Messages, Gmail, …
   Future<void> _openSharePicker(BuildContext from, {Uint8List? png}) async {
+    _hideKeyboard();
     await _ready();
     if (!mounted) return;
     final image = png ?? await capturePng(_cardKey) ?? await capturePng(_sendCardKey);
     if (!mounted) return;
+    _hideKeyboard();
     final pick = await showModalBottomSheet<String>(
-      context: context,
+      context: from.mounted ? from : context,
+      isScrollControlled: true,
+      useSafeArea: true,
       showDragHandle: true,
       backgroundColor: HC.ground,
       builder: (ctx) => _SharePicker(hasImage: image != null),
     );
+    _hideKeyboard();
     if (pick == null || !mounted) return;
     final state = AppScope.of(context);
     final text = _text(state);
@@ -554,6 +567,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
   }
 
   Future<void> _openPreview() async {
+    _hideKeyboard();
     await _ready();
     if (!mounted) return;
     final state = AppScope.of(context);
@@ -742,10 +756,18 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
     );
   }
 
-  Widget _wrap(List<Widget> children) => Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
-          child: ListView(padding: const EdgeInsets.fromLTRB(20, 16, 20, 40), children: children),
+  Widget _wrap(List<Widget> children) => GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: _hideKeyboard,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: ListView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+              children: children,
+            ),
+          ),
         ),
       );
 
@@ -886,6 +908,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
         textCapitalization: TextCapitalization.words,
         decoration: InputDecoration(hintText: e.title, helperText: 'Leave empty to use your event name'),
         onChanged: (_) => _changed(() {}),
+        onTapOutside: (_) => _hideKeyboard(),
       ),
       const SizedBox(height: 8),
       const SectionLabel('Hosted by'),
@@ -898,6 +921,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
           helperText: 'Your names as guests know you. Leave empty to hide.',
         ),
         onChanged: (_) => _changed(() {}),
+        onTapOutside: (_) => _hideKeyboard(),
       ),
       const SizedBox(height: 8),
       const SectionLabel('Message'),
@@ -909,6 +933,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
         textCapitalization: TextCapitalization.sentences,
         decoration: const InputDecoration(hintText: 'Dress code, parking, gifts, anything guests should know'),
         onChanged: (_) => _changed(() {}),
+        onTapOutside: (_) => _hideKeyboard(),
       ),
       Wrap(
         spacing: 6,
@@ -934,6 +959,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
         textCapitalization: TextCapitalization.sentences,
         decoration: const InputDecoration(hintText: 'Dress code, parking, gift registry, RSVP by, contact number…'),
         onChanged: (_) => _changed(() {}),
+        onTapOutside: (_) => _hideKeyboard(),
       ),
       Wrap(
         spacing: 6,
@@ -1339,6 +1365,7 @@ class _InvitePreviewState extends State<_InvitePreview> {
   final _key = GlobalKey();
 
   Future<void> _withPng(BuildContext from, Future<void> Function(BuildContext, Uint8List?) action) async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final png = await capturePng(_key);
     if (!from.mounted) return;
     await action(from, png);
@@ -1715,7 +1742,7 @@ class _SharePicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
