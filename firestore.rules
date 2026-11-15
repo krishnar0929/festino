@@ -201,6 +201,7 @@ service cloud.firestore {
         && request.resource.data.title is string && request.resource.data.title.size() <= 120
         && request.resource.data.hostName is string && request.resource.data.hostName.size() <= 80
         && (!('photoUrl' in request.resource.data) || (request.resource.data.photoUrl is string && request.resource.data.photoUrl.size() <= 600))
+        && (!('extra' in request.resource.data) || (request.resource.data.extra is string && request.resource.data.extra.size() <= 300))
         && (!('theme' in request.resource.data) || (request.resource.data.theme is string && request.resource.data.theme.size() <= 20));
       allow delete: if signedIn() && resource.data.hostUid == request.auth.uid;
 

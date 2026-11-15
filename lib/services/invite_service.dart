@@ -345,7 +345,14 @@ class InviteInfo {
     this.photoUrl = '',
     this.theme = 'midnight',
     this.photoFrame = const PhotoFrame(),
+    this.extra = '',
   });
+
+  /// Extra text under the message (dress code, parking, …).
+  final String extra;
+
+  /// For sentences: the host's names, or "your host".
+  String get hostLabel => hostName.trim().isEmpty ? 'your host' : hostName;
 
   final PhotoFrame photoFrame;
 
@@ -385,7 +392,7 @@ class InviteInfo {
       'action': 'TEMPLATE',
       'text': title,
       'dates': '${t(start)}/${t(end)}',
-      'details': '${message.isEmpty ? '' : '$message\n\n'}Invited by $hostName on Hoopla',
+      'details': '${message.isEmpty ? '' : '$message\n\n'}${hostName.trim().isEmpty ? 'Invitation' : 'Invited by $hostName'} on Hoopla',
       'location': venueAddress.isNotEmpty ? venueAddress : venue,
     });
   }
@@ -393,7 +400,8 @@ class InviteInfo {
   factory InviteInfo.fromDoc(String id, Map<String, dynamic> m) => InviteInfo(
         id: id,
         hostUid: m['hostUid'] as String? ?? '',
-        hostName: m['hostName'] as String? ?? 'Your host',
+        hostName: m['hostName'] as String? ?? '',
+        extra: m['extra'] as String? ?? '',
         title: m['title'] as String? ?? 'A party',
         occasion: m['occasion'] as String? ?? '',
         date: DateTime.tryParse(m['date'] as String? ?? '') ?? DateTime.now(),
@@ -424,6 +432,7 @@ String inviteText(EventDetails e, String url, {String hostName = '', String mess
     '🎉 You\'re invited: ${e.inviteHeadline}!',
     '🗓 $when$where',
     if (message.trim().isNotEmpty) '\n${message.trim()}',
+    if (e.inviteExtra.trim().isNotEmpty) e.inviteExtra.trim(),
     '\nPlease RSVP here: $url',
     if (hostName.isNotEmpty) '— $hostName',
   ].join('\n');
@@ -443,7 +452,8 @@ class InviteService {
     await _doc(id).set({
       'hostUid': u.uid,
       'eventId': e.id,
-      'hostName': hostName,
+      'hostName': hostName.trim(),
+      'extra': e.inviteExtra.trim(),
       'title': e.inviteHeadline,
       'photoUrl': e.invitePhoto,
       'theme': e.inviteTheme,

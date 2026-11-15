@@ -66,6 +66,8 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
 
   final titleCtrl = TextEditingController();
   final messageCtrl = TextEditingController();
+  final hostCtrl = TextEditingController();
+  final extraCtrl = TextEditingController();
   String theme = 'midnight';
   String photoUrl = '';
   PhotoFrame frame = const PhotoFrame();
@@ -105,7 +107,9 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
       theme = e.inviteTheme;
       photoUrl = e.invitePhoto;
       frame = e.invitePhotoFrame;
-      publishing = InviteService.publish(e, hostName: _hostName(state), message: messageCtrl.text);
+      hostCtrl.text = e.inviteHost.isNotEmpty ? e.inviteHost : _accountName(state);
+      extraCtrl.text = e.inviteExtra;
+      publishing = InviteService.publish(e, hostName: _host, message: messageCtrl.text);
       publishing!.then((id) {
         if (!mounted) return;
         setState(() {
@@ -122,6 +126,8 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
     tabs.dispose();
     titleCtrl.dispose();
     messageCtrl.dispose();
+    hostCtrl.dispose();
+    extraCtrl.dispose();
     super.dispose();
   }
 
@@ -134,13 +140,17 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
         _ => 'We\'d love to see you there! 🎉',
       };
 
-  String _hostName(AppState s) {
+  /// A real name from the account (never the email), or ''.
+  static String _accountName(AppState s) {
     final n = (s.profile?['name'] as String?)?.trim();
-    if (n != null && n.isNotEmpty) return n;
+    if (n != null && n.isNotEmpty && !n.contains('@')) return n;
     final d = s.accounts?.user?.displayName?.trim();
-    if (d != null && d.isNotEmpty) return d;
-    return (s.email ?? 'Your host').split('@').first;
+    if (d != null && d.isNotEmpty && !d.contains('@')) return d;
+    return '';
   }
+
+  /// "Hosted by" on the invitation, as the host typed it.
+  String get _host => hostCtrl.text.trim();
 
   // ---------------------------------------------------------------- design
 
@@ -161,8 +171,10 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
         e.inviteTheme = theme;
         e.invitePhoto = photoUrl;
         e.invitePhotoFrame = frame;
+        e.inviteHost = _host;
+        e.inviteExtra = extraCtrl.text.trim();
       });
-      await InviteService.publish(state.event!, hostName: _hostName(state), message: messageCtrl.text);
+      await InviteService.publish(state.event!, hostName: _host, message: messageCtrl.text);
       if (mounted) {
         setState(() => dirty = false);
         if (!quiet) toast(context, 'Invitation saved. Guests see the new design.');
@@ -344,10 +356,11 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
     final card = InvitationCard(
       theme: inviteThemeFor(theme),
       title: titleCtrl.text.trim().isEmpty ? e.title : titleCtrl.text.trim(),
-      hostName: _hostName(state),
+      hostName: _host,
       when: inviteWhen(e),
       place: invitePlace(e),
       message: messageCtrl.text,
+      extra: extraCtrl.text,
       photoUrl: photoUrl,
       photoBytes: photoBytes,
       frame: frame,
@@ -360,7 +373,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
   String _text(AppState state, {Invitee? guest}) => inviteText(
         state.event!,
         inviteUrl(inviteId!, guest: guest?.guestKey ?? ''),
-        hostName: _hostName(state),
+        hostName: _host,
         message: messageCtrl.text,
       );
 
@@ -818,6 +831,18 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
         onChanged: (_) => _changed(() {}),
       ),
       const SizedBox(height: 8),
+      const SectionLabel('Hosted by'),
+      TextField(
+        controller: hostCtrl,
+        maxLength: 80,
+        textCapitalization: TextCapitalization.words,
+        decoration: const InputDecoration(
+          hintText: 'e.g. Krishna & Anu, or The Mula family',
+          helperText: 'Your names as guests know you. Leave empty to hide.',
+        ),
+        onChanged: (_) => _changed(() {}),
+      ),
+      const SizedBox(height: 8),
       const SectionLabel('Message'),
       TextField(
         controller: messageCtrl,
@@ -843,6 +868,31 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
         ],
       ),
       const SizedBox(height: 18),
+      const SectionLabel('More details (optional)'),
+      TextField(
+        controller: extraCtrl,
+        minLines: 2,
+        maxLines: 5,
+        maxLength: 300,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: const InputDecoration(hintText: 'Dress code, parking, gift registry, RSVP by, contact number…'),
+        onChanged: (_) => _changed(() {}),
+      ),
+      Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: [
+          for (final idea in const ['Dress code: festive 👗', 'Parking on the street 🚗', 'No gifts please 🎁', 'Kids welcome 🧒'])
+            ActionChip(
+              label: Text(idea, style: body(12)),
+              onPressed: () => _changed(() {
+                final now = extraCtrl.text.trim();
+                extraCtrl.text = now.isEmpty ? idea : '$now\n$idea';
+              }),
+            ),
+        ],
+      ),
+      const SizedBox(height: 18),
       Text('Date, time and place come from your plan. Edit them with ✏️ on the Plan page.', style: body(12, color: HC.muted)),
       if (dirty) ...[
         const SizedBox(height: 14),
@@ -857,10 +907,8 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
 
   static List<String> _messageIdeas(EventDetails e) => [
         _defaultMessage(e),
-        'Kids welcome! 🧒',
         'Dinner will be served. 🍽️',
         'Your presence is the only gift we need. 💛',
-        'Parking on the street. 🚗',
         'Please RSVP by ${DateFormat('MMM d').format(e.date.subtract(const Duration(days: 7)))}.',
       ];
 

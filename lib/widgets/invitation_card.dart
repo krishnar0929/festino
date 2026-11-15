@@ -98,6 +98,7 @@ class InvitationCard extends StatelessWidget {
     this.hostName = '',
     this.place = '',
     this.message = '',
+    this.extra = '',
     this.photoUrl = '',
     this.photoBytes,
     this.onPlaceTap,
@@ -112,6 +113,9 @@ class InvitationCard extends StatelessWidget {
   final String hostName;
   final String place;
   final String message;
+
+  /// Any other text (dress code, parking, RSVP by…), shown under the message.
+  final String extra;
   final String photoUrl;
 
   /// A photo picked on this device (shown before or instead of [photoUrl]).
@@ -157,6 +161,17 @@ class InvitationCard extends StatelessWidget {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(color: t.panel, borderRadius: BorderRadius.circular(16)),
                     child: Text(message.trim(), style: body(15, color: t.text)),
+                  ),
+                ],
+                if (extra.trim().isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.info_outline_rounded, color: t.accent, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(extra.trim(), style: body(14, color: t.text))),
+                    ],
                   ),
                 ],
               ],

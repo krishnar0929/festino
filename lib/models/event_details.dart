@@ -80,6 +80,8 @@ class EventDetails {
     this.inviteTitle = '',
     this.invitePhoto = '',
     this.inviteTheme = 'midnight',
+    this.inviteHost = '',
+    this.inviteExtra = '',
     this.invitePhotoFrame = const PhotoFrame(),
     this.budget,
     this.venue,
@@ -146,6 +148,12 @@ class EventDetails {
   /// Look of the invitation card (see inviteThemes).
   String inviteTheme;
 
+  /// "Hosted by" names on the invitation ('' = not shown).
+  String inviteHost;
+
+  /// Any other text on the invitation: dress code, parking, RSVP by…
+  String inviteExtra;
+
   /// How the invitation photo is cropped.
   PhotoFrame invitePhotoFrame;
 
@@ -200,6 +208,8 @@ class EventDetails {
         'inviteTitle': inviteTitle,
         'invitePhoto': invitePhoto,
         'inviteTheme': inviteTheme,
+        'inviteHost': inviteHost,
+        'inviteExtra': inviteExtra,
         'invitePhotoFrame': invitePhotoFrame.toMap(),
         'taskReminders': {for (final r in taskReminders.entries) r.key: r.value.toUtc().toIso8601String()},
         'budget': budget,
@@ -236,6 +246,8 @@ class EventDetails {
       inviteTitle: m['inviteTitle'] as String? ?? '',
       invitePhoto: m['invitePhoto'] as String? ?? '',
       inviteTheme: m['inviteTheme'] as String? ?? 'midnight',
+      inviteHost: m['inviteHost'] as String? ?? '',
+      inviteExtra: m['inviteExtra'] as String? ?? '',
       invitePhotoFrame: PhotoFrame.fromMap(m['invitePhotoFrame']),
       taskReminders: {
         for (final r in (m['taskReminders'] as Map? ?? const {}).entries)

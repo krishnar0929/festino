@@ -153,4 +153,13 @@ void main() {
     final ev = EventDetails.fromMap({...e.toMap(), 'invitePhotoFrame': c.toMap()});
     expect(ev.invitePhotoFrame.shape, 'square');
   });
+
+  test('hosted-by names and extra details go on the invitation', () {
+    final ev = EventDetails.fromMap({...e.toMap(), 'inviteHost': 'Krishna & Anu', 'inviteExtra': 'Dress code: festive'});
+    expect((ev.inviteHost, ev.inviteExtra), ('Krishna & Anu', 'Dress code: festive'));
+    expect(inviteText(ev, inviteUrl('x'), hostName: ev.inviteHost), allOf(contains('Dress code: festive'), contains('— Krishna & Anu')));
+    expect(inviteText(e, inviteUrl('x')), isNot(contains('—')));
+    final info = InviteInfo.fromDoc('x', {'title': 'Party', 'hostName': ''});
+    expect(info.hostLabel, 'your host');
+  });
 }

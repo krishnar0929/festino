@@ -81,7 +81,7 @@ class _RsvpScreenState extends State<RsvpScreen> {
   Future<void> _send(InviteInfo info) async {
     final s = status;
     if (nameCtrl.text.trim().isEmpty) {
-      setState(() => error = 'Please add your name so ${info.hostName} knows who\'s coming.');
+      setState(() => error = 'Please add your name so ${info.hostLabel} knows who\'s coming.');
       return;
     }
     if (s == null) {
@@ -105,7 +105,7 @@ class _RsvpScreenState extends State<RsvpScreen> {
         sent = true;
       });
       if (s == RsvpStatus.going) {
-        Celebration.show(overlay, title: 'See you there!', message: '${info.hostName} will be thrilled. 🎉', emoji: '🥳');
+        Celebration.show(overlay, title: 'See you there!', message: '${info.hostName.trim().isEmpty ? 'Your host' : info.hostName} will be thrilled. 🎉', emoji: '🥳');
       }
     } catch (e) {
       if (mounted) {
@@ -119,7 +119,7 @@ class _RsvpScreenState extends State<RsvpScreen> {
 
   Future<void> _claim(InviteInfo info, PitchItem it) async {
     if (nameCtrl.text.trim().isEmpty) {
-      toast(context, 'Add your name above first, so ${info.hostName} knows who\'s bringing it.');
+      toast(context, 'Add your name above first, so ${info.hostLabel} knows who\'s bringing it.');
       return;
     }
     final ok = await InviteService.claim(info.id, it.id, nameCtrl.text);
@@ -154,7 +154,7 @@ class _RsvpScreenState extends State<RsvpScreen> {
                 ],
               ),
               const SizedBox(height: 4),
-              Text('Want to help ${info.hostName}? Pick something to bring or a way to help.', style: body(13, color: HC.muted)),
+              Text('Want to help ${info.hostLabel}? Pick something to bring or a way to help.', style: body(13, color: HC.muted)),
               const SizedBox(height: 6),
               ClipRRect(
                 borderRadius: BorderRadius.circular(6),
@@ -220,6 +220,7 @@ class _RsvpScreenState extends State<RsvpScreen> {
                     when: info.whenLabel,
                     place: info.venueAddress.isNotEmpty ? info.venueAddress : info.venue,
                     message: info.message,
+                    extra: info.extra,
                     photoUrl: info.photoUrl,
                     frame: info.photoFrame,
                     onPlaceTap: info.mapUrl == null ? null : () => openLink(context, info.mapUrl!),
