@@ -6,12 +6,16 @@ import '../services/invite_service.dart';
 import '../theme.dart';
 import '../widgets/celebration.dart';
 import '../widgets/common.dart';
+import '../widgets/invitation_card.dart';
 
 /// What a guest sees when they open an invite link
 /// (https://hoopla-894ca.web.app/?invite=...): the invite card and an RSVP form.
 /// No app or account needed.
 class RsvpScreen extends StatefulWidget {
-  const RsvpScreen({super.key, required this.inviteId, this.onPlanOwn});
+  const RsvpScreen({super.key, required this.inviteId, this.onPlanOwn, this.guestKey = ''});
+
+  /// From a personal invite link (&g=...), so the host sees this reply next to the right guest.
+  final String guestKey;
   final String inviteId;
 
   /// "Plan your own party with Hoopla".
@@ -90,7 +94,7 @@ class _RsvpScreenState extends State<RsvpScreen> {
       error = null;
     });
     try {
-      await InviteService.reply(info.id, name: nameCtrl.text, status: s, adults: adults, kids: kids, note: noteCtrl.text, diet: diet.toList());
+      await InviteService.reply(info.id, name: nameCtrl.text, status: s, adults: adults, kids: kids, note: noteCtrl.text, diet: diet.toList(), guestKey: widget.guestKey);
       myUid = FirebaseAuth.instance.currentUser?.uid;
       try {
         await (await SharedPreferences.getInstance()).setString(_nameKey, nameCtrl.text.trim());
@@ -209,7 +213,16 @@ class _RsvpScreenState extends State<RsvpScreen> {
                     const Align(alignment: Alignment.centerLeft, child: BackArrow()),
                     const SizedBox(height: 10),
                   ],
-                  _InviteCard(info: info),
+                  InvitationCard(
+                    theme: inviteThemeFor(info.theme),
+                    title: info.title,
+                    hostName: info.hostName,
+                    when: info.whenLabel,
+                    place: info.venueAddress.isNotEmpty ? info.venueAddress : info.venue,
+                    message: info.message,
+                    photoUrl: info.photoUrl,
+                    onPlaceTap: info.mapUrl == null ? null : () => openLink(context, info.mapUrl!),
+                  ),
                   const SizedBox(height: 18),
                   if (sent && status != null) ...[
                     CardBox(
@@ -322,73 +335,6 @@ class _RsvpScreenState extends State<RsvpScreen> {
           );
         },
       ),
-    );
-  }
-}
-
-class _InviteCard extends StatelessWidget {
-  const _InviteCard({required this.info});
-  final InviteInfo info;
-
-  @override
-  Widget build(BuildContext context) {
-    final map = info.mapUrl;
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [HC.ink, Color(0xFF3B2C8F)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('YOU\'RE INVITED', style: overline(color: HC.lime)),
-          const SizedBox(height: 8),
-          Text(info.title, style: display(30, color: Colors.white)),
-          const SizedBox(height: 4),
-          Text('Hosted by ${info.hostName}', style: body(14, color: HC.nightMuted)),
-          const SizedBox(height: 18),
-          _Line(icon: Icons.event_rounded, text: info.whenLabel),
-          if (info.venue.isNotEmpty || info.venueAddress.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            InkWell(
-              onTap: map == null ? null : () => openLink(context, map),
-              child: _Line(icon: Icons.place_rounded, text: info.venueAddress.isNotEmpty ? info.venueAddress : info.venue, link: map != null),
-            ),
-          ],
-          if (info.message.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: const Color(0x1FFFFFFF), borderRadius: BorderRadius.circular(16)),
-              child: Text(info.message, style: body(14, color: Colors.white)),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _Line extends StatelessWidget {
-  const _Line({required this.icon, required this.text, this.link = false});
-  final IconData icon;
-  final String text;
-  final bool link;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: HC.lime, size: 20),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(text,
-              style: body(15, color: Colors.white, weight: FontWeight.w600).copyWith(decoration: link ? TextDecoration.underline : null, decorationColor: Colors.white54)),
-        ),
-      ],
     );
   }
 }

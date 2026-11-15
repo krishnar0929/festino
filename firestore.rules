@@ -199,7 +199,9 @@ service cloud.firestore {
         && inviteId == request.auth.uid + '_' + request.resource.data.eventId
         && request.resource.data.message is string && request.resource.data.message.size() <= 300
         && request.resource.data.title is string && request.resource.data.title.size() <= 120
-        && request.resource.data.hostName is string && request.resource.data.hostName.size() <= 80;
+        && request.resource.data.hostName is string && request.resource.data.hostName.size() <= 80
+        && (!('photoUrl' in request.resource.data) || (request.resource.data.photoUrl is string && request.resource.data.photoUrl.size() <= 600))
+        && (!('theme' in request.resource.data) || (request.resource.data.theme is string && request.resource.data.theme.size() <= 20));
       allow delete: if signedIn() && resource.data.hostUid == request.auth.uid;
 
       match /rsvps/{guestUid} {
@@ -207,7 +209,8 @@ service cloud.firestore {
           || (signedIn() && get(/databases/$(database)/documents/invites/$(inviteId)).data.hostUid == request.auth.uid);
         allow create, update: if isOwner(guestUid)
           && exists(/databases/$(database)/documents/invites/$(inviteId))
-          && request.resource.data.keys().hasOnly(['name', 'status', 'adults', 'kids', 'note', 'diet', 'updatedAt'])
+          && request.resource.data.keys().hasOnly(['name', 'status', 'adults', 'kids', 'note', 'diet', 'guestKey', 'updatedAt'])
+          && (!('guestKey' in request.resource.data) || (request.resource.data.guestKey is string && request.resource.data.guestKey.size() <= 16))
           && (!('diet' in request.resource.data) || (request.resource.data.diet is list && request.resource.data.diet.size() <= 8))
           && request.resource.data.status in ['going', 'maybe', 'no']
           && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 60
