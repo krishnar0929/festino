@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoopla/models/event_details.dart';
+import 'package:hoopla/models/photo_frame.dart';
 import 'package:hoopla/services/invite_service.dart';
 import 'package:hoopla/services/location_service.dart';
 
@@ -138,5 +139,18 @@ void main() {
     expect(ev.inviteTheme, 'confetti');
     expect(e.inviteHeadline, "Vir's 1st birthday");
     expect(inviteText(ev, inviteUrl('x')), contains('Vir turns 1!'));
+  });
+
+  test('photo crop is saved and kept in range', () {
+    const f = PhotoFrame();
+    expect(f.whole, isTrue);
+    expect(f.aspect, isNull);
+    final c = f.copyWith(shape: 'square', x: 5, y: -0.4, zoom: 9);
+    expect((c.x, c.y, c.zoom, c.aspect), (1.0, -0.4, 3.0, 1.0));
+    final back = PhotoFrame.fromMap(c.toMap());
+    expect((back.shape, back.x, back.y, back.zoom), ('square', 1.0, -0.4, 3.0));
+    expect(PhotoFrame.fromMap(null).whole, isTrue);
+    final ev = EventDetails.fromMap({...e.toMap(), 'invitePhotoFrame': c.toMap()});
+    expect(ev.invitePhotoFrame.shape, 'square');
   });
 }

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 
 import '../models/event_details.dart';
+import '../models/photo_frame.dart';
 
 /// Someone the host invited (from contacts, or typed in).
 class Invitee {
@@ -343,7 +344,10 @@ class InviteInfo {
     this.lng,
     this.photoUrl = '',
     this.theme = 'midnight',
+    this.photoFrame = const PhotoFrame(),
   });
+
+  final PhotoFrame photoFrame;
 
   final String photoUrl;
   final String theme;
@@ -402,6 +406,7 @@ class InviteInfo {
         lng: (m['lng'] as num?)?.toDouble(),
         photoUrl: m['photoUrl'] as String? ?? '',
         theme: m['theme'] as String? ?? 'midnight',
+        photoFrame: PhotoFrame.fromMap(m['photoFrame']),
       );
 }
 
@@ -442,6 +447,7 @@ class InviteService {
       'title': e.inviteHeadline,
       'photoUrl': e.invitePhoto,
       'theme': e.inviteTheme,
+      'photoFrame': e.invitePhotoFrame.toMap(),
       'occasion': e.occasion,
       'date': DateFormat('yyyy-MM-dd').format(e.date),
       'startMinutes': e.startMinutes,

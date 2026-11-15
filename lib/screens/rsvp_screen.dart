@@ -221,6 +221,7 @@ class _RsvpScreenState extends State<RsvpScreen> {
                     place: info.venueAddress.isNotEmpty ? info.venueAddress : info.venue,
                     message: info.message,
                     photoUrl: info.photoUrl,
+                    frame: info.photoFrame,
                     onPlaceTap: info.mapUrl == null ? null : () => openLink(context, info.mapUrl!),
                   ),
                   const SizedBox(height: 18),

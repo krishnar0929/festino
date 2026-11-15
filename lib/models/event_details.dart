@@ -1,5 +1,6 @@
 import '../services/invite_service.dart';
 import '../services/location_service.dart';
+import 'photo_frame.dart';
 
 /// Who the event is mainly for. Drives which games get suggested.
 enum Audience { kids, adults, everyone }
@@ -79,6 +80,7 @@ class EventDetails {
     this.inviteTitle = '',
     this.invitePhoto = '',
     this.inviteTheme = 'midnight',
+    this.invitePhotoFrame = const PhotoFrame(),
     this.budget,
     this.venue,
     this.status = 'active',
@@ -144,6 +146,9 @@ class EventDetails {
   /// Look of the invitation card (see inviteThemes).
   String inviteTheme;
 
+  /// How the invitation photo is cropped.
+  PhotoFrame invitePhotoFrame;
+
   /// What the invitation says at the top.
   String get inviteHeadline => inviteTitle.trim().isNotEmpty ? inviteTitle.trim() : title;
 
@@ -195,6 +200,7 @@ class EventDetails {
         'inviteTitle': inviteTitle,
         'invitePhoto': invitePhoto,
         'inviteTheme': inviteTheme,
+        'invitePhotoFrame': invitePhotoFrame.toMap(),
         'taskReminders': {for (final r in taskReminders.entries) r.key: r.value.toUtc().toIso8601String()},
         'budget': budget,
         'venue': venue?.toMap(),
@@ -230,6 +236,7 @@ class EventDetails {
       inviteTitle: m['inviteTitle'] as String? ?? '',
       invitePhoto: m['invitePhoto'] as String? ?? '',
       inviteTheme: m['inviteTheme'] as String? ?? 'midnight',
+      invitePhotoFrame: PhotoFrame.fromMap(m['invitePhotoFrame']),
       taskReminders: {
         for (final r in (m['taskReminders'] as Map? ?? const {}).entries)
           if (DateTime.tryParse('${r.value}') != null) '${r.key}': DateTime.parse('${r.value}').toLocal(),

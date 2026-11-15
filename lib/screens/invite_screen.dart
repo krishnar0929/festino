@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../models/event_details.dart';
+import '../models/photo_frame.dart';
 import '../services/invite_service.dart';
 import '../services/plan_generator.dart';
 import '../state/app_state.dart';
@@ -67,6 +68,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
   final messageCtrl = TextEditingController();
   String theme = 'midnight';
   String photoUrl = '';
+  PhotoFrame frame = const PhotoFrame();
   Uint8List? photoBytes;
   bool uploading = false;
   bool dirty = false;
@@ -102,6 +104,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
       messageCtrl.text = e.inviteMessage.isNotEmpty ? e.inviteMessage : _defaultMessage(e);
       theme = e.inviteTheme;
       photoUrl = e.invitePhoto;
+      frame = e.invitePhotoFrame;
       publishing = InviteService.publish(e, hostName: _hostName(state), message: messageCtrl.text);
       publishing!.then((id) {
         if (!mounted) return;
@@ -157,6 +160,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
         e.inviteMessage = messageCtrl.text.trim();
         e.inviteTheme = theme;
         e.invitePhoto = photoUrl;
+        e.invitePhotoFrame = frame;
       });
       await InviteService.publish(state.event!, hostName: _hostName(state), message: messageCtrl.text);
       if (mounted) {
@@ -203,6 +207,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
       final bytes = await file.readAsBytes();
       setState(() {
         photoBytes = bytes;
+        frame = const PhotoFrame();
         uploading = true;
       });
       final url = await InviteService.uploadPhoto(state.event!.id, bytes);
@@ -211,7 +216,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
       dirty = true;
       await _saveDesign(quiet: true);
       InviteService.deletePhoto(old);
-      if (mounted) toast(context, 'Photo added to your invitation.');
+      if (mounted) toast(context, 'Photo added. Tap "Adjust" to crop or zoom it.');
     } catch (err) {
       if (mounted) {
         setState(() => photoBytes = null);
@@ -233,6 +238,108 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
     InviteService.deletePhoto(old);
   }
 
+  /// Crop the photo: pick a shape, drag to choose what shows, pinch or slide to zoom.
+  Future<void> _adjustPhoto() async {
+    var f = frame;
+    var startZoom = f.zoom;
+    final result = await showModalBottomSheet<PhotoFrame>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: HC.ground,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(child: Text('Adjust photo', style: display(22))),
+                  TextButton(onPressed: () => setS(() => f = const PhotoFrame()), child: const Text('Reset')),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final s in PhotoFrame.shapes.entries)
+                    Pill(
+                      label: s.value,
+                      small: true,
+                      selectedColor: HC.violet,
+                      selected: f.shape == s.key,
+                      onTap: () => setS(() => f = f.copyWith(shape: s.key)),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: LayoutBuilder(
+                  builder: (ctx, box) => GestureDetector(
+                    onScaleStart: (_) => startZoom = f.zoom,
+                    onScaleUpdate: f.whole
+                        ? null
+                        : (d) => setS(() {
+                              final half = box.maxWidth / 2;
+                              f = f.copyWith(
+                                x: f.x - d.focalPointDelta.dx / half / f.zoom,
+                                y: f.y - d.focalPointDelta.dy / half / f.zoom,
+                                zoom: d.pointerCount > 1 ? startZoom * d.scale : f.zoom,
+                              );
+                            }),
+                    child: SingleChildScrollView(
+                      physics: const NeverScrollableScrollPhysics(),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: FramedPhoto(frame: f, bytes: photoBytes, url: photoUrl),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              if (f.whole)
+                Text('The whole photo shows, nothing is cut. Pick Square, Wide or Tall to crop.', style: body(13, color: HC.muted))
+              else ...[
+                Text('Drag the photo to choose what shows. Pinch or use the slider to zoom.', style: body(13, color: HC.muted)),
+                Row(
+                  children: [
+                    const Icon(Icons.zoom_out_rounded, color: HC.muted),
+                    Expanded(
+                      child: Slider(
+                        value: f.zoom,
+                        min: 1,
+                        max: 3,
+                        activeColor: HC.violet,
+                        onChanged: (v) => setS(() => f = f.copyWith(zoom: v)),
+                      ),
+                    ),
+                    const Icon(Icons.zoom_in_rounded, color: HC.muted),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 8),
+              FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: HC.violet, minimumSize: const Size(0, 50)),
+                onPressed: () => Navigator.pop(ctx, f),
+                child: const Text('Done'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      frame = result;
+      dirty = true;
+    });
+    await _saveDesign(quiet: true);
+  }
+
   Widget _card(EventDetails e, AppState state, {GlobalKey? key}) {
     final card = InvitationCard(
       theme: inviteThemeFor(theme),
@@ -243,6 +350,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
       message: messageCtrl.text,
       photoUrl: photoUrl,
       photoBytes: photoBytes,
+      frame: frame,
     );
     return key == null ? card : RepaintBoundary(key: key, child: card);
   }
@@ -643,10 +751,22 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
           ),
           if (hasPhoto) ...[
             const SizedBox(width: 8),
-            TextButton(onPressed: uploading ? null : _removePhoto, child: const Text('Remove')),
+            Expanded(
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(minimumSize: const Size(0, 46), side: const BorderSide(color: HC.line)),
+                onPressed: uploading ? null : _adjustPhoto,
+                icon: const Icon(Icons.crop_rounded, size: 20, color: HC.violet),
+                label: Text('Adjust', style: body(14, weight: FontWeight.w600)),
+              ),
+            ),
           ],
         ],
       ),
+      if (hasPhoto)
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(onPressed: uploading ? null : _removePhoto, child: const Text('Remove photo')),
+        ),
       const SizedBox(height: 4),
       Text('A photo of the birthday star, the couple, your new home…', style: body(12, color: HC.muted)),
       const SizedBox(height: 20),

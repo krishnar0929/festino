@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../models/photo_frame.dart';
 import '../theme.dart';
 
 /// A look for the invitation card.
@@ -100,7 +101,10 @@ class InvitationCard extends StatelessWidget {
     this.photoUrl = '',
     this.photoBytes,
     this.onPlaceTap,
+    this.frame = const PhotoFrame(),
   });
+
+  final PhotoFrame frame;
 
   final InviteTheme theme;
   final String title;
@@ -127,18 +131,7 @@ class InvitationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (hasPhoto)
-            AspectRatio(
-              aspectRatio: 4 / 3,
-              child: photoBytes != null
-                  ? Image.memory(photoBytes!, fit: BoxFit.cover)
-                  : Image.network(
-                      photoUrl,
-                      fit: BoxFit.cover,
-                      webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
-                      errorBuilder: (_, __, ___) => Container(color: t.panel, alignment: Alignment.center, child: const Text('🎉', style: TextStyle(fontSize: 48))),
-                    ),
-            ),
+          if (hasPhoto) FramedPhoto(frame: frame, bytes: photoBytes, url: photoUrl, fallback: t.panel),
           Padding(
             padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
             child: Column(
@@ -197,6 +190,56 @@ class _Line extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+
+/// The invitation photo, cropped the way the host set it up.
+/// "Whole photo" shows all of it at its own shape; other shapes fill the frame,
+/// showing the part at [PhotoFrame.x]/[PhotoFrame.y], zoomed by [PhotoFrame.zoom].
+class FramedPhoto extends StatelessWidget {
+  const FramedPhoto({super.key, required this.frame, this.bytes, this.url = '', this.fallback = HC.track});
+
+  final PhotoFrame frame;
+  final Uint8List? bytes;
+  final String url;
+  final Color fallback;
+
+  Widget _image(BoxFit fit, Alignment align) {
+    if (bytes != null) return Image.memory(bytes!, fit: fit, alignment: align, width: double.infinity);
+    return Image.network(
+      url,
+      fit: fit,
+      alignment: align,
+      width: double.infinity,
+      webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
+      errorBuilder: (_, __, ___) => AspectRatio(
+        aspectRatio: 4 / 3,
+        child: Container(color: fallback, alignment: Alignment.center, child: const Text('🎉', style: TextStyle(fontSize: 48))),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (frame.whole) {
+      // Whole photo: its own shape, nothing cut (very tall photos are capped).
+      return ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 640),
+        child: _image(BoxFit.contain, Alignment.center),
+      );
+    }
+    final align = Alignment(frame.x, frame.y);
+    return AspectRatio(
+      aspectRatio: frame.aspect!,
+      child: ClipRect(
+        child: Transform.scale(
+          scale: frame.zoom,
+          alignment: align,
+          child: SizedBox.expand(child: _image(BoxFit.cover, align)),
+        ),
+      ),
     );
   }
 }
