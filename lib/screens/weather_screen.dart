@@ -57,25 +57,6 @@ class _WeatherReportScreenState extends State<WeatherReportScreen> {
     if (p != null) await state.update((e) => e.venue = p);
   }
 
-  void _changeDate(EventDetails e) => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SetupScreen(existing: e)));
-
-  Future<void> _moveIndoors() async {
-    await AppScope.of(context).update((e) => e.indoor = true);
-    if (mounted) toast(context, 'Moved indoors. Your plan and games now fit an indoor party.');
-  }
-
-  Future<void> _addTent() async {
-    await AppScope.of(context).update((e) {
-      if (!e.customTasks.any((t) => t.id == 'weather_tent')) {
-        e.customTasks.add(CustomTask(id: 'weather_tent', label: 'Book a tent or canopy (rain backup)', daysBefore: 10));
-      }
-      final items = PlanGenerator.budgetItems(e);
-      if (!items.any((b) => b.id == 'weather_tent')) items.add(BudgetItem(id: 'weather_tent', label: 'Tent / canopy rental', planned: 150));
-      e.budgetItems = items;
-    });
-    if (mounted) toast(context, 'Added "Book a tent" to your checklist and a tent line to your budget.');
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
@@ -163,7 +144,7 @@ class _WeatherReportScreenState extends State<WeatherReportScreen> {
         ),
         if (v.level != WeatherLevel.good && !e.indoor) ...[
           const SizedBox(height: 12),
-          _fixes(e, risky: v.level == WeatherLevel.risky),
+          WeatherFixes(event: e, risky: v.level == WeatherLevel.risky),
         ],
         if (w.hours.isNotEmpty) ...[
           const SizedBox(height: 20),
@@ -236,7 +217,7 @@ class _WeatherReportScreenState extends State<WeatherReportScreen> {
                 ),
                 if (v.level != WeatherLevel.good && !e.indoor) ...[
                   const SizedBox(height: 12),
-                  _fixes(e, risky: false),
+                  WeatherFixes(event: e, risky: false),
                 ],
                 const SizedBox(height: 10),
                 Text('Based on ${DateFormat('MMMM d').format(e.date)} ±2 days over the past ${t.years} years.', style: body(12, color: HC.muted)),
@@ -245,36 +226,6 @@ class _WeatherReportScreenState extends State<WeatherReportScreen> {
           },
         ),
       ],
-    );
-  }
-
-  Widget _fixes(EventDetails e, {required bool risky}) {
-    final tent = e.customTasks.any((t) => t.id == 'weather_tent');
-    return CardBox(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(risky ? 'Please review your plan' : 'Have a backup ready', style: body(15, weight: FontWeight.w700)),
-          const SizedBox(height: 2),
-          Text(risky ? 'Your party is outdoors. A quick change now saves the day.' : 'Probably fine, but it\'s good to be ready.', style: body(13, color: HC.muted)),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _Fix(icon: Icons.home_rounded, label: 'Move indoors', onTap: _moveIndoors),
-              _Fix(icon: Icons.event_rounded, label: 'Change date', onTap: () => _changeDate(e)),
-              _Fix(icon: Icons.place_rounded, label: 'Change venue', onTap: _changeVenue),
-              if (!tent) _Fix(icon: Icons.umbrella_rounded, label: 'Add a tent to my plan', onTap: _addTent),
-            ],
-          ),
-          if (tent) ...[
-            const SizedBox(height: 8),
-            Text('✅ Tent is on your checklist and budget.', style: body(12, color: const Color(0xFF1F8A4C), weight: FontWeight.w600)),
-          ],
-        ],
-      ),
     );
   }
 }
@@ -444,6 +395,82 @@ class _AddVenue extends StatelessWidget {
           child: const Text('Add venue'),
         ),
       ],
+    );
+  }
+}
+
+
+/// "Please review your plan": one-tap fixes for weather that could spoil an outdoor party.
+/// Used on the Plan page (so nobody misses it) and in the full weather report.
+class WeatherFixes extends StatelessWidget {
+  const WeatherFixes({super.key, required this.event, required this.risky, this.compact = false});
+  final EventDetails event;
+  final bool risky;
+
+  /// Inside the Plan page's weather card: no box, no heading.
+  final bool compact;
+
+  Future<void> _moveIndoors(BuildContext context) async {
+    await AppScope.of(context).update((e) => e.indoor = true);
+    if (context.mounted) toast(context, 'Moved indoors. Your plan and games now fit an indoor party.');
+  }
+
+  Future<void> _changeVenue(BuildContext context) async {
+    final state = AppScope.of(context);
+    final p = await pickPlace(context);
+    if (p != null) await state.update((e) => e.venue = p);
+  }
+
+  void _changeDate(BuildContext context) =>
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SetupScreen(existing: event)));
+
+  Future<void> _addTent(BuildContext context) async {
+    await AppScope.of(context).update((e) {
+      if (!e.customTasks.any((t) => t.id == 'weather_tent')) {
+        e.customTasks.add(CustomTask(id: 'weather_tent', label: 'Book a tent or canopy (rain backup)', daysBefore: 10));
+      }
+      final items = PlanGenerator.budgetItems(e);
+      if (!items.any((b) => b.id == 'weather_tent')) items.add(BudgetItem(id: 'weather_tent', label: 'Tent / canopy rental', planned: 150));
+      e.budgetItems = items;
+    });
+    if (context.mounted) toast(context, 'Added "Book a tent" to your checklist and a tent line to your budget.');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tent = event.customTasks.any((t) => t.id == 'weather_tent');
+    final buttons = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        _Fix(icon: Icons.home_rounded, label: 'Move indoors', onTap: () => _moveIndoors(context)),
+        _Fix(icon: Icons.event_rounded, label: 'Change date', onTap: () => _changeDate(context)),
+        _Fix(icon: Icons.place_rounded, label: 'Change venue', onTap: () => _changeVenue(context)),
+        if (!tent) _Fix(icon: Icons.umbrella_rounded, label: 'Add a tent', onTap: () => _addTent(context)),
+      ],
+    );
+    final done = tent
+        ? Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text('✅ Tent is on your checklist and budget.', style: body(12, color: const Color(0xFF1F8A4C), weight: FontWeight.w600)),
+          )
+        : const SizedBox.shrink();
+    if (compact) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [buttons, done]);
+    }
+    return CardBox(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(risky ? 'Please review your plan' : 'Have a backup ready', style: body(15, weight: FontWeight.w700)),
+          const SizedBox(height: 2),
+          Text(risky ? 'Your party is outdoors. A quick change now saves the day.' : 'Probably fine, but it\'s good to be ready.', style: body(13, color: HC.muted)),
+          const SizedBox(height: 10),
+          buttons,
+          done,
+        ],
+      ),
     );
   }
 }
