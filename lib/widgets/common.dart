@@ -136,3 +136,28 @@ void toast(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(message)));
 }
+
+
+/// The one back button used across Hoopla: a round arrow at the top left.
+/// Pops the page, or runs [onPressed] when given.
+class BackArrow extends StatelessWidget {
+  const BackArrow({super.key, this.onPressed, this.color = HC.ink, this.tooltip = 'Back'});
+
+  final VoidCallback? onPressed;
+  final Color color;
+  final String tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      style: IconButton.styleFrom(
+        backgroundColor: color == HC.ink ? HC.card : Colors.white.withValues(alpha: 0.12),
+        side: color == HC.ink ? const BorderSide(color: HC.line) : BorderSide.none,
+        fixedSize: const Size(44, 44),
+      ),
+      onPressed: onPressed ?? () => Navigator.of(context).maybePop(),
+      icon: Icon(Icons.arrow_back_rounded, color: color, size: 22),
+    );
+  }
+}

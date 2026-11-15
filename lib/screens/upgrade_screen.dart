@@ -134,14 +134,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
               children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    tooltip: 'Close',
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded, color: Colors.white),
-                  ),
-                ),
+                const Align(alignment: Alignment.centerLeft, child: BackArrow(color: Colors.white)),
                 const SizedBox(height: 4),
                 Text('Choose your plan', style: display(32, color: Colors.white)),
                 const SizedBox(height: 6),

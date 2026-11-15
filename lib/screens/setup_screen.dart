@@ -247,12 +247,8 @@ class _SetupScreenState extends State<SetupScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
                   child: Row(
                     children: [
-                      if (Navigator.of(context).canPop())
-                        IconButton(
-                          tooltip: 'Back',
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.arrow_back_rounded),
-                        )
+                      if (canPop)
+                        const BackArrow()
                       else
                         const _Logo(),
                       const Spacer(),
@@ -269,7 +265,7 @@ class _SetupScreenState extends State<SetupScreen> {
                         )
                       else if (state.usingCloud)
                         TextButton(
-                          onPressed: () => Navigator.of(context).push(MaterialPageRoute<bool>(builder: (_) => const SignInScreen())),
+                          onPressed: () => Navigator.of(context).push(MaterialPageRoute<bool>(builder: (_) => const SignInScreen(startWithSignIn: true))),
                           child: Text('Sign in', style: body(15, weight: FontWeight.w600, color: HC.violet)),
                         ),
                     ],
