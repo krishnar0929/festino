@@ -119,6 +119,22 @@ void main() {
       expect(summarizeTypical(const [], fahrenheit: true), isNull);
     });
 
+    test('finds dry days closest to the party', () {
+      final days = parseOutlook({
+        'daily': {
+          'time': ['2027-02-24', '2027-02-25', '2027-02-26', '2027-02-27', '2027-02-28', '2027-03-01'],
+          'weather_code': [0, 61, 63, 95, 1, 2],
+          'temperature_2m_max': [60, 58, 55, 57, 62, 63],
+          'temperature_2m_min': [45, 44, 43, 44, 46, 47],
+          'precipitation_probability_max': [10, 70, 80, 20, 5, 15],
+        },
+      });
+      expect(days, hasLength(6));
+      final dry = drierDays(days, DateTime(2027, 2, 26), now: DateTime(2027, 2, 20));
+      expect(dry.map((d) => d.date.day), [28, 24, 1]);
+      expect(drierDays(days, DateTime(2027, 2, 26), now: DateTime(2027, 2, 27)).map((d) => d.date.day), [28, 1]);
+    });
+
     test('the forecast shows up 16 days before', () {
       expect(forecastFrom(DateTime(2026, 12, 14)), DateTime(2026, 11, 29));
     });

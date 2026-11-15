@@ -195,6 +195,54 @@ TypicalWeather? summarizeTypical(List<Map<String, dynamic>> years, {required boo
   return TypicalWeather(high: avg(highs), low: avg(lows), rainyShare: rainy / days, years: counted, fahrenheit: fahrenheit);
 }
 
+/// One day of the 16-day outlook (to find a drier day for the party).
+class DayOutlook {
+  const DayOutlook({required this.date, required this.code, required this.high, required this.low, required this.rainChance});
+  final DateTime date;
+  final int code;
+  final double high;
+  final double low;
+  final int rainChance;
+}
+
+List<DayOutlook> parseOutlook(Map<String, dynamic> json) {
+  final d = json['daily'] as Map<String, dynamic>?;
+  if (d == null) return const [];
+  final days = (d['time'] as List?) ?? const [];
+  num at(String k, int i) {
+    final l = (d[k] as List?) ?? const [];
+    return i < l.length && l[i] is num ? l[i] as num : 0;
+  }
+
+  return [
+    for (var i = 0; i < days.length; i++)
+      if (DateTime.tryParse('${days[i]}') != null)
+        DayOutlook(
+          date: DateTime.parse('${days[i]}'),
+          code: at('weather_code', i).toInt(),
+          high: at('temperature_2m_max', i).toDouble(),
+          low: at('temperature_2m_min', i).toDouble(),
+          rainChance: at('precipitation_probability_max', i).round(),
+        ),
+  ];
+}
+
+/// Dry days (under 30% rain, no storms or snow) closest to the party date, best first.
+List<DayOutlook> drierDays(List<DayOutlook> days, DateTime party, {DateTime? now, int take = 4}) {
+  final n = now ?? DateTime.now();
+  final today = DateTime(n.year, n.month, n.day);
+  final p = DateTime(party.year, party.month, party.day);
+  final ok = [
+    for (final d in days)
+      if (d.date.isAfter(today) && d.date != p && d.rainChance < 30 && !_stormy(d.code) && !_snowy(d.code)) d,
+  ];
+  ok.sort((a, b) {
+    final da = a.date.difference(p).inDays.abs(), db = b.date.difference(p).inDays.abs();
+    return da != db ? da.compareTo(db) : a.rainChance.compareTo(b.rainChance);
+  });
+  return ok.take(take).toList();
+}
+
 const forecastDays = 16;
 
 /// The day the forecast for [date] becomes available.
@@ -263,6 +311,21 @@ class WeatherService {
     })).timeout(const Duration(seconds: 10));
     if (res.statusCode != 200) throw StateError('Weather is unavailable right now.');
     return parseWeather(jsonDecode(res.body) as Map<String, dynamic>, e, fahrenheit: f);
+  }
+
+  /// The next 16 days at the venue, day by day.
+  static Future<List<DayOutlook>> outlook(Place venue) async {
+    final f = venue.usesFahrenheit;
+    final res = await http.get(Uri.https('api.open-meteo.com', '/v1/forecast', {
+      'latitude': venue.lat.toStringAsFixed(4),
+      'longitude': venue.lng.toStringAsFixed(4),
+      'daily': 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
+      'temperature_unit': f ? 'fahrenheit' : 'celsius',
+      'timezone': 'auto',
+      'forecast_days': '$forecastDays',
+    })).timeout(const Duration(seconds: 10));
+    if (res.statusCode != 200) throw StateError('Weather is unavailable right now.');
+    return parseOutlook(jsonDecode(res.body) as Map<String, dynamic>);
   }
 
   /// The usual weather around the party date over the past 5 years (±2 days each year).

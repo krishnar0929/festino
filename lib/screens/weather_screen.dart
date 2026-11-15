@@ -8,6 +8,7 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/place_picker.dart';
+import 'rain_plan_screen.dart';
 import 'setup_screen.dart';
 
 /// Party-day weather in full: hour by hour for the party, wind and sunset,
@@ -411,8 +412,12 @@ class WeatherFixes extends StatelessWidget {
   final bool compact;
 
   Future<void> _moveIndoors(BuildContext context) async {
-    await AppScope.of(context).update((e) => e.indoor = true);
-    if (context.mounted) toast(context, 'Moved indoors. Your plan and games now fit an indoor party.');
+    final state = AppScope.of(context);
+    final swaps = PlanGenerator.indoorSwaps(state.event!);
+    await state.update(PlanGenerator.moveIndoors);
+    if (context.mounted) {
+      toast(context, swaps.isEmpty ? 'Moved indoors. Your games already work inside.' : 'Moved indoors and swapped ${swaps.length} outdoor game${swaps.length == 1 ? '' : 's'} for indoor ones.');
+    }
   }
 
   Future<void> _changeVenue(BuildContext context) async {
@@ -443,6 +448,12 @@ class WeatherFixes extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: [
+        FilledButton.icon(
+          style: FilledButton.styleFrom(backgroundColor: HC.violet, minimumSize: const Size(0, 42)),
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const RainPlanScreen())),
+          icon: const Icon(Icons.alt_route_rounded, size: 18),
+          label: const Text('See Plan B'),
+        ),
         _Fix(icon: Icons.home_rounded, label: 'Move indoors', onTap: () => _moveIndoors(context)),
         _Fix(icon: Icons.event_rounded, label: 'Change date', onTap: () => _changeDate(context)),
         _Fix(icon: Icons.place_rounded, label: 'Change venue', onTap: () => _changeVenue(context)),
