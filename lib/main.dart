@@ -17,6 +17,7 @@ import 'services/shared_reels.dart';
 import 'services/search_log.dart';
 import 'state/app_state.dart';
 import 'theme.dart';
+import 'widgets/launch_intro.dart';
 import 'screens/rsvp_screen.dart';
 
 Future<void> main() async {
@@ -83,11 +84,20 @@ class _FestinoAppState extends State<FestinoApp> with WidgetsBindingObserver {
   AppState get state => widget.state;
   late String? _inviteId = widget.inviteId;
 
+  /// The branded opening screen: shown, then fading out, then gone.
+  bool _intro = true;
+  bool _introGone = false;
+
+  void _endIntro() {
+    if (mounted && _intro) setState(() => _intro = false);
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _collectSharedReels());
+    Future<void>.delayed(const Duration(milliseconds: 1400), _endIntro);
   }
 
   @override
@@ -130,6 +140,26 @@ class _FestinoAppState extends State<FestinoApp> with WidgetsBindingObserver {
           title: 'Festino',
           debugShowCheckedModeBanner: false,
           theme: buildTheme(),
+          builder: (context, child) => Stack(
+            children: [
+              child ?? const SizedBox.shrink(),
+              if (!_introGone)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    ignoring: !_intro,
+                    child: AnimatedOpacity(
+                      opacity: _intro ? 1 : 0,
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeOut,
+                      onEnd: () {
+                        if (!_intro && mounted) setState(() => _introGone = true);
+                      },
+                      child: LaunchIntro(onTap: _endIntro),
+                    ),
+                  ),
+                ),
+            ],
+          ),
           home: _inviteId != null
               ? RsvpScreen(inviteId: _inviteId!, guestKey: widget.guestKey, onPlanOwn: () => setState(() => _inviteId = null))
               : _home(state),
