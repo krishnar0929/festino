@@ -67,7 +67,8 @@ void main() {
       ..venueKind = 'restaurant'
       ..areaCost = 'higher';
     final back = EventDetails.fromMap(e.toMap());
-    expect((back.costLevel, back.costPicks, back.venueKind, back.areaCost), ('pro', ['food', 'dj'], 'restaurant', 'higher'));
+    expect((back.costLevel, back.venueKind, back.areaCost), ('pro', 'restaurant', 'higher'));
+    expect(back.costPicks, ['food', 'dj']);
     for (final i in costItems) {
       if (i.helper != null) expect(helperCategories.any((c) => c.label == i.helper), isTrue, reason: i.helper);
     }
