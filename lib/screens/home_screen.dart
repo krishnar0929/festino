@@ -10,6 +10,7 @@ import '../widgets/task_guide.dart';
 import '../widgets/weather_brief.dart';
 import 'account_sheet.dart';
 import 'cost_estimate_screen.dart';
+import 'event_actions.dart';
 import 'home_shell.dart';
 import 'setup_screen.dart';
 import 'weather_screen.dart';
@@ -101,7 +102,18 @@ class HomeScreen extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         _PartyCard(event: e, steps: steps, onTap: () => _push(context, SetupScreen(existing: e))),
-        const SizedBox(height: 18),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: () => showMyEvents(context),
+            icon: const Icon(Icons.event_note_outlined, size: 18),
+            label: Text(
+              'My events · ${state.upcomingEvents.length} upcoming · ${state.pastEvents.length + state.cancelledEvents.length} past',
+              style: body(13, color: HC.violet, weight: FontWeight.w600),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
         Text('NEXT UP', style: overline()),
         const SizedBox(height: 8),
         if (next == null)

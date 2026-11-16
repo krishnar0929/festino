@@ -6,6 +6,7 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import 'feedback_sheet.dart';
 import 'help_screen.dart';
+import 'my_events_screen.dart';
 import 'refer_screen.dart';
 import 'sign_in_screen.dart';
 import 'upgrade_screen.dart';
@@ -276,6 +277,13 @@ class _AccountSheet extends StatelessWidget {
         const _AppColorPicker(),
         const SizedBox(height: 18),
         _Group(title: 'Hoopla', rows: [
+          _Row(
+            icon: Icons.event_note_outlined,
+            color: const Color(0xFF1F6FEB),
+            title: 'My events',
+            subtitle: '${state.upcomingEvents.length} upcoming · ${state.pastEvents.length} celebrated · ${state.cancelledEvents.length} cancelled',
+            onTap: () => open(const MyEventsScreen()),
+          ),
           _Row(
             icon: Icons.celebration_outlined,
             color: HC.coral,
