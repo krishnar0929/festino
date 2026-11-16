@@ -10,7 +10,33 @@ class InviteVideo {
     this.clip = '',
     this.clipAutoplay = true,
     this.sendClip = true,
+    this.clipTheme = 'none',
+    this.clipMusic = 'original',
+    this.clipVoice = true,
   });
+
+  /// Fun themes laid over the host's own video (confetti, comic bursts, frames…).
+  static const clipThemes = {
+    'none': '🎬 Plain',
+    'confetti': '🎉 Confetti',
+    'comic': '💥 Comic pop',
+    'frame': '🎈 Party frame',
+    'star': '⭐ Movie star',
+    'hearts': '💖 Hearts',
+    'retro': '📼 Retro film',
+  };
+
+  /// One of [clipThemes].
+  final String clipTheme;
+
+  /// Background music for the own video: 'original' (just the video's sound),
+  /// a built-in track id, or a link to a song (https://… .mp3).
+  final String clipMusic;
+
+  /// Keep the video's own sound (voices) under the music.
+  final bool clipVoice;
+
+  bool get clipHasMusic => clipMusic != 'original' && clipMusic.isNotEmpty;
 
   /// Fun themes that turn the photos into a "star" video.
   static const looks = {
@@ -78,6 +104,9 @@ class InviteVideo {
         'clip': clip,
         'clipAutoplay': clipAutoplay,
         'sendClip': sendClip,
+        'clipTheme': clipTheme,
+        'clipMusic': clipMusic,
+        'clipVoice': clipVoice,
       };
 
   factory InviteVideo.fromMap(Object? v) {
@@ -88,6 +117,9 @@ class InviteVideo {
     final music = m is String && (m == 'none' || tracks.containsKey(m) || (m.startsWith('https://') && m.length <= 500)) ? m : defaultMusic;
     final look = v['look'] is String && looks.containsKey(v['look']) ? v['look'] as String : 'classic';
     final clip = v['clip'] is String && (v['clip'] as String).startsWith('https://') ? v['clip'] as String : '';
+    final ct = v['clipTheme'];
+    final cm = v['clipMusic'];
+    final clipMusic = cm is String && (cm == 'original' || tracks.containsKey(cm) || (cm.startsWith('https://') && cm.length <= 500)) ? cm : 'original';
     return InviteVideo(
       photos: strings(v['photos']).take(maxPhotos).toList(),
       captions: strings(v['captions']),
@@ -97,6 +129,9 @@ class InviteVideo {
       clip: clip,
       clipAutoplay: v['clipAutoplay'] is bool ? v['clipAutoplay'] as bool : true,
       sendClip: v['sendClip'] is bool ? v['sendClip'] as bool : true,
+      clipTheme: ct is String && clipThemes.containsKey(ct) ? ct : 'none',
+      clipMusic: clipMusic,
+      clipVoice: v['clipVoice'] is bool ? v['clipVoice'] as bool : true,
     );
   }
 }

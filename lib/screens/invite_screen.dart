@@ -478,7 +478,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
                       v.isEmpty
                           ? 'Turn 6–10 photos into a 30-second video guests watch when they open your invite.'
                           : v.hasClip
-                              ? 'Your own video · ${v.clipAutoplay ? 'plays when guests open the invite' : 'guests tap to play'}${v.sendClip ? ' · sent with the invitation' : ''}'
+                              ? 'Your own video${v.clipTheme == 'none' ? '' : ' · ${InviteVideo.clipThemes[v.clipTheme]}'}${v.clipHasMusic ? ' · 🎵 music' : ''} · ${v.clipAutoplay ? 'plays when guests open the invite' : 'guests tap to play'}'
                               : '${v.photos.length} photos · ${InviteVideo.looks[v.look]} · 🎵 ${v.musicLabel} · plays on your invite page',
                       style: body(12, color: HC.muted),
                     ),
@@ -489,7 +489,15 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
           ),
           if (v.hasClip) ...[
             const SizedBox(height: 12),
-            InviteClipPlayer(url: v.clip, autoplay: false),
+            InviteClipPlayer(
+              url: v.clip,
+              autoplay: false,
+              theme: v.clipTheme,
+              music: v.clipMusic,
+              keepVoice: v.clipVoice,
+              title: titleCtrl.text.trim().isEmpty ? e.title : titleCtrl.text.trim(),
+              when: '${DateFormat('EEE, MMM d').format(e.date)} · ${clockAmPm(e.startMinutes)}',
+            ),
           ] else if (!v.isEmpty) ...[
             const SizedBox(height: 12),
             InviteVideoPlayer(
