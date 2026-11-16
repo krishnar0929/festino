@@ -64,7 +64,7 @@ class ProviderDetailScreen extends StatelessWidget {
                   Flexible(child: Text(p.businessName, style: display(26))),
                   if (p.verified) ...[
                     const SizedBox(width: 6),
-                    const Icon(Icons.verified_rounded, color: HC.violet, semanticLabel: 'Verified'),
+                    Icon(Icons.verified_rounded, color: HC.violet, semanticLabel: 'Verified'),
                   ],
                 ],
               ),

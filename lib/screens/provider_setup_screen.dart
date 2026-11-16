@@ -393,7 +393,7 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
                       padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
                       child: Row(
                         children: [
-                          const Icon(Icons.play_circle_outline_rounded, color: HC.violet, size: 20),
+                          Icon(Icons.play_circle_outline_rounded, color: HC.violet, size: 20),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -521,14 +521,14 @@ class _GalleryEditor extends StatelessWidget {
       if (!full)
         Material(
           color: HC.card,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: HC.violet, width: 1.5)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: HC.violet, width: 1.5)),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: onAdd,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.add_photo_alternate_outlined, color: HC.violet, size: 28),
+                Icon(Icons.add_photo_alternate_outlined, color: HC.violet, size: 28),
                 const SizedBox(height: 4),
                 Text('Add photos', style: body(12, color: HC.violet, weight: FontWeight.w600)),
               ],

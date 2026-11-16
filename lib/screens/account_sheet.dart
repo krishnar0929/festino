@@ -273,6 +273,8 @@ class _AccountSheet extends StatelessWidget {
         ],
 
         const SizedBox(height: 18),
+        const _AppColorPicker(),
+        const SizedBox(height: 18),
         _Group(title: 'Hoopla', rows: [
           _Row(
             icon: Icons.celebration_outlined,
@@ -422,6 +424,84 @@ class _Row extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+
+/// Account → App color: pick the app's main color. It changes right away.
+class _AppColorPicker extends StatelessWidget {
+  const _AppColorPicker();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+    final current = appColorFor(state.themeColor);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: HC.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: HC.line)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.palette_outlined, color: HC.violet),
+              const SizedBox(width: 10),
+              Expanded(child: Text('App color', style: body(15, weight: FontWeight.w700))),
+              Text(current.name, style: body(13, color: HC.muted, weight: FontWeight.w600)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final c in appColors)
+                Semantics(
+                  button: true,
+                  selected: c.id == current.id,
+                  label: '${c.name} app color',
+                  child: InkResponse(
+                    onTap: () => state.setThemeColor(c.id),
+                    radius: 26,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: c.color,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: c.id == current.id ? HC.ink : Colors.white, width: 3),
+                        boxShadow: [BoxShadow(color: c.color.withValues(alpha: 0.35), blurRadius: c.id == current.id ? 8 : 0)],
+                      ),
+                      child: c.id == current.id ? const Icon(Icons.check_rounded, color: Colors.white, size: 20) : null,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton(
+                  style: FilledButton.styleFrom(backgroundColor: HC.violet, minimumSize: const Size(0, 40)),
+                  onPressed: () {},
+                  child: const Text('Preview button'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(color: HC.violet.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+                child: Text('Highlights', style: body(13, color: HC.violet, weight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text('Changes buttons, links and highlights everywhere. Saved to your account.', style: body(12, color: HC.muted)),
+        ],
       ),
     );
   }

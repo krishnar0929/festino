@@ -47,6 +47,8 @@ Future<void> main() async {
     accounts: cloud ? AccountService() : null,
     referrals: cloud ? ReferralService() : null,
   );
+  state.themeColor = await AppState.loadThemeColor();
+  applyAppColor(state.themeColor);
   await state.load();
 
   // Invite links: https://hoopla-894ca.web.app/?ref=CODE

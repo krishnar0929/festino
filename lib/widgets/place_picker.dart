@@ -118,7 +118,7 @@ class _PlaceSheetState extends State<_PlaceSheet> {
                       decoration: BoxDecoration(color: HC.violet.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
                       child: locating
                           ? const Padding(padding: EdgeInsets.all(10), child: CircularProgressIndicator(strokeWidth: 2.4))
-                          : const Icon(Icons.my_location_rounded, color: HC.violet),
+                          : Icon(Icons.my_location_rounded, color: HC.violet),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -161,7 +161,7 @@ class _PlaceSheetState extends State<_PlaceSheet> {
                 for (final p in results)
                   ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                    leading: const Icon(Icons.place_outlined, color: HC.violet),
+                    leading: Icon(Icons.place_outlined, color: HC.violet),
                     title: Text(p.address.isNotEmpty ? p.address : p.label, maxLines: 2, overflow: TextOverflow.ellipsis, style: body(14, weight: FontWeight.w600)),
                     subtitle: Text(p.label, style: body(12, color: HC.muted)),
                     onTap: () => Navigator.pop(context, p),

@@ -15,6 +15,7 @@ import '../services/plan_generator.dart';
 import '../services/referrals.dart';
 import '../services/reminder_plan.dart';
 import '../services/reminders.dart';
+import '../theme.dart';
 
 /// What the person can see: guest (no account), member (free account) or premium (any paid plan).
 enum Access { guest, member, premium }
@@ -161,6 +162,38 @@ class AppState extends ChangeNotifier {
   bool get onReferralBonus {
     final until = bonusProUntil;
     return isSignedIn && until != null && DateTime.now().isBefore(until);
+  }
+
+  /// The app's main color (see appColors in theme.dart).
+  String themeColor = 'violet';
+
+  /// Reads the saved app color before the first screen shows.
+  static Future<String> loadThemeColor() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('themeColor') ?? 'violet';
+    } catch (_) {
+      return 'violet';
+    }
+  }
+
+  static Future<void> _saveThemeLocally(String id) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('themeColor', id);
+    } catch (_) {}
+  }
+
+  /// Changes the app color everywhere, on this device and (signed in) your other devices.
+  Future<void> setThemeColor(String id) async {
+    themeColor = appColorFor(id).id;
+    applyAppColor(themeColor);
+    notifyListeners();
+    refreshAllScreens();
+    await _saveThemeLocally(themeColor);
+    try {
+      await accounts?.saveProfileFields({'themeColor': themeColor});
+    } catch (_) {}
   }
 
   Future<void> setPendingRefCode(String? code) async {
@@ -369,6 +402,13 @@ class AppState extends ChangeNotifier {
     if (a == null || !a.isSignedIn) return;
     try {
       profile = await a.loadProfile();
+      final saved = profile?['themeColor'] as String?;
+      if (saved != null && saved != themeColor) {
+        themeColor = saved;
+        applyAppColor(saved);
+        _saveThemeLocally(saved);
+        WidgetsBinding.instance.addPostFrameCallback((_) => refreshAllScreens());
+      }
       if (role == UserRole.provider) provider = await a.loadProvider();
     } catch (e) {
       debugPrint('Could not load account: $e');

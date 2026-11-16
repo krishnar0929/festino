@@ -228,7 +228,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
               padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
               child: Row(
                 children: [
-                  const Icon(Icons.place_rounded, color: HC.violet, size: 20),
+                  Icon(Icons.place_rounded, color: HC.violet, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text.rich(
@@ -619,7 +619,7 @@ class _ProviderCard extends StatelessWidget {
                       ],
                       if (p.verified) ...[
                         const SizedBox(width: 4),
-                        const Icon(Icons.verified_rounded, size: 16, color: HC.violet, semanticLabel: 'Verified'),
+                        Icon(Icons.verified_rounded, size: 16, color: HC.violet, semanticLabel: 'Verified'),
                       ],
                     ],
                   ),

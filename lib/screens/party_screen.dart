@@ -334,7 +334,7 @@ class _PartyScreenState extends State<PartyScreen> {
             for (final i in ideas)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(children: [const Icon(Icons.card_giftcard_rounded, size: 18, color: HC.violet), const SizedBox(width: 10), Text(i, style: body(15))]),
+                child: Row(children: [Icon(Icons.card_giftcard_rounded, size: 18, color: HC.violet), const SizedBox(width: 10), Text(i, style: body(15))]),
               ),
           ],
         ),

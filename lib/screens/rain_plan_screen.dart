@@ -207,7 +207,7 @@ class _RainPlanScreenState extends State<RainPlanScreen> {
                                   ),
                                 ),
                                 Text('Pick', style: body(13, color: HC.violet, weight: FontWeight.w700)),
-                                const Icon(Icons.chevron_right_rounded, color: HC.violet),
+                                Icon(Icons.chevron_right_rounded, color: HC.violet),
                               ],
                             ),
                           ),

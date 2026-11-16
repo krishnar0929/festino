@@ -404,7 +404,7 @@ class _Counter extends StatelessWidget {
           Expanded(child: Text(label, style: body(15, weight: FontWeight.w600))),
           IconButton(onPressed: value > min ? () => onChanged(value - 1) : null, icon: const Icon(Icons.remove_circle_outline_rounded)),
           SizedBox(width: 28, child: Text('$value', textAlign: TextAlign.center, style: display(18))),
-          IconButton(onPressed: value < 50 ? () => onChanged(value + 1) : null, icon: const Icon(Icons.add_circle_outline_rounded, color: HC.violet)),
+          IconButton(onPressed: value < 50 ? () => onChanged(value + 1) : null, icon: Icon(Icons.add_circle_outline_rounded, color: HC.violet)),
         ],
       ),
     );

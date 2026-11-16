@@ -195,7 +195,7 @@ class _PlanScreenState extends State<PlanScreen> {
               padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
               child: Row(
                 children: [
-                  const Icon(Icons.cloud_done_outlined, color: HC.violet),
+                  Icon(Icons.cloud_done_outlined, color: HC.violet),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text('Sign in free to keep this plan on all your devices.', style: body(13)),

@@ -367,7 +367,7 @@ class TaskTile extends StatelessWidget {
                           ),
                           if (!done && e.taskReminders.containsKey(t.id)) ...[
                             const SizedBox(width: 6),
-                            const Icon(Icons.notifications_active_rounded, size: 14, color: HC.violet),
+                            Icon(Icons.notifications_active_rounded, size: 14, color: HC.violet),
                           ],
                           if (!done && g.action != null) ...[
                             const SizedBox(width: 6),
@@ -425,7 +425,7 @@ class ChecklistProgress extends StatelessWidget {
               value: pct,
               minHeight: 8,
               backgroundColor: HC.track,
-              valueColor: const AlwaysStoppedAnimation(HC.violet),
+              valueColor: AlwaysStoppedAnimation(HC.violet),
             ),
           ),
         ],

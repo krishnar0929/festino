@@ -291,7 +291,7 @@ class _SetupScreenState extends State<SetupScreen> {
                             children: [
                               Row(
                                 children: [
-                                  const Icon(Icons.auto_awesome_rounded, color: HC.violet, size: 20),
+                                  Icon(Icons.auto_awesome_rounded, color: HC.violet, size: 20),
                                   const SizedBox(width: 8),
                                   Text('Tell us about your event', style: body(15, weight: FontWeight.w600)),
                                 ],
@@ -540,7 +540,7 @@ class _VenueTile extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(color: HC.violet.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
-            child: const Icon(Icons.place_outlined, color: HC.violet, size: 20),
+            child: Icon(Icons.place_outlined, color: HC.violet, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(

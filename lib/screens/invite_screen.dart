@@ -960,7 +960,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(minimumSize: const Size(0, 50), side: const BorderSide(color: HC.line)),
               onPressed: () => tabs.animateTo(1),
-              icon: const Icon(Icons.send_rounded, size: 18, color: HC.violet),
+              icon: Icon(Icons.send_rounded, size: 18, color: HC.violet),
               label: Text('Send', style: body(15, weight: FontWeight.w600)),
             ),
           ),
@@ -976,7 +976,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(minimumSize: const Size(0, 46), side: const BorderSide(color: HC.line)),
               onPressed: uploading ? null : _pickPhoto,
-              icon: const Icon(Icons.add_photo_alternate_outlined, size: 20, color: HC.violet),
+              icon: Icon(Icons.add_photo_alternate_outlined, size: 20, color: HC.violet),
               label: Text(hasPhoto ? 'Change photo' : 'Add a photo', style: body(14, weight: FontWeight.w600)),
             ),
           ),
@@ -986,7 +986,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(minimumSize: const Size(0, 46), side: const BorderSide(color: HC.line)),
                 onPressed: uploading ? null : _adjustPhoto,
-                icon: const Icon(Icons.crop_rounded, size: 20, color: HC.violet),
+                icon: Icon(Icons.crop_rounded, size: 20, color: HC.violet),
                 label: Text('Adjust', style: body(14, weight: FontWeight.w600)),
               ),
             ),
@@ -1234,7 +1234,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(minimumSize: const Size(0, 46), side: const BorderSide(color: HC.line)),
                 onPressed: _pickContacts,
-                icon: const Icon(Icons.contacts_rounded, size: 18, color: HC.violet),
+                icon: Icon(Icons.contacts_rounded, size: 18, color: HC.violet),
                 label: Text('Pick contacts', style: body(14, weight: FontWeight.w600)),
               ),
             ),
@@ -1244,7 +1244,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(minimumSize: const Size(0, 46), side: const BorderSide(color: HC.line)),
               onPressed: _typeContacts,
-              icon: const Icon(Icons.keyboard_rounded, size: 18, color: HC.violet),
+              icon: Icon(Icons.keyboard_rounded, size: 18, color: HC.violet),
               label: Text('Type numbers / emails', style: body(14, weight: FontWeight.w600)),
             ),
           ),
@@ -1341,7 +1341,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44), side: const BorderSide(color: HC.line)),
                       onPressed: () => _remindAllPending(shown),
-                      icon: const Icon(Icons.notifications_active_outlined, size: 18, color: HC.violet),
+                      icon: Icon(Icons.notifications_active_outlined, size: 18, color: HC.violet),
                       label: Text('Remind everyone who hasn\'t replied', style: body(14, weight: FontWeight.w600)),
                     ),
                   ),
@@ -1680,13 +1680,13 @@ class _SendButtons extends StatelessWidget {
           IconButton(
             tooltip: '$verb a text',
             onPressed: () => onSend('sms'),
-            icon: const Icon(Icons.sms_outlined, size: 20, color: HC.violet),
+            icon: Icon(Icons.sms_outlined, size: 20, color: HC.violet),
           ),
         if (p.email.isNotEmpty)
           IconButton(
             tooltip: '$verb an email',
             onPressed: () => onSend('email'),
-            icon: const Icon(Icons.mail_outline_rounded, size: 20, color: HC.violet),
+            icon: Icon(Icons.mail_outline_rounded, size: 20, color: HC.violet),
           ),
       ],
     );
@@ -1876,7 +1876,7 @@ class _SharePicker extends StatelessWidget {
   const _SharePicker({required this.hasImage});
   final bool hasImage;
 
-  static const _apps = <(String, String, Color, IconData?, String?)>[
+  static final _apps = <(String, String, Color, IconData?, String?)>[
     ('whatsapp', 'WhatsApp', Color(0xFF25D366), Icons.chat_rounded, null),
     ('instagram', 'Instagram', Color(0xFFE1306C), Icons.camera_alt_rounded, null),
     ('facebook', 'Facebook', Color(0xFF1877F2), null, 'f'),
