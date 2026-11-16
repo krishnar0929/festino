@@ -90,6 +90,34 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             Material(
+              color: HC.card,
+              shape: const CircleBorder(side: BorderSide(color: HC.line)),
+              child: PopupMenuButton<String>(
+                tooltip: 'Event options',
+                icon: const Icon(Icons.more_horiz_rounded, color: HC.ink),
+                onSelected: (v) {
+                  switch (v) {
+                    case 'edit':
+                      _push(context, SetupScreen(existing: e));
+                    case 'new':
+                      startNewEvent(context);
+                    case 'events':
+                      showMyEvents(context);
+                    case 'cancel':
+                      confirmCancelEvent(context, e);
+                  }
+                },
+                itemBuilder: (_) => [
+                  _item('edit', Icons.edit_outlined, 'Edit date, time or place'),
+                  _item('new', Icons.add_rounded, 'Start a new event'),
+                  _item('events', Icons.event_note_outlined, 'My events'),
+                  const PopupMenuDivider(),
+                  _item('cancel', Icons.event_busy_outlined, 'Cancel this event', danger: true),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Material(
               color: const Color(0xFFEEEAFE),
               shape: const CircleBorder(),
               child: IconButton(
@@ -176,6 +204,23 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+
+PopupMenuItem<String> _item(String value, IconData icon, String label, {bool danger = false}) {
+  final color = danger ? const Color(0xFFB42318) : HC.ink;
+  return PopupMenuItem<String>(
+    value: value,
+    child: Row(
+      children: [
+        Icon(icon, size: 20, color: color),
+        const SizedBox(width: 12),
+        Text(label, style: body(14, color: color)),
+      ],
+    ),
+  );
+}
+
+/// Verdict titles start with an emoji; the row already shows a big one.
+String _plainTitle(String t) => t.replaceFirst(RegExp(r'^[^A-Za-z0-9]+'), '');
 
 /// The big colored card: name, date and place, days to go, and the 5-dot journey.
 class _PartyCard extends StatelessWidget {
@@ -399,7 +444,7 @@ class _WeatherRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(brief.verdict.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: body(15, weight: FontWeight.w600)),
+                    Text(_plainTitle(brief.verdict.title), maxLines: 2, overflow: TextOverflow.ellipsis, style: body(15, weight: FontWeight.w600)),
                     Text(sub, style: body(13, color: fg)),
                   ],
                 ),
