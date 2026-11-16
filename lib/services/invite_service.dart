@@ -447,7 +447,7 @@ String inviteIdFor(String hostUid, String eventId) => '${hostUid}_$eventId';
 /// Short invite links (/i/<id>) show a personal preview card in WhatsApp,
 /// iMessage and others (cover photo, title, date). They need the invitePreview
 /// Firebase function; set to false to go back to plain ?invite= links.
-const usePreviewLinks = true;
+const usePreviewLinks = false; // Turn on after the Blaze plan + `firebase deploy --only functions:invitePreview`.
 
 /// The invite link. With [guest], the link is personal so the reply is matched to that guest.
 String inviteUrl(String inviteId, {String guest = ''}) => usePreviewLinks
