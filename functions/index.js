@@ -63,7 +63,7 @@ exports.logSearch = onCall({ region: "us-central1", cors: true }, async (request
 // ---------------------------------------------------------------------------
 const { onRequest } = require("firebase-functions/v2/https");
 
-const SITE = "https://hoopla-894ca.web.app";
+const SITE = "https://festino.web.app";
 
 /** Makes text safe to put inside HTML. */
 function esc(value) {

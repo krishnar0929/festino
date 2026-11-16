@@ -1,0 +1,17 @@
+{
+  "projects": {
+    "default": "hoopla-894ca"
+  },
+  "targets": {
+    "hoopla-894ca": {
+      "hosting": {
+        "festino": [
+          "festino"
+        ],
+        "legacy": [
+          "hoopla-894ca"
+        ]
+      }
+    }
+  }
+}

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../models/event_details.dart';
 import '../models/invite_video.dart';
+import 'site.dart';
 import '../models/photo_frame.dart';
 
 /// Someone the host invited (from contacts, or typed in).
@@ -451,8 +452,8 @@ const usePreviewLinks = false; // Turn on after the Blaze plan + `firebase deplo
 
 /// The invite link. With [guest], the link is personal so the reply is matched to that guest.
 String inviteUrl(String inviteId, {String guest = ''}) => usePreviewLinks
-    ? 'https://hoopla-894ca.web.app/i/$inviteId${guest.isEmpty ? '' : '?g=$guest'}'
-    : 'https://hoopla-894ca.web.app/?invite=$inviteId${guest.isEmpty ? '' : '&g=$guest'}';
+    ? '$siteUrl/i/$inviteId${guest.isEmpty ? '' : '?g=$guest'}'
+    : '$siteUrl/?invite=$inviteId${guest.isEmpty ? '' : '&g=$guest'}';
 
 /// Reads an invite from a link: /i/<id>?g=… or ?invite=<id>&g=…
 (String?, String) inviteFromUri(Uri u) {

@@ -11,7 +11,7 @@ import '../widgets/invite_clip_player.dart';
 import '../widgets/invite_video_player.dart';
 
 /// What a guest sees when they open an invite link
-/// (https://hoopla-894ca.web.app/?invite=...): the invite card and an RSVP form.
+/// (https://festino.web.app/?invite=...): the invite card and an RSVP form.
 /// No app or account needed.
 class RsvpScreen extends StatefulWidget {
   const RsvpScreen({super.key, required this.inviteId, this.onPlanOwn, this.guestKey = ''});
