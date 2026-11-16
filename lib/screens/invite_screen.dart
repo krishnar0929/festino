@@ -55,10 +55,16 @@ String invitePlace(EventDetails e) => e.venue == null ? '' : (e.venue!.address.i
 /// Send (WhatsApp, iMessage, email, share sheet, guest list) and
 /// Guests (going, pending, can't go, reminders, Pitch In).
 class InviteScreen extends StatefulWidget {
-  const InviteScreen({super.key, this.initialTab = 0});
+  const InviteScreen({super.key, this.initialTab = 0, this.guestTab = 0, this.shareOnOpen = false});
 
   /// 0 Design, 1 Send, 2 Guests.
   final int initialTab;
+
+  /// On the Guests tab: 0 going, 1 pending, 2 can't go.
+  final int guestTab;
+
+  /// Open the share sheet as soon as the invite link is ready.
+  final bool shareOnOpen;
 
   @override
   State<InviteScreen> createState() => _InviteScreenState();
@@ -85,10 +91,14 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
   bool saving = false;
 
   /// Inner tab on Guests: 0 going, 1 pending, 2 can't go.
-  int guestTab = 0;
+  late int guestTab = widget.guestTab.clamp(0, 2);
 
   final _cardKey = GlobalKey();
   final _sendCardKey = GlobalKey();
+  final _templatesKey = GlobalKey();
+  final _textKey = GlobalKey();
+  final _videoKey = GlobalKey();
+  final _titleFocus = FocusNode();
   bool _started = false;
 
   bool get _canPickContacts => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
@@ -127,6 +137,11 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
           replies = InviteService.rsvps(id);
           pitch = InviteService.pitchItems(id);
         });
+        if (widget.shareOnOpen) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _openSharePicker(context);
+          });
+        }
       }, onError: (_) {});
     }
   }
@@ -134,6 +149,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
   @override
   void dispose() {
     tabs.dispose();
+    _titleFocus.dispose();
     titleCtrl.dispose();
     messageCtrl.dispose();
     hostCtrl.dispose();
@@ -501,6 +517,81 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
     );
   }
 
+  /// Scrolls the design page to a section (templates, text fields, video).
+  void _scrollTo(GlobalKey key) {
+    final c = key.currentContext;
+    if (c != null) Scrollable.ensureVisible(c, duration: const Duration(milliseconds: 300), alignment: 0.05);
+  }
+
+  /// One row of tools under the card: Photo, Crop, Text, Video, Designs.
+  Widget _toolsRow(EventDetails e, bool hasPhoto) {
+    Future<void> openVideo() async {
+      await _ready();
+      if (!mounted) return;
+      await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const InviteVideoScreen()));
+    }
+
+    final tools = <(IconData, String, VoidCallback?)>[
+      (Icons.add_photo_alternate_outlined, hasPhoto ? 'Photo' : 'Add photo', uploading ? null : _pickPhoto),
+      (Icons.crop_rounded, 'Crop', hasPhoto && !uploading ? _adjustPhoto : null),
+      (Icons.text_fields_rounded, 'Text', () {
+        _scrollTo(_textKey);
+        _titleFocus.requestFocus();
+      }),
+      (Icons.movie_creation_outlined, 'Video', openVideo),
+      (Icons.auto_awesome_outlined, 'Designs', () => _scrollTo(_templatesKey)),
+    ];
+    return Row(
+      children: [
+        for (final t in tools)
+          Expanded(
+            child: Semantics(
+              button: true,
+              label: t.$2,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: t.$3,
+                child: Opacity(
+                  opacity: t.$3 == null ? 0.4 : 1,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(color: HC.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: HC.line)),
+                          child: Icon(t.$1, color: HC.ink, size: 22),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(t.$2, maxLines: 1, overflow: TextOverflow.ellipsis, style: body(12, weight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// The big "Share invitation" button: waits for the invite link, then opens the share sheet.
+  Future<void> _share(BuildContext from) async {
+    if (inviteId == null) {
+      toast(context, 'Getting your invitation ready…');
+      try {
+        await publishing;
+      } catch (_) {}
+      if (!mounted) return;
+      if (inviteId == null) {
+        toast(context, 'Couldn\'t get your invite link. Check your connection and try again.');
+        return;
+      }
+    }
+    await _openSharePicker(from);
+  }
+
   Widget _card(EventDetails e, AppState state, {GlobalKey? key}) {
     final card = InvitationCard(
       theme: inviteThemeFor(theme),
@@ -568,14 +659,14 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
     }
   }
 
-  Future<void> _shareCard(BuildContext from, {Uint8List? png, bool withText = true}) async {
+  Future<void> _shareCard(BuildContext from, {Uint8List? png, bool withText = true, bool? withVideo, bool withPicture = true}) async {
     _hideKeyboard();
     await _ready();
     if (!mounted) return;
     final state = AppScope.of(context);
     final v = state.event!.inviteVideo;
     // "Send the video with the invitation": attach the recorded clip so it plays in the chat.
-    if (withText && v.hasClip && v.sendClip && !kIsWeb) {
+    if (withText && v.hasClip && (withVideo ?? v.sendClip) && !kIsWeb) {
       toast(context, 'Getting your video ready…');
       final bytes = await _clipFile(v.clip);
       if (!mounted) return;
@@ -594,7 +685,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
       }
       if (mounted) toast(context, 'Couldn\'t attach the video, so sharing the card instead.');
     }
-    final image = png ?? await capturePng(_cardKey) ?? await capturePng(_sendCardKey);
+    final image = withPicture ? png ?? await capturePng(_cardKey) ?? await capturePng(_sendCardKey) : null;
     final rect = from.mounted ? originOf(from) : null;
     try {
       if (image == null) {
@@ -622,26 +713,27 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
     final image = png ?? await capturePng(_cardKey) ?? await capturePng(_sendCardKey);
     if (!mounted) return;
     _hideKeyboard();
-    final pick = await showModalBottomSheet<String>(
+    final choice = await showModalBottomSheet<_ShareChoice>(
       context: from.mounted ? from : context,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
-      backgroundColor: HC.ground,
+      backgroundColor: HC.card,
       builder: (ctx) {
         final v = AppScope.of(context).event!.inviteVideo;
-        return _SharePicker(hasImage: image != null, hasVideo: v.hasClip && v.sendClip && !kIsWeb);
+        return _SharePicker(hasImage: image != null, hasVideo: v.hasClip && !kIsWeb, videoOn: v.sendClip);
       },
     );
     _hideKeyboard();
-    if (pick == null || !mounted) return;
+    if (choice == null || !mounted) return;
+    final pick = choice.app;
     final state = AppScope.of(context);
     final text = _text(state);
     final url = inviteUrl(inviteId!);
     final subject = 'You\'re invited: ${state.event!.inviteHeadline}';
     switch (pick) {
       case 'all':
-        await _shareCard(from, png: image);
+        await _shareCard(from, png: image, withVideo: choice.video, withPicture: choice.picture);
       case 'whatsapp':
         openLink(context, Uri.parse('https://wa.me/?text=${Uri.encodeComponent(text)}'));
       case 'instagram':
@@ -984,73 +1076,24 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
   List<Widget> _designTab(BuildContext context, AppState state, EventDetails e) {
     final hasPhoto = photoBytes != null || photoUrl.isNotEmpty;
     return [
-      _templates(e),
-      const SizedBox(height: 18),
-      Stack(
-        children: [
-          _card(e, state, key: _cardKey),
-          if (uploading)
-            const Positioned(top: 12, right: 12, child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))),
-        ],
-      ),
-      const SizedBox(height: 14),
-      Row(
-        children: [
-          Expanded(
-            child: FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: HC.violet, minimumSize: const Size(0, 50)),
-              onPressed: _openPreview,
-              icon: const Icon(Icons.visibility_outlined, size: 20),
-              label: const Text('Preview & share'),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 50), side: const BorderSide(color: HC.line)),
-              onPressed: () => tabs.animateTo(1),
-              icon: Icon(Icons.send_rounded, size: 18, color: HC.violet),
-              label: Text('Send', style: body(15, weight: FontWeight.w600)),
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 24),
-      _videoSection(e, state),
-      const SizedBox(height: 24),
-      const SectionLabel('Photo'),
-      Row(
-        children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 46), side: const BorderSide(color: HC.line)),
-              onPressed: uploading ? null : _pickPhoto,
-              icon: Icon(Icons.add_photo_alternate_outlined, size: 20, color: HC.violet),
-              label: Text(hasPhoto ? 'Change photo' : 'Add a photo', style: body(14, weight: FontWeight.w600)),
-            ),
-          ),
-          if (hasPhoto) ...[
-            const SizedBox(width: 8),
-            Expanded(
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(minimumSize: const Size(0, 46), side: const BorderSide(color: HC.line)),
-                onPressed: uploading ? null : _adjustPhoto,
-                icon: Icon(Icons.crop_rounded, size: 20, color: HC.violet),
-                label: Text('Adjust', style: body(14, weight: FontWeight.w600)),
-              ),
-            ),
+      GestureDetector(
+        onTap: hasPhoto || uploading ? null : _pickPhoto,
+        child: Stack(
+          children: [
+            _card(e, state, key: _cardKey),
+            if (uploading)
+              const Positioned(top: 12, right: 12, child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))),
           ],
-        ],
-      ),
-      if (hasPhoto)
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(onPressed: uploading ? null : _removePhoto, child: const Text('Remove photo')),
         ),
-      const SizedBox(height: 4),
-      Text('A photo of the birthday star, the couple, your new home…', style: body(12, color: HC.muted)),
-      const SizedBox(height: 20),
-      const SectionLabel('Style'),
+      ),
+      if (!hasPhoto) ...[
+        const SizedBox(height: 6),
+        Text('Tap the card to add a photo', textAlign: TextAlign.center, style: body(12, color: HC.muted)),
+      ],
+      const SizedBox(height: 14),
+      _toolsRow(e, hasPhoto),
+      const SizedBox(height: 18),
+      const SectionLabel('Colors'),
       SizedBox(
         height: 84,
         child: ListView.separated(
@@ -1099,10 +1142,38 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
           ),
         ),
       ],
+      const SizedBox(height: 16),
+      Builder(
+        builder: (b) => FilledButton.icon(
+          style: FilledButton.styleFrom(backgroundColor: HC.violet, minimumSize: const Size(0, 54), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+          onPressed: () => _share(b),
+          icon: const Icon(Icons.ios_share_rounded, size: 20),
+          label: Text('Share invitation', style: body(16, color: Colors.white, weight: FontWeight.w700)),
+        ),
+      ),
+      TextButton.icon(
+        onPressed: _openPreview,
+        icon: const Icon(Icons.visibility_outlined, size: 18),
+        label: const Text('Preview how guests see it'),
+      ),
+      const SizedBox(height: 14),
+      KeyedSubtree(key: _templatesKey, child: _templates(e)),
+      if (hasPhoto) ...[
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: uploading ? null : _removePhoto,
+            icon: const Icon(Icons.hide_image_outlined, size: 18),
+            label: const Text('Remove photo'),
+          ),
+        ),
+      ],
       const SizedBox(height: 20),
-      const SectionLabel('Title'),
+      KeyedSubtree(key: _textKey, child: const SectionLabel('Title')),
       TextField(
         controller: titleCtrl,
+        focusNode: _titleFocus,
         maxLength: 60,
         textCapitalization: TextCapitalization.words,
         decoration: InputDecoration(hintText: e.title, helperText: 'Leave empty to use your event name'),
@@ -1174,6 +1245,8 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
             ),
         ],
       ),
+      const SizedBox(height: 18),
+      KeyedSubtree(key: _videoKey, child: _videoSection(e, state)),
       const SizedBox(height: 18),
       Text('Date, time and place come from your plan. Edit them with ✏️ on the Plan page.', style: body(12, color: HC.muted)),
       if (dirty) ...[
@@ -1920,29 +1993,65 @@ class _InviteStatusLineState extends State<InviteStatusLine> {
 }
 
 
-/// The share menu: big "all apps" button plus a grid of favourite places to send.
-class _SharePicker extends StatelessWidget {
-  const _SharePicker({required this.hasImage, this.hasVideo = false});
+/// What the host picked in the share sheet.
+class _ShareChoice {
+  const _ShareChoice(this.app, {required this.picture, required this.video});
+  final String app;
+  final bool picture;
+  final bool video;
+}
+
+/// The share sheet: big app icons, then switches for the card picture and the video.
+class _SharePicker extends StatefulWidget {
+  const _SharePicker({required this.hasImage, this.hasVideo = false, this.videoOn = true});
   final bool hasImage;
 
-  /// The host's recorded video goes along with "any app".
+  /// The host recorded their own video, which can go along with the invite.
   final bool hasVideo;
+  final bool videoOn;
+
+  @override
+  State<_SharePicker> createState() => _SharePickerState();
+}
+
+class _SharePickerState extends State<_SharePicker> {
+  late bool picture = widget.hasImage;
+  late bool video = widget.hasVideo && widget.videoOn;
 
   static final _apps = <(String, String, Color, IconData?, String?)>[
     ('whatsapp', 'WhatsApp', Color(0xFF25D366), Icons.chat_rounded, null),
-    ('instagram', 'Instagram', Color(0xFFE1306C), Icons.camera_alt_rounded, null),
-    ('facebook', 'Facebook', Color(0xFF1877F2), null, 'f'),
     ('messages', 'Messages', Color(0xFF34C759), Icons.sms_rounded, null),
+    ('email', 'Email', Color(0xFF1F6FEB), Icons.alternate_email_rounded, null),
+    ('instagram', 'Instagram', Color(0xFFD6336C), Icons.camera_alt_rounded, null),
     ('gmail', 'Gmail', Color(0xFFEA4335), Icons.mail_rounded, null),
-    ('email', 'Email', Color(0xFF5E5A72), Icons.alternate_email_rounded, null),
-    ('telegram', 'Telegram', Color(0xFF29A9EB), Icons.send_rounded, null),
-    ('x', 'X', Color(0xFF111111), null, '𝕏'),
-    ('copy', 'Copy link', HC.violet, Icons.link_rounded, null),
-    ('save', 'Save image', HC.ink, Icons.download_rounded, null),
+    ('facebook', 'Facebook', Color(0xFF1877F2), null, 'f'),
+    ('copy', 'Copy link', Color(0xFF5E5A72), Icons.link_rounded, null),
+    ('all', 'More', HC.ink, Icons.more_horiz_rounded, null),
   ];
+
+  void _go(String app) => Navigator.pop(context, _ShareChoice(app, picture: picture, video: video));
+
+  Widget _switch(IconData icon, String label, bool value, ValueChanged<bool> onChanged, {bool top = false}) {
+    return Container(
+      decoration: BoxDecoration(border: top ? const Border(top: BorderSide(color: HC.line)) : null),
+      padding: const EdgeInsets.fromLTRB(14, 4, 6, 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: HC.violet),
+          const SizedBox(width: 12),
+          Expanded(child: Text(label, style: body(14))),
+          Switch.adaptive(value: value, activeTrackColor: HC.violet, onChanged: onChanged),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final apps = [
+      for (final a in _apps)
+        if (widget.hasImage || a.$1 != 'instagram') a,
+    ];
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
@@ -1950,52 +2059,69 @@ class _SharePicker extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Share your invitation', style: display(22)),
-            const SizedBox(height: 4),
-            Text('Guests open the link to see your card and RSVP. No app needed.', style: body(13, color: HC.muted)),
-            const SizedBox(height: 14),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: HC.violet, minimumSize: const Size(0, 52)),
-              onPressed: () => Navigator.pop(context, 'all'),
-              icon: const Icon(Icons.ios_share_rounded, size: 20),
-              label: Text(hasVideo ? 'Video + link to any app' : (hasImage ? 'Picture + link to any app' : 'Share to any app')),
-            ),
+            Text('Send to guests', style: display(22)),
             const SizedBox(height: 16),
             GridView.count(
-              crossAxisCount: 5,
+              crossAxisCount: 4,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 14,
-              crossAxisSpacing: 6,
-              childAspectRatio: 0.78,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 8,
+              childAspectRatio: 0.8,
               children: [
-                for (final a in _apps)
-                  if (hasImage || (a.$1 != 'save' && a.$1 != 'instagram'))
-                    InkWell(
-                      borderRadius: BorderRadius.circular(14),
-                      onTap: () => Navigator.pop(context, a.$1),
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(color: a.$3, shape: BoxShape.circle),
-                            alignment: Alignment.center,
-                            child: a.$4 != null
-                                ? Icon(a.$4, color: Colors.white, size: 24)
-                                : Text(a.$5!, style: display(24, color: Colors.white)),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(a.$2, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: body(11, weight: FontWeight.w600)),
-                        ],
-                      ),
+                for (final a in apps)
+                  InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: () => _go(a.$1),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 58,
+                          height: 58,
+                          decoration: BoxDecoration(color: a.$3, borderRadius: BorderRadius.circular(18)),
+                          alignment: Alignment.center,
+                          child: a.$4 != null ? Icon(a.$4, color: Colors.white, size: 26) : Text(a.$5!, style: display(26, color: Colors.white)),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(a.$2, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: body(12, weight: FontWeight.w600)),
+                      ],
                     ),
+                  ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(color: HC.ground, borderRadius: BorderRadius.circular(18)),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  if (widget.hasImage) _switch(Icons.image_outlined, 'Attach the card picture', picture, (v) => setState(() => picture = v)),
+                  if (widget.hasVideo) _switch(Icons.movie_outlined, 'Attach your video', video, (v) => setState(() => video = v), top: widget.hasImage),
+                  if (widget.hasImage)
+                    InkWell(
+                      onTap: () => _go('save'),
+                      child: Container(
+                        decoration: const BoxDecoration(border: Border(top: BorderSide(color: HC.line))),
+                        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                        child: Row(
+                          children: [
+                            Icon(Icons.download_rounded, size: 20, color: HC.violet),
+                            const SizedBox(width: 12),
+                            Expanded(child: Text('Save to Photos', style: body(14))),
+                            const Icon(Icons.chevron_right_rounded, color: HC.muted),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
             Text(
-              'WhatsApp, Messages and email send the link. To send the picture too, use "Picture + link to any app" and pick the app.',
-              style: body(11, color: HC.muted),
+              'Each message includes your RSVP link, so replies show up in Guests. '
+              'WhatsApp, Messages and email send the link; tap More to send the picture or video too.',
+              textAlign: TextAlign.center,
+              style: body(12, color: HC.muted),
             ),
           ],
         ),

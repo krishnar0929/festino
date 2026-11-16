@@ -209,7 +209,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
               const BackArrow(),
               const SizedBox(width: 10),
             ],
-            Expanded(child: Text('Find nearby', style: display(30))),
+            Expanded(child: Text('Find helpers', style: display(28))),
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: Text('For ${DateFormat('MMM d').format(e.date)} · ${clockAmPm(e.startMinutes)}', style: body(12, color: HC.muted)),
@@ -217,6 +217,13 @@ class _NearbyScreenState extends State<NearbyScreen> {
           ],
         ),
         const SizedBox(height: 12),
+        TextField(
+          onChanged: _onSearch,
+          onSubmitted: (v) => _onSearch(v, now: true),
+          textInputAction: TextInputAction.search,
+          decoration: const InputDecoration(prefixIcon: Icon(Icons.search_rounded), hintText: 'Search photographers, cakes, DJs…'),
+        ),
+        const SizedBox(height: 10),
         // Where to search.
         Material(
           color: HC.card,
@@ -249,20 +256,17 @@ class _NearbyScreenState extends State<NearbyScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 10),
-        TextField(
-          onChanged: _onSearch,
-          onSubmitted: (v) => _onSearch(v, now: true),
-          textInputAction: TextInputAction.search,
-          decoration: const InputDecoration(prefixIcon: Icon(Icons.search_rounded), hintText: 'Search photographers, cakes, panthulu…'),
-        ),
         const SizedBox(height: 14),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: [
-            for (final c in cats)
-              Pill(
+        SizedBox(
+          height: 40,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+            for (final c in [...cats.where((c) => state.plan.helpers.contains(c.label)), ...cats.where((c) => !state.plan.helpers.contains(c.label))])
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Center(
+                  child: Pill(
                 label: c.label,
                 small: true,
                 selectedColor: HC.violet,
@@ -271,8 +275,23 @@ class _NearbyScreenState extends State<NearbyScreen> {
                   setState(() => selected = c.label);
                   SearchLog.instance.log('nearby_category', query: query.trim().isEmpty ? null : query.trim(), filters: {'category': c.label});
                 },
+                  ),
+                ),
               ),
-          ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          decoration: BoxDecoration(color: const Color(0xFFEEEAFE), borderRadius: BorderRadius.circular(18)),
+          child: Row(
+            children: [
+              Icon(Icons.local_offer_outlined, color: HC.violet, size: 22),
+              const SizedBox(width: 10),
+              Expanded(child: Text('Book with Hoopla, save up to 20%', style: body(14, weight: FontWeight.w700))),
+            ],
+          ),
         ),
         const SizedBox(height: 20),
         Row(
@@ -281,8 +300,8 @@ class _NearbyScreenState extends State<NearbyScreen> {
             if (state.plan.helpers.contains(selected))
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: HC.lime, borderRadius: BorderRadius.circular(8)),
-                child: Text('In your plan', style: body(11, weight: FontWeight.w600)),
+                decoration: BoxDecoration(color: const Color(0xFFE3F6EC), borderRadius: BorderRadius.circular(8)),
+                child: Text('In your plan', style: body(11, color: const Color(0xFF13895C), weight: FontWeight.w700)),
               ),
           ],
         ),
