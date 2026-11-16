@@ -449,6 +449,26 @@ class _SetupScreenState extends State<SetupScreen> {
                           ],
                         ),
                       ),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          style: TextButton.styleFrom(foregroundColor: HC.muted, padding: const EdgeInsets.symmetric(horizontal: 4)),
+                          onPressed: () => toast(context, 'Coming soon: plan two occasions together, like Housewarming & Pooja.'),
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('Combine with another occasion', style: body(13, color: HC.muted, weight: FontWeight.w600)),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                decoration: BoxDecoration(color: const Color(0xFFEEEAFE), borderRadius: BorderRadius.circular(6)),
+                                child: Text('Coming soon', style: body(11, color: HC.violet, weight: FontWeight.w700)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                       if (occasion.isNotEmpty && !occasions.contains(occasion))
                         Padding(
                           padding: const EdgeInsets.only(top: 6),
