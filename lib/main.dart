@@ -10,6 +10,7 @@ import 'screens/provider_setup_screen.dart';
 import 'screens/setup_screen.dart';
 import 'services/account_service.dart';
 import 'services/event_store.dart';
+import 'services/invite_service.dart';
 import 'services/referrals.dart';
 import 'services/reminders.dart';
 import 'services/shared_reels.dart';
@@ -57,9 +58,9 @@ Future<void> main() async {
     if (code != null && state.referral.usedCode == null) await state.setPendingRefCode(code);
   }
   // Party invites: https://hoopla-894ca.web.app/?invite=<hostUid>_<eventId>
-  final invite = kIsWeb ? Uri.base.queryParameters['invite'] : null;
-  final guest = kIsWeb ? (Uri.base.queryParameters['g'] ?? '') : '';
-  runApp(HooplaApp(state: state, inviteId: (invite == null || invite.isEmpty) ? null : invite, guestKey: guest));
+  // or the short form https://hoopla-894ca.web.app/i/<hostUid>_<eventId>
+  final (invite, guest) = kIsWeb ? inviteFromUri(Uri.base) : (null, '');
+  runApp(HooplaApp(state: state, inviteId: invite, guestKey: guest));
 }
 
 class HooplaApp extends StatefulWidget {

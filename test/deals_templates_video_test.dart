@@ -86,7 +86,7 @@ void main() {
 
     test('the invite text points to the video', () {
       final e = party()..inviteVideo = const InviteVideo(photos: ['a']);
-      expect(inviteText(e, inviteUrl('x')), contains('Watch our invitation video and RSVP here: https://hoopla-894ca.web.app/?invite=x'));
+      expect(inviteText(e, inviteUrl('x')), contains('Watch our invitation video and RSVP here: ${inviteUrl('x')}'));
       expect(inviteText(party(), inviteUrl('x')), contains('Please RSVP here:'));
       expect(EventDetails.fromMap(e.toMap()).inviteVideo.photos, ['a']);
     });

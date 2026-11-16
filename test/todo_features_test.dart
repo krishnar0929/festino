@@ -72,4 +72,14 @@ void main() {
     expect(InviteVideo.fromMap({'music': 'none'}).hasMusic, isFalse);
     expect(InviteVideo.fromMap(const InviteVideo(photos: ['a'], music: 'none').toMap()).music, 'none');
   });
+
+  test('recorded video and star themes are saved', () {
+    const v = InviteVideo(clip: 'https://x/clip.mp4', clipAutoplay: false, sendClip: true, look: 'soccer');
+    final back = InviteVideo.fromMap(v.toMap());
+    expect((back.hasClip, back.clipAutoplay, back.sendClip, back.look), (true, false, true, 'soccer'));
+    expect(back.isEmpty, isFalse);
+    expect(InviteVideo.fromMap({'clip': 'http://insecure', 'look': 'nope'}).hasClip, isFalse);
+    expect(InviteVideo.fromMap({'look': 'nope'}).look, 'classic');
+    expect(InviteVideo.looks.keys, containsAll(['soccer', 'football', 'superhero', 'rockstar', 'princess', 'astronaut']));
+  });
 }
