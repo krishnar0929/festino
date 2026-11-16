@@ -214,7 +214,31 @@ class _RsvpScreenState extends State<RsvpScreen> {
                     const Align(alignment: Alignment.centerLeft, child: BackArrow()),
                     const SizedBox(height: 10),
                   ],
-                  if (!info.video.isEmpty) ...[
+                  if (info.cancelled)
+                    _NoticeBanner(
+                      color: const Color(0xFFFFE4DE),
+                      border: const Color(0xFFC0392B),
+                      title: '😢 This event has been cancelled',
+                      text: info.notice.isNotEmpty ? info.notice : 'The host cancelled this party. Sorry for the change!',
+                      by: info.hostName,
+                    )
+                  else if (info.noticeKind == 'updated')
+                    _NoticeBanner(
+                      color: const Color(0xFFFFF1C2),
+                      border: const Color(0xFFE0A100),
+                      title: '🔔 Updated: new details below',
+                      text: info.notice.isNotEmpty ? info.notice : 'The date, time or place changed. Please check and update your reply.',
+                      by: info.hostName,
+                    )
+                  else if (info.noticeKind == 'back')
+                    _NoticeBanner(
+                      color: const Color(0xFFE9F8C6),
+                      border: const Color(0xFF5E9E1A),
+                      title: '🎉 We\'re back on!',
+                      text: info.notice.isNotEmpty ? info.notice : 'The party is happening. Please RSVP below.',
+                      by: info.hostName,
+                    ),
+                  if (!info.video.isEmpty && !info.cancelled) ...[
                     InviteVideoPlayer(
                       photos: info.video.photos,
                       captions: info.video.captions,
@@ -242,7 +266,9 @@ class _RsvpScreenState extends State<RsvpScreen> {
                     onPlaceTap: info.mapUrl == null ? null : () => openLink(context, info.mapUrl!),
                   ),
                   const SizedBox(height: 18),
-                  if (sent && status != null) ...[
+                  if (info.cancelled) ...[
+                    Text('RSVPs are closed for this event.', textAlign: TextAlign.center, style: body(14, color: HC.muted)),
+                  ] else if (sent && status != null) ...[
                     CardBox(
                       color: HC.lime,
                       padding: const EdgeInsets.all(16),
@@ -339,7 +365,7 @@ class _RsvpScreenState extends State<RsvpScreen> {
                       ),
                     ),
                   ],
-                  _pitchIn(info),
+                  if (!info.cancelled) _pitchIn(info),
                   const SizedBox(height: 28),
                   Center(
                     child: TextButton(
@@ -479,6 +505,38 @@ class _PitchRow extends StatelessWidget {
               onPressed: onClaim,
               child: Text(it.help ? 'I\'ll help' : 'I\'ll bring it'),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+
+/// News from the host at the top of the invite page.
+class _NoticeBanner extends StatelessWidget {
+  const _NoticeBanner({required this.color, required this.border, required this.title, required this.text, this.by = ''});
+  final Color color;
+  final Color border;
+  final String title;
+  final String text;
+  final String by;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(18), border: Border.all(color: border, width: 1.5)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: display(19)),
+          const SizedBox(height: 6),
+          Text(text, style: body(15)),
+          if (by.trim().isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text('— ${by.trim()}', style: body(13, color: HC.muted, weight: FontWeight.w600)),
+          ],
         ],
       ),
     );

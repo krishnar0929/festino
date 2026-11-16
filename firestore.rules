@@ -211,6 +211,8 @@ service cloud.firestore {
         && request.resource.data.hostName is string && request.resource.data.hostName.size() <= 80
         && (!('photoUrl' in request.resource.data) || (request.resource.data.photoUrl is string && request.resource.data.photoUrl.size() <= 600))
         && (!('extra' in request.resource.data) || (request.resource.data.extra is string && request.resource.data.extra.size() <= 300))
+        && (!('notice' in request.resource.data) || (request.resource.data.notice is string && request.resource.data.notice.size() <= 600))
+        && (!('status' in request.resource.data) || request.resource.data.status in ['active', 'cancelled'])
         && (!('motif' in request.resource.data) || (request.resource.data.motif is string && request.resource.data.motif.size() <= 40))
         && (!('video' in request.resource.data) || (request.resource.data.video is map
             && request.resource.data.video.get('photos', []) is list && request.resource.data.video.get('photos', []).size() <= 10
@@ -223,6 +225,7 @@ service cloud.firestore {
           || (signedIn() && get(/databases/$(database)/documents/invites/$(inviteId)).data.hostUid == request.auth.uid);
         allow create, update: if isOwner(guestUid)
           && exists(/databases/$(database)/documents/invites/$(inviteId))
+          && get(/databases/$(database)/documents/invites/$(inviteId)).data.get('status', 'active') != 'cancelled'
           && request.resource.data.keys().hasOnly(['name', 'status', 'adults', 'kids', 'note', 'diet', 'guestKey', 'updatedAt'])
           && (!('guestKey' in request.resource.data) || (request.resource.data.guestKey is string && request.resource.data.guestKey.size() <= 16))
           && (!('diet' in request.resource.data) || (request.resource.data.diet is list && request.resource.data.diet.size() <= 8))

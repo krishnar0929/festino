@@ -83,6 +83,8 @@ class EventDetails {
     this.inviteTheme = 'midnight',
     this.inviteHost = '',
     this.inviteMotif = '',
+    this.guestNotice = '',
+    this.noticeKind = '',
     this.inviteVideo = const InviteVideo(),
     this.inviteExtra = '',
     this.invitePhotoFrame = const PhotoFrame(),
@@ -160,6 +162,11 @@ class EventDetails {
   /// Emoji decoration from the chosen design, e.g. "🦖🎈🌴".
   String inviteMotif;
 
+  /// News for guests on the invite page (reason and note), and what it's about:
+  /// '' (nothing), 'cancelled', 'updated' or 'back'.
+  String guestNotice;
+  String noticeKind;
+
   /// The 30-second invitation video (photos played as a slideshow).
   InviteVideo inviteVideo;
 
@@ -219,6 +226,8 @@ class EventDetails {
         'inviteTheme': inviteTheme,
         'inviteHost': inviteHost,
         'inviteMotif': inviteMotif,
+        'guestNotice': guestNotice,
+        'noticeKind': noticeKind,
         'inviteVideo': inviteVideo.toMap(),
         'inviteExtra': inviteExtra,
         'invitePhotoFrame': invitePhotoFrame.toMap(),
@@ -259,6 +268,8 @@ class EventDetails {
       inviteTheme: m['inviteTheme'] as String? ?? 'midnight',
       inviteHost: m['inviteHost'] as String? ?? '',
       inviteMotif: m['inviteMotif'] as String? ?? '',
+      guestNotice: m['guestNotice'] as String? ?? '',
+      noticeKind: m['noticeKind'] as String? ?? '',
       inviteVideo: InviteVideo.fromMap(m['inviteVideo']),
       inviteExtra: m['inviteExtra'] as String? ?? '',
       invitePhotoFrame: PhotoFrame.fromMap(m['invitePhotoFrame']),

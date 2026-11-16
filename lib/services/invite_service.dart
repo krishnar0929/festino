@@ -349,7 +349,18 @@ class InviteInfo {
     this.extra = '',
     this.motif = '',
     this.video = const InviteVideo(),
+    this.status = 'active',
+    this.notice = '',
+    this.noticeKind = '',
   });
+
+  /// 'active' or 'cancelled' (then RSVPs are closed).
+  final String status;
+  bool get cancelled => status == 'cancelled';
+
+  /// The host's news for guests, and what it's about ('cancelled', 'updated', 'back' or '').
+  final String notice;
+  final String noticeKind;
 
   final String motif;
 
@@ -411,6 +422,9 @@ class InviteInfo {
         hostName: m['hostName'] as String? ?? '',
         extra: m['extra'] as String? ?? '',
         motif: m['motif'] as String? ?? '',
+        status: m['status'] as String? ?? 'active',
+        notice: m['notice'] as String? ?? '',
+        noticeKind: m['noticeKind'] as String? ?? '',
         video: InviteVideo.fromMap(m['video']),
         title: m['title'] as String? ?? 'A party',
         occasion: m['occasion'] as String? ?? '',
@@ -465,6 +479,9 @@ class InviteService {
       'hostName': hostName.trim(),
       'extra': e.inviteExtra.trim(),
       'motif': e.inviteMotif,
+      'status': e.status,
+      'notice': e.guestNotice,
+      'noticeKind': e.noticeKind,
       'video': e.inviteVideo.toMap(),
       'title': e.inviteHeadline,
       'photoUrl': e.invitePhoto,

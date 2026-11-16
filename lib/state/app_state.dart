@@ -437,6 +437,13 @@ class AppState extends ChangeNotifier {
 
   // ---------- events ----------
 
+  /// Saves changes to any event (even a cancelled one) without switching to it.
+  Future<void> saveQuietly(EventDetails e) async {
+    e.updatedAt = DateTime.now();
+    notifyListeners();
+    await _persist(e);
+  }
+
   Future<void> saveEvent(EventDetails e) async {
     if (pendingReels.isNotEmpty) {
       final have = {for (final l in e.savedLinks) l.url};

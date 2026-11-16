@@ -17,6 +17,7 @@ import '../services/location_service.dart';
 import '../widgets/place_picker.dart';
 import '../data/party_stories.dart';
 import 'party_stories_screen.dart';
+import 'guest_notice.dart';
 
 /// "Tell us about your event" — used to create a new event or edit one.
 class SetupScreen extends StatefulWidget {
@@ -177,6 +178,8 @@ class _SetupScreenState extends State<SetupScreen> {
     final rootNav = Navigator.of(context, rootNavigator: true);
     final isNew = widget.existing == null;
     final previous = state.event;
+    final old = widget.existing;
+    final before = old == null ? null : (old.date, old.startMinutes, old.venue?.lat, old.venue?.lng);
     final title = titleCtrl.text.trim().isEmpty ? '$occasion party' : titleCtrl.text.trim();
     final e = widget.existing ??
         EventDetails(
@@ -229,6 +232,10 @@ class _SetupScreenState extends State<SetupScreen> {
     if (!mounted) return;
     final nav = Navigator.of(context);
     if (nav.canPop()) nav.pop();
+    // Date, time or place changed: offer to tell the guests.
+    if (before != null && before != (e.date, e.startMinutes, e.venue?.lat, e.venue?.lng) && e.isActive) {
+      await offerGuestNotice(rootNav.context, e, 'updated');
+    }
   }
 
   @override
