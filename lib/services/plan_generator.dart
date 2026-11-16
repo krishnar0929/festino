@@ -251,6 +251,56 @@ class PlanGenerator {
     ];
   }
 
+  /// Rain plan: each planned game that only works outside, paired with an
+  /// indoor game that fits the same guests (null when there's no good swap).
+  static List<(Game, Game?)> indoorSwaps(EventDetails e) {
+    final planned = [for (final id in e.gameIds) gameById(id)].whereType<Game>().toList();
+    final outdoorOnly = [for (final g in planned) if (!g.indoor) g];
+    if (outdoorOnly.isEmpty) return const [];
+    final inside = EventDetails.fromMap({...e.toMap(), 'indoor': true});
+    final candidates = [for (final g in rankedGames(inside)) if (!e.gameIds.contains(g.id)) g];
+    final out = <(Game, Game?)>[];
+    for (final g in outdoorOnly) {
+      Game? pick;
+      for (final c in candidates) {
+        if ((c.minutes - g.minutes).abs() <= 5) {
+          pick = c;
+          break;
+        }
+      }
+      pick ??= candidates.isEmpty ? null : candidates.first;
+      if (pick != null) candidates.remove(pick);
+      out.add((g, pick));
+    }
+    return out;
+  }
+
+  /// Moves the party indoors and swaps outdoor-only games for indoor ones,
+  /// keeping each swap at the same spot in the timeline.
+  static void moveIndoors(EventDetails e) {
+    final swaps = indoorSwaps(e);
+    e.indoor = true;
+    for (final (old, neu) in swaps) {
+      final i = e.gameIds.indexOf(old.id);
+      if (i >= 0) {
+        if (neu == null) {
+          e.gameIds.removeAt(i);
+        } else {
+          e.gameIds[i] = neu.id;
+        }
+      }
+      final t = e.customTimeline;
+      if (t == null) continue;
+      final j = t.indexWhere((c) => c.gameId == old.id);
+      if (j < 0) continue;
+      if (neu == null) {
+        t.removeAt(j);
+      } else {
+        t[j] = CustomStep(key: 'game_${neu.id}', title: neu.name, subtitle: _gameLine(neu), minutes: neu.minutes, kind: 'game', gameId: neu.id);
+      }
+    }
+  }
+
   static String _gameLine(Game g) => '${g.audienceLabel} · ${g.minutes} min${g.needs.isEmpty ? '' : ' · ${g.needs.first}'}';
 
   /// Starting point for editing: the timeline as it is now.

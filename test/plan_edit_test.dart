@@ -93,4 +93,31 @@ void main() {
     expect(todo.when, DateTime(2027, 2, 20, 9));
     expect(todo.title, contains('Buy diyas'));
   });
+
+  group('rain plan', () {
+    test('moving indoors swaps outdoor-only games and keeps their spot', () {
+      final e = party()
+        ..indoor = false
+        ..gameIds = ['sack_race', 'pass_the_parcel', 'tug_of_war'];
+      e.customTimeline = PlanGenerator.toCustom(PlanGenerator.build(e));
+      final swaps = PlanGenerator.indoorSwaps(e);
+      expect(swaps.map((s) => s.$1.id), ['sack_race', 'tug_of_war']);
+      expect(swaps.every((s) => s.$2 != null && s.$2!.indoor), isTrue);
+      final at = e.customTimeline!.indexWhere((c) => c.gameId == 'sack_race');
+
+      PlanGenerator.moveIndoors(e);
+      expect(e.indoor, isTrue);
+      expect(e.gameIds, hasLength(3));
+      expect(e.gameIds[1], 'pass_the_parcel');
+      expect(e.gameIds, isNot(contains('sack_race')));
+      expect(e.customTimeline![at].gameId, swaps.first.$2!.id);
+      final timelineGames = PlanGenerator.build(e).plannedGames;
+      expect(timelineGames.every((g) => g.indoor), isTrue);
+    });
+
+    test('indoor-friendly games need no swap', () {
+      final e = party()..indoor = false;
+      expect(PlanGenerator.indoorSwaps(e), isEmpty);
+    });
+  });
 }
