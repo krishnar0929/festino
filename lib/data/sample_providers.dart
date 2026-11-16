@@ -148,7 +148,8 @@ const _serviceEmoji = {
   'Photographers': '📸', 'Videographers': '🎥', 'Decorators': '🎈', 'Stage decor': '🌸', 'Event planners': '📋',
   'Designers': '🎨', 'Cake makers': '🎂', 'Panthulu': '🪔', 'Makeup': '💄', 'Cleaners & maids': '🧹',
   'Helpers': '🙌', 'Transport': '🚐', 'Anchors / MC': '🎤', 'DJs': '🎧', 'Singers': '🎶', 'Dancers': '💃',
-  'Caterers': '🍛', 'Rentals': '🪑',
+  'Caterers': '🍛', 'Rentals': '🪑', 'Kids entertainers': '🤡', 'Magicians': '🎩', 'Stand-up comedians': '😂',
+  'Live bands': '🎸', 'Instrumentalists': '🎻', 'Mehndi artists': '🌿', 'Caricature artists': '✏️',
 };
 const _partyEmoji = ['🎉', '🎈', '✨', '🥳', '🎁', '🌼', '🍰', '🎊'];
 

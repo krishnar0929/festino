@@ -173,6 +173,10 @@ class EventDetails {
     this.inviteHost = '',
     this.inviteMotif = '',
     this.guestNotice = '',
+    this.costLevel = 'medium',
+    this.costPicks,
+    this.venueKind = '',
+    this.areaCost = 'average',
     this.noticeKind = '',
     this.inviteVideo = const InviteVideo(),
     this.inviteExtra = '',
@@ -254,6 +258,13 @@ class EventDetails {
   /// Emoji decoration from the chosen design, e.g. "🦖🎈🌴".
   String inviteMotif;
 
+  /// Cost estimate choices: level (simple…lux), ticked items (null = suggested),
+  /// venue type (home, hall, restaurant, park; '' = guess) and area cost (lower, average, higher).
+  String costLevel;
+  List<String>? costPicks;
+  String venueKind;
+  String areaCost;
+
   /// News for guests on the invite page (reason and note), and what it's about:
   /// '' (nothing), 'cancelled', 'updated' or 'back'.
   String guestNotice;
@@ -319,6 +330,10 @@ class EventDetails {
         'inviteHost': inviteHost,
         'inviteMotif': inviteMotif,
         'guestNotice': guestNotice,
+        'costLevel': costLevel,
+        if (costPicks != null) 'costPicks': costPicks,
+        'venueKind': venueKind,
+        'areaCost': areaCost,
         'noticeKind': noticeKind,
         'inviteVideo': inviteVideo.toMap(),
         'inviteExtra': inviteExtra,
@@ -361,6 +376,10 @@ class EventDetails {
       inviteHost: m['inviteHost'] as String? ?? '',
       inviteMotif: m['inviteMotif'] as String? ?? '',
       guestNotice: m['guestNotice'] as String? ?? '',
+      costLevel: m['costLevel'] as String? ?? 'medium',
+      costPicks: (m['costPicks'] as List?)?.whereType<String>().toList(),
+      venueKind: m['venueKind'] as String? ?? '',
+      areaCost: m['areaCost'] as String? ?? 'average',
       noticeKind: m['noticeKind'] as String? ?? '',
       inviteVideo: InviteVideo.fromMap(m['inviteVideo']),
       inviteExtra: m['inviteExtra'] as String? ?? '',
