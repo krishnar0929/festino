@@ -235,7 +235,7 @@ class EventDetails {
   List<SavedLink> savedLinks;
 
   /// The host's own timeline (after editing, moving or removing steps).
-  /// Null means Hoopla's suggested timeline.
+  /// Null means Festino's suggested timeline.
   List<CustomStep>? customTimeline;
 
   /// Checklist tasks the host added, or suggested ones they edited (same id).
@@ -244,7 +244,7 @@ class EventDetails {
   /// Suggested checklist tasks the host removed.
   List<String> hiddenTasks;
 
-  /// The host's own budget (amounts, vendors, paid). Null = Hoopla's suggested split.
+  /// The host's own budget (amounts, vendors, paid). Null = Festino's suggested split.
   List<BudgetItem>? budgetItems;
 
   /// "My list": the host's own to-dos and notes.
@@ -477,7 +477,7 @@ class BudgetItem {
   String label;
   double planned;
 
-  /// Their own photographer, cook, decorator... (or one found on Hoopla).
+  /// Their own photographer, cook, decorator... (or one found on Festino).
   String vendor;
   String vendorPhone;
   double? actual;

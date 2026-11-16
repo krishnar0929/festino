@@ -238,7 +238,7 @@ CostEstimate estimateCost(
       hi *= 1.4;
       how = '$how (restaurant prices)';
     }
-    if (it.id == 'invites') how = 'Free with Hoopla · printed cards cost extra';
+    if (it.id == 'invites') how = 'Free with Festino · printed cards cost extra';
     final f = lvl * areaF * (it.seasonal ? season * day : 1.0);
     lines.add(CostLine(it, lo * f, hi * f, how, included: included));
   }

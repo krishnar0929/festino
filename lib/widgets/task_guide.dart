@@ -40,7 +40,7 @@ TaskGuide guideFor(PlanTask t, EventDetails e, {ValueChanged<int>? switchTab}) {
       why: 'Good ${service.toLowerCase()} book up weeks ahead, especially on weekends.',
       tips: const [
         'Ask 2–3 for quotes and compare.',
-        'Look for the 🎁 Hoopla deal badge for a discount.',
+        'Look for the 🎁 Festino deal badge for a discount.',
         'Confirm the date, hours and price in writing.',
       ],
       action: known ? 'Find $service nearby' : null,

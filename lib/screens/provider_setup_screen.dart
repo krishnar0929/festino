@@ -123,7 +123,7 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
     try {
       files = await GalleryService.pick(limit: room);
     } catch (e) {
-      if (mounted) toast(context, 'Could not open your photos. Check Hoopla\'s photo access in Settings.');
+      if (mounted) toast(context, 'Could not open your photos. Check Festino\'s photo access in Settings.');
       return;
     }
     if (files.isEmpty || !mounted) return;
@@ -269,7 +269,7 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
                   children: [
                     BackArrow(onPressed: canPop ? () => Navigator.of(context).pop() : () => _leaveSetup(context)),
                     const SizedBox(width: 10),
-                    Text('HOOPLA FOR BUSINESS', style: overline()),
+                    Text('FESTINO FOR BUSINESS', style: overline()),
                     const Spacer(),
                     IconButton(tooltip: 'Account', onPressed: () => showAccountSheet(context), icon: const Icon(Icons.person_outline_rounded)),
                   ],
@@ -329,8 +329,8 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
                 const SectionLabel('Price range'),
                 TextField(controller: priceCtrl, decoration: const InputDecoration(hintText: r'e.g. $300–$800 per event')),
                 const SizedBox(height: 18),
-                const SectionLabel('Hoopla deal (optional)'),
-                Text('Offer a discount to customers who book you through Hoopla. Listings with a deal get a 🎁 badge and show up under "Hoopla deals".',
+                const SectionLabel('Festino deal (optional)'),
+                Text('Offer a discount to customers who book you through Festino. Listings with a deal get a 🎁 badge and show up under "Festino deals".',
                     style: body(12, color: HC.muted)),
                 const SizedBox(height: 8),
                 Wrap(

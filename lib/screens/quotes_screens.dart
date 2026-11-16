@@ -12,7 +12,7 @@ import 'sign_in_screen.dart';
 
 // ============================================================ customer side
 
-/// "Request a quote": the event details go to the provider inside Hoopla.
+/// "Request a quote": the event details go to the provider inside Festino.
 /// Needs a free account so the provider can reply.
 Future<void> requestQuote(BuildContext context, ProviderProfile provider) async {
   if (provider.isSample) {
@@ -108,7 +108,7 @@ class _RequestSheetState extends State<_RequestSheet> {
         Celebration.show(
           overlay,
           title: 'Quote request sent!',
-          message: '${widget.provider.businessName} will reply in Hoopla${phoneCtrl.text.trim().isEmpty ? '' : ' or contact you'}. '
+          message: '${widget.provider.businessName} will reply in Festino${phoneCtrl.text.trim().isEmpty ? '' : ' or contact you'}. '
               'Track it under "Your quote requests" in Nearby.',
           emoji: '📨',
         );
@@ -499,13 +499,13 @@ class _LeadInboxScreenState extends State<LeadInboxScreen> {
                             if (q.phoneDigits.isNotEmpty) ...[
                               TextButton(onPressed: () => openLink(context, Uri(scheme: 'tel', path: q.phoneDigits)), child: const Text('Call')),
                               TextButton(
-                                onPressed: () => openLink(context, Uri.https('wa.me', '/${q.phoneDigits}', {'text': 'Hi ${q.customerName}, this is about your quote request on Hoopla.'})),
+                                onPressed: () => openLink(context, Uri.https('wa.me', '/${q.phoneDigits}', {'text': 'Hi ${q.customerName}, this is about your quote request on Festino.'})),
                                 child: const Text('WhatsApp'),
                               ),
                             ],
                             if (q.customerEmail.isNotEmpty)
                               TextButton(
-                                onPressed: () => openLink(context, Uri(scheme: 'mailto', path: q.customerEmail, query: 'subject=${Uri.encodeComponent('Your Hoopla quote request: ${q.eventTitle}')}')),
+                                onPressed: () => openLink(context, Uri(scheme: 'mailto', path: q.customerEmail, query: 'subject=${Uri.encodeComponent('Your Festino quote request: ${q.eventTitle}')}')),
                                 child: const Text('Email'),
                               ),
                             TextButton(onPressed: () => _reply(q), child: Text(q.reply.isEmpty ? 'Reply' : 'Edit reply')),
@@ -582,7 +582,7 @@ class _QuoteTile extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(color: const Color(0xFFF1FBD9), borderRadius: BorderRadius.circular(12), border: Border.all(color: HC.lime)),
-                child: Text('🎁 Hoopla deal claimed: ${q.dealPercent}% off · code ${q.dealCode}', style: body(13, weight: FontWeight.w700)),
+                child: Text('🎁 Festino deal claimed: ${q.dealPercent}% off · code ${q.dealCode}', style: body(13, weight: FontWeight.w700)),
               ),
             ],
             const SizedBox(height: 8),
@@ -612,7 +612,7 @@ class _QuoteTile extends StatelessWidget {
 }
 
 
-/// The deal a customer gets by booking this provider through Hoopla.
+/// The deal a customer gets by booking this provider through Festino.
 class _DealBox extends StatelessWidget {
   const _DealBox({required this.provider, required this.customerUid});
   final ProviderProfile provider;
@@ -627,7 +627,7 @@ class _DealBox extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('🎁 Your Hoopla deal: ${p.dealPercent}% off', style: body(15, weight: FontWeight.w700)),
+          Text('🎁 Your Festino deal: ${p.dealPercent}% off', style: body(15, weight: FontWeight.w700)),
           const SizedBox(height: 2),
           Text('Code ${p.dealCodeFor(customerUid)} is added to your request. Mention it when you book.', style: body(12)),
           if (p.dealTerms.isNotEmpty) Text(p.dealTerms, style: body(12, color: HC.muted)),

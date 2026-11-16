@@ -6,7 +6,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'reminder_plan.dart';
 
 /// Reminders scheduled on the phone itself: no server, work offline,
-/// and show even when Hoopla is closed. Not available on the website.
+/// and show even when Festino is closed. Not available on the website.
 class Reminders {
   static final _plugin = FlutterLocalNotificationsPlugin();
   static bool _ready = false;

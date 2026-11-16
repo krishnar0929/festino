@@ -16,7 +16,7 @@ class Invitee {
   final String email;
   final DateTime addedAt;
 
-  /// When the host last sent this person the invite from Hoopla (null = not yet).
+  /// When the host last sent this person the invite from Festino (null = not yet).
   DateTime? sentAt;
 
   String get phoneDigits => phone.replaceAll(RegExp(r'[^0-9+]'), '');
@@ -411,7 +411,7 @@ class InviteInfo {
       'action': 'TEMPLATE',
       'text': title,
       'dates': '${t(start)}/${t(end)}',
-      'details': '${message.isEmpty ? '' : '$message\n\n'}${hostName.trim().isEmpty ? 'Invitation' : 'Invited by $hostName'} on Hoopla',
+      'details': '${message.isEmpty ? '' : '$message\n\n'}${hostName.trim().isEmpty ? 'Invitation' : 'Invited by $hostName'} on Festino',
       'location': venueAddress.isNotEmpty ? venueAddress : venue,
     });
   }

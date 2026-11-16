@@ -53,7 +53,7 @@ class AccountService {
         try {
           await current.linkWithPopup(provider);
         } on FirebaseAuthException catch (e) {
-          // This Google account (or its email) already has a Hoopla account:
+          // This Google account (or its email) already has a Festino account:
           // sign in to that one instead. The guest's events are carried over.
           if (!_alreadyHasAccount(e)) rethrow;
           if (e.credential != null) {

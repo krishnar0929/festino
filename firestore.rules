@@ -68,7 +68,7 @@ service cloud.firestore {
     match /providers/{uid} {
       allow read: if signedIn();
       allow delete: if isOwner(uid);
-      // Hoopla deal: 0–30% off for customers who book through Hoopla, with short fine print.
+      // Festino deal: 0–30% off for customers who book through Festino, with short fine print.
       function validDeal(d) {
         return d.get('dealPercent', 0) is int && d.get('dealPercent', 0) >= 0 && d.get('dealPercent', 0) <= 30
           && d.get('dealTerms', '') is string && d.get('dealTerms', '').size() <= 120;

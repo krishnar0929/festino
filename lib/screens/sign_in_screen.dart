@@ -92,7 +92,7 @@ class _SignInScreenState extends State<SignInScreen> {
       await state.afterSignIn(role, carry);
       final notice = state.takeReferralNotice();
       if (notice != null && notice.startsWith('Friend')) {
-        Celebration.show(overlay, title: 'Welcome to Hoopla!', message: 'Your friend\'s invite code is saved. Happy planning!', emoji: '🎁');
+        Celebration.show(overlay, title: 'Welcome to Festino!', message: 'Your friend\'s invite code is saved. Happy planning!', emoji: '🎁');
       } else if (notice != null) {
         messenger.showSnackBar(SnackBar(content: Text(notice)));
       }
@@ -209,7 +209,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     children: [
                       BackArrow(onPressed: () => Navigator.of(context).pop(false)),
                       const Spacer(),
-                      Text('HOOPLA', style: overline()),
+                      Text('FESTINO', style: overline()),
                       const SizedBox(width: 12),
                     ],
                   ),
@@ -365,7 +365,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   const SizedBox(height: 6),
                   TextButton(
                     onPressed: busy ? null : () => _setMode(!creating),
-                    child: Text(creating ? 'Already have an account? Sign in' : 'New to Hoopla? Create an account'),
+                    child: Text(creating ? 'Already have an account? Sign in' : 'New to Festino? Create an account'),
                   ),
                   const SizedBox(height: 8),
                   Text('You can delete your account anytime from Account.', textAlign: TextAlign.center, style: body(12, color: HC.muted)),

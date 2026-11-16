@@ -19,7 +19,7 @@ Future<void> showFeedbackSheet(BuildContext context, {int rating = 0, FeedbackTy
   );
 }
 
-/// "Rate Hoopla": 4–5 stars go to the App Store, 1–3 stars open the feedback form
+/// "Rate Festino": 4–5 stars go to the App Store, 1–3 stars open the feedback form
 /// so we can fix what's wrong.
 Future<void> showRateSheet(BuildContext context) async {
   final stars = await showDialog<int>(context: context, builder: (_) => const _RateDialog());
@@ -49,7 +49,7 @@ Future<void> openStoreReview(BuildContext context) async {
   }
 }
 
-/// Asks "Enjoying Hoopla?" once, right after a fun moment (a party game finishing).
+/// Asks "Enjoying Festino?" once, right after a fun moment (a party game finishing).
 class RatePrompt {
   static const _askedKey = 'hoopla.ratePrompted';
   static const _momentsKey = 'hoopla.happyMoments';
@@ -72,7 +72,7 @@ class RatePrompt {
     final happy = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Enjoying Hoopla? 🎉'),
+        title: const Text('Enjoying Festino? 🎉'),
         content: const Text('A quick rating helps other party planners find us.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Not really')),
@@ -132,7 +132,7 @@ class _RateDialogState extends State<_RateDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Rate Hoopla', textAlign: TextAlign.center),
+      title: const Text('Rate Festino', textAlign: TextAlign.center),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -178,7 +178,7 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
   }
 
   String get _hint => switch (type) {
-        FeedbackType.idea => 'What would make Hoopla better for your party?',
+        FeedbackType.idea => 'What would make Festino better for your party?',
         FeedbackType.problem => 'What went wrong? What were you trying to do?',
         FeedbackType.praise => 'What did you love?',
         FeedbackType.other => 'Tell us anything',
@@ -215,7 +215,7 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
       await openLink(
         context,
         FeedbackService.mailto(
-          subject: 'Hoopla ${type.label.toLowerCase()}${rating > 0 ? ' ($rating★)' : ''}',
+          subject: 'Festino ${type.label.toLowerCase()}${rating > 0 ? ' ($rating★)' : ''}',
           body: message,
         ),
       );
@@ -235,7 +235,7 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
             children: [
               Text('Send feedback', style: display(22)),
               const SizedBox(height: 4),
-              Text('Ideas, problems, kind words: it all goes straight to the Hoopla team.', style: body(13, color: HC.muted)),
+              Text('Ideas, problems, kind words: it all goes straight to the Festino team.', style: body(13, color: HC.muted)),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 8,

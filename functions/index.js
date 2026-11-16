@@ -102,7 +102,7 @@ exports.invitePreview = onRequest({ region: "us-central1", memory: "256MiB", max
   const target = id ? `${SITE}/?invite=${encodeURIComponent(id)}${guest ? `&g=${guest}` : ""}` : `${SITE}/`;
 
   let title = "You're invited! 🎉";
-  let description = "Open your invitation and RSVP on Hoopla.";
+  let description = "Open your invitation and RSVP on Festino.";
   let image = `${SITE}/icons/Icon-512.png`;
   try {
     if (id) {
@@ -133,7 +133,7 @@ exports.invitePreview = onRequest({ region: "us-central1", memory: "256MiB", max
 <title>${esc(title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Hoopla">
+<meta property="og:site_name" content="Festino">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:image" content="${esc(image)}">

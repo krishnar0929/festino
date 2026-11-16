@@ -20,7 +20,7 @@ class RsvpScreen extends StatefulWidget {
   final String guestKey;
   final String inviteId;
 
-  /// "Plan your own party with Hoopla".
+  /// "Plan your own party with Festino".
   final VoidCallback? onPlanOwn;
 
   @override
@@ -375,7 +375,7 @@ class _RsvpScreenState extends State<RsvpScreen> {
                   Center(
                     child: TextButton(
                       onPressed: widget.onPlanOwn,
-                      child: const Text('🎈 Planning a party too? Plan it free with Hoopla'),
+                      child: const Text('🎈 Planning a party too? Plan it free with Festino'),
                     ),
                   ),
                 ],

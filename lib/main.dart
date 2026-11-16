@@ -60,11 +60,11 @@ Future<void> main() async {
   // Party invites: https://hoopla-894ca.web.app/?invite=<hostUid>_<eventId>
   // or the short form https://hoopla-894ca.web.app/i/<hostUid>_<eventId>
   final (invite, guest) = kIsWeb ? inviteFromUri(Uri.base) : (null, '');
-  runApp(HooplaApp(state: state, inviteId: invite, guestKey: guest));
+  runApp(FestinoApp(state: state, inviteId: invite, guestKey: guest));
 }
 
-class HooplaApp extends StatefulWidget {
-  const HooplaApp({super.key, required this.state, this.inviteId, this.guestKey = ''});
+class FestinoApp extends StatefulWidget {
+  const FestinoApp({super.key, required this.state, this.inviteId, this.guestKey = ''});
   final AppState state;
 
   /// From a personal invite link: who this guest is on the host's list.
@@ -74,10 +74,10 @@ class HooplaApp extends StatefulWidget {
   final String? inviteId;
 
   @override
-  State<HooplaApp> createState() => _HooplaAppState();
+  State<FestinoApp> createState() => _FestinoAppState();
 }
 
-class _HooplaAppState extends State<HooplaApp> with WidgetsBindingObserver {
+class _FestinoAppState extends State<FestinoApp> with WidgetsBindingObserver {
   final _messenger = GlobalKey<ScaffoldMessengerState>();
 
   AppState get state => widget.state;
@@ -101,7 +101,7 @@ class _HooplaAppState extends State<HooplaApp> with WidgetsBindingObserver {
     if (s == AppLifecycleState.resumed) _collectSharedReels();
   }
 
-  /// Picks up reels shared to Hoopla from Instagram (or TikTok, YouTube) while the app was closed.
+  /// Picks up reels shared to Festino from Instagram (or TikTok, YouTube) while the app was closed.
   Future<void> _collectSharedReels() async {
     final reels = await SharedReels.take();
     final added = await state.addReels(reels);
@@ -127,7 +127,7 @@ class _HooplaAppState extends State<HooplaApp> with WidgetsBindingObserver {
         listenable: state,
         builder: (context, _) => MaterialApp(
           scaffoldMessengerKey: _messenger,
-          title: 'Hoopla',
+          title: 'Festino',
           debugShowCheckedModeBanner: false,
           theme: buildTheme(),
           home: _inviteId != null

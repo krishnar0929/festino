@@ -96,7 +96,7 @@ class _GamesScreenState extends State<GamesScreen> {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'Faster: in Instagram tap the share icon on a reel → Share to… → Hoopla. It saves in one tap.',
+                      'Faster: in Instagram tap the share icon on a reel → Share to… → Festino. It saves in one tap.',
                       style: body(12, color: HC.muted),
                     ),
                   ),
@@ -118,7 +118,7 @@ class _GamesScreenState extends State<GamesScreen> {
     if (mounted) toast(context, added == 0 ? 'Already saved.' : 'Saved "$name". It waits here for your party.');
   }
 
-  /// Share a game on WhatsApp with a link back to Hoopla.
+  /// Share a game on WhatsApp with a link back to Festino.
   void _shareGame(BuildContext ctx, Game g) {
     final text = 'Party game idea: ${g.name}\n${g.howTo}\n'
         '${g.needs.isEmpty ? '' : 'You need: ${g.needs.join(', ')}\n'}'
@@ -233,8 +233,8 @@ class _GamesScreenState extends State<GamesScreen> {
                           Text('Saw a funny game reel?', style: body(14, color: Colors.white, weight: FontWeight.w600)),
                           Text(
                             kIsWeb
-                                ? 'Save it to Hoopla for free. It waits for your next party, so you never forget it.'
-                                : 'Save it free. Tip: in Instagram tap Share → Hoopla to save in one tap.',
+                                ? 'Save it to Festino for free. It waits for your next party, so you never forget it.'
+                                : 'Save it free. Tip: in Instagram tap Share → Festino to save in one tap.',
                             style: body(12, color: HC.nightMuted),
                           ),
                         ],

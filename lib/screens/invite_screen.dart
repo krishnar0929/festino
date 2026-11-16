@@ -705,7 +705,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
     }
   }
 
-  /// Hoopla's own share menu: WhatsApp, Instagram, Facebook, Messages, Gmail, …
+  /// Festino's own share menu: WhatsApp, Instagram, Facebook, Messages, Gmail, …
   Future<void> _openSharePicker(BuildContext from, {Uint8List? png}) async {
     _hideKeyboard();
     await _ready();

@@ -24,7 +24,7 @@ class ProviderProfile {
     this.dealTerms = '',
   });
 
-  /// Choices for the Hoopla deal (0 = no deal).
+  /// Choices for the Festino deal (0 = no deal).
   static const dealChoices = [0, 10, 15, 20];
 
   /// Most featured post links (reels, videos) a provider can show.
@@ -68,7 +68,7 @@ class ProviderProfile {
   /// Set only by you (the admin) in the Firebase console.
   final bool verified;
 
-  /// Hoopla deal: % off the provider gives customers who book through Hoopla (0 = none).
+  /// Festino deal: % off the provider gives customers who book through Festino (0 = none).
   final int dealPercent;
 
   /// Fine print for the deal, e.g. "On bookings over $300".
@@ -76,13 +76,13 @@ class ProviderProfile {
 
   bool get hasDeal => dealPercent > 0;
 
-  /// "20% off with Hoopla"
-  String get dealLabel => '$dealPercent% off with Hoopla';
+  /// "20% off with Festino"
+  String get dealLabel => '$dealPercent% off with Festino';
 
-  /// The code a customer shows the provider: HOOPLA20-AB12 (same customer, same code).
+  /// The code a customer shows the provider: FESTINO20-AB12 (same customer, same code).
   String dealCodeFor(String customerUid) {
     final tag = customerUid.replaceAll(RegExp(r'[^A-Za-z0-9]'), '').toUpperCase();
-    return 'HOOPLA$dealPercent-${tag.length >= 4 ? tag.substring(0, 4) : tag.padRight(4, 'X')}';
+    return 'FESTINO$dealPercent-${tag.length >= 4 ? tag.substring(0, 4) : tag.padRight(4, 'X')}';
   }
 
   Uri? get instagramUrl => instagram.isEmpty ? null : Uri.https('www.instagram.com', '/$instagram/');
@@ -100,7 +100,7 @@ class ProviderProfile {
   /// A built-in sample listing (lib/data/sample_providers.dart), not a real business.
   bool get isSample => uid.startsWith('sample-');
 
-  /// True when the listing links anywhere outside Hoopla.
+  /// True when the listing links anywhere outside Festino.
   bool get hasSocial => [instagramUrl, facebookUrl, youtubeUrl, tiktokUrl, reviewsUrl, websiteUrl].any((u) => u != null);
 
   /// Digits only, for call and WhatsApp links.

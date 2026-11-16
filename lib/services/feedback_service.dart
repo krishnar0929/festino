@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-/// Where people reach the Hoopla team.
+/// Where people reach the Festino team.
 const supportEmail = 'northbitapps@gmail.com';
 const appStoreId = '6831895941';
 const appStoreUrl = 'https://apps.apple.com/app/id$appStoreId';
@@ -50,7 +50,7 @@ class FeedbackService {
   }
 
   /// mailto: link for "Email us", with the app version filled in.
-  static Uri mailto({String subject = 'Hoopla help', String body = ''}) =>
+  static Uri mailto({String subject = 'Festino help', String body = ''}) =>
       Uri(scheme: 'mailto', path: supportEmail, query: _query({'subject': subject, 'body': body}));
 
   static String _query(Map<String, String> params) => params.entries
