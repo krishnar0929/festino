@@ -44,7 +44,7 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Hoopla uses the microphone so your invitation video has sound.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Hoopla uses the camera so you can take pictures of your work for your listing.</string>
+	<string>Hoopla uses the camera to take photos and videos for your invitations and your listing.</string>
 	<key>NSContactsUsageDescription</key>
 	<string>Hoopla lets you pick friends from your contacts to send party invites. Your contacts are never uploaded.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
