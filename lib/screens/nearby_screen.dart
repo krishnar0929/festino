@@ -202,8 +202,10 @@ class _NearbyScreenState extends State<NearbyScreen> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            if (widget.standalone)
-              IconButton(tooltip: 'Back', onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.arrow_back_rounded)),
+            if (widget.standalone) ...[
+              const BackArrow(),
+              const SizedBox(width: 10),
+            ],
             Expanded(child: Text('Find nearby', style: display(30))),
             Padding(
               padding: const EdgeInsets.only(bottom: 4),

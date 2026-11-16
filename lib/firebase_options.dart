@@ -63,13 +63,13 @@ class DefaultFirebaseOptions {
     projectId: 'hoopla-894ca',
     storageBucket: 'hoopla-894ca.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyA_qty6e5ESPIcbF-xQWeHmR8CGSkavULg',
     appId: '1:376055601845:ios:27c54651893b9bc6713cfc',
     messagingSenderId: '376055601845',
     projectId: 'hoopla-894ca',
     storageBucket: 'hoopla-894ca.firebasestorage.app',
+    iosClientId: '376055601845-9pib2360jhioev67g7k9tttbir2170jn.apps.googleusercontent.com',
     iosBundleId: 'com.northbitapps.hoopla',
   );
 }

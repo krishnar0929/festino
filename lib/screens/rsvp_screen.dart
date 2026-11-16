@@ -203,8 +203,12 @@ class _RsvpScreenState extends State<RsvpScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+                padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 12, 20, 32),
                 children: [
+                  if (Navigator.of(context).canPop()) ...[
+                    const Align(alignment: Alignment.centerLeft, child: BackArrow()),
+                    const SizedBox(height: 10),
+                  ],
                   _InviteCard(info: info),
                   const SizedBox(height: 18),
                   if (sent && status != null) ...[

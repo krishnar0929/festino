@@ -22,10 +22,27 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.376055601845-9pib2360jhioev67g7k9tttbir2170jn</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>GIDClientID</key>
+	<string>376055601845-9pib2360jhioev67g7k9tttbir2170jn.apps.googleusercontent.com</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Hoopla uses the camera so you can take pictures of your work for your listing.</string>
 	<key>NSContactsUsageDescription</key>
 	<string>Hoopla lets you pick friends from your contacts to send party invites. Your contacts are never uploaded.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
@@ -36,10 +53,6 @@
 	<string>Hoopla uses your location to set your party venue, show the weather for party day and find helpers near you.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Hoopla uses your photos so you can add pictures of your work to your listing.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>Hoopla uses the camera so you can take pictures of your work for your listing.</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

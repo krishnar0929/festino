@@ -227,6 +227,24 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
     }
   }
 
+  /// First-time setup has nowhere to go back to, so "back" means
+  /// "I'm not listing a business right now": return to planning events.
+  Future<void> _leaveSetup(BuildContext context) async {
+    final state = AppScope.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Leave listing setup?'),
+        content: const Text('You\'ll go back to planning events. You can list your business anytime from Account → Offer a service.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Stay')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Go back')),
+        ],
+      ),
+    );
+    if (ok == true) await state.setRole(UserRole.customer);
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
@@ -242,10 +260,9 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
               children: [
                 Row(
                   children: [
-                    if (canPop)
-                      IconButton(tooltip: 'Back', onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.arrow_back_rounded))
-                    else
-                      Text('HOOPLA FOR BUSINESS', style: overline()),
+                    BackArrow(onPressed: canPop ? () => Navigator.of(context).pop() : () => _leaveSetup(context)),
+                    const SizedBox(width: 10),
+                    Text('HOOPLA FOR BUSINESS', style: overline()),
                     const Spacer(),
                     IconButton(tooltip: 'Account', onPressed: () => showAccountSheet(context), icon: const Icon(Icons.person_outline_rounded)),
                   ],

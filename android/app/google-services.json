@@ -12,7 +12,12 @@
           "package_name": "com.northbitapps.hoopla"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "376055601845-nn1rd8jgcbs631b4b5h7pqqmfsn9ge1t.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDI9yRKRljymyqmZ5AYMuQb5m5cgnNrkVA"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "376055601845-nn1rd8jgcbs631b4b5h7pqqmfsn9ge1t.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "376055601845-9pib2360jhioev67g7k9tttbir2170jn.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.northbitapps.hoopla"
+              }
+            }
+          ]
         }
       }
     }
