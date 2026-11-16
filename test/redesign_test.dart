@@ -74,4 +74,19 @@ void main() {
       expect(costLevelHint(k), isNotEmpty);
     }
   });
+
+  test('How long and Who\'s coming: Other choices are kept', () {
+    expect(durationLabel(3, 1), '3 hrs');
+    expect(durationLabel(1, 1), '1 hr');
+    expect(durationLabel(10, 1), 'Full day');
+    expect(durationLabel(10, 3), '3 days · full days');
+    expect(durationLabel(6, 2), '2 days · 6 hrs a day');
+    final e = party()
+      ..days = 3
+      ..hours = 10
+      ..audienceNote = 'Seniors';
+    final back = EventDetails.fromMap(e.toMap());
+    expect((back.days, back.hours, back.audienceNote), (3, 10, 'Seniors'));
+    expect(party().days, 1);
+  });
 }

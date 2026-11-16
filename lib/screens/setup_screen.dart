@@ -44,6 +44,8 @@ class _SetupScreenState extends State<SetupScreen> {
   late DateTime date;
   late int startMinutes;
   late int hours;
+  late int days;
+  late String audienceNote;
   late bool indoor;
   late int guests;
   late Audience audience;
@@ -65,11 +67,13 @@ class _SetupScreenState extends State<SetupScreen> {
     super.initState();
     final e = widget.existing;
     final preset = widget.preset;
-    occasion = e?.occasion ?? (preset != null && occasions.contains(preset.occasion) ? preset.occasion : occasions.first);
+    occasion = e?.occasion ?? preset?.occasion ?? '';
     titleCtrl = TextEditingController(text: e?.title ?? '');
     date = e?.date ?? _sampleDate();
     startMinutes = e?.startMinutes ?? 16 * 60;
     hours = e?.hours ?? 3;
+    days = e?.days ?? 1;
+    audienceNote = e?.audienceNote ?? '';
     indoor = e?.indoor ?? preset?.indoor ?? true;
     guests = e?.guests ?? preset?.guests ?? 30;
     audience = e?.audience ?? Audience.kids;
@@ -180,16 +184,66 @@ class _SetupScreenState extends State<SetupScreen> {
   }
 
   Future<void> _moreOccasions() async {
-    final o = await pickMoreOccasion(context, current: occasion);
+    final o = await pickMoreOccasion(context, current: occasion, all: true);
     if (o != null && mounted) setState(() => occasion = o);
   }
 
-  Future<void> _otherOccasion() async {
-    final o = await typeOccasion(context, initial: occasions.contains(occasion) ? '' : occasion);
-    if (o != null && mounted) setState(() => occasion = o);
+  /// "How long?" → Other: hours per day (or full day) and number of days.
+  Future<void> _otherLength() async {
+    final picked = await showModalBottomSheet<(int, int)>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      backgroundColor: HC.ground,
+      builder: (_) => _LengthSheet(hours: hours, days: days),
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        hours = picked.$1;
+        days = picked.$2;
+      });
+    }
+  }
+
+  /// "Who's coming?" → Other: type it (e.g. Seniors, Colleagues, Teens).
+  Future<void> _otherAudience() async {
+    final ctrl = TextEditingController(text: audienceNote);
+    final text = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Who\'s coming?'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          maxLength: 40,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(hintText: 'e.g. Seniors, Colleagues, Teens, Couples'),
+          onSubmitted: (v) => Navigator.pop(ctx, v),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(style: FilledButton.styleFrom(backgroundColor: HC.violet), onPressed: () => Navigator.pop(ctx, ctrl.text), child: const Text('Use this')),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    final t = text?.trim() ?? '';
+    if (t.isEmpty || !mounted) return;
+    final low = t.toLowerCase();
+    setState(() {
+      audienceNote = t;
+      // Plan games for the closest group.
+      audience = RegExp(r'kid|child|teen|school|toddler|baby').hasMatch(low)
+          ? Audience.kids
+          : (RegExp(r'senior|elder|grand').hasMatch(low) ? Audience.everyone : Audience.adults);
+    });
   }
 
   Future<void> _save() async {
+    if (occasion.isEmpty) {
+      toast(context, 'Pick an occasion first.');
+      return;
+    }
     if (costOn && costLevel == null) {
       toast(context, 'Pick a cost level: Simple, Medium, High, Pro or Luxe.');
       return;
@@ -224,6 +278,8 @@ class _SetupScreenState extends State<SetupScreen> {
       ..date = date
       ..startMinutes = startMinutes
       ..hours = hours
+      ..days = days
+      ..audienceNote = audienceNote
       ..indoor = indoor
       ..guests = guests
       ..audience = audience
@@ -362,19 +418,38 @@ class _SetupScreenState extends State<SetupScreen> {
                         const SizedBox(height: 22),
                       ],
                       const SectionLabel("What's the occasion?"),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final o in occasions) Pill(label: o, selected: o == occasion, onTap: () => setState(() => occasion = o)),
-                          // A picked "more" or typed occasion shows here, selected.
-                          if (!occasions.contains(occasion))
-                            Pill(label: '${occasionIcon(occasion)} $occasion', selected: true, onTap: _moreOccasions),
-                          Pill(label: 'More ▾', selected: false, onTap: _moreOccasions),
-                          Pill(label: '✏️ Other', selected: false, onTap: _otherOccasion),
-                        ],
+                      CardBox(
+                        onTap: _moreOccasions,
+                        padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(color: const Color(0xFFEEEAFE), borderRadius: BorderRadius.circular(14)),
+                              child: occasion.isEmpty
+                                  ? Icon(Icons.celebration_outlined, color: HC.violet)
+                                  : Text(occasionIcon(occasion), style: const TextStyle(fontSize: 22)),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Occasion *', style: body(12, color: HC.muted)),
+                                  Text(
+                                    occasion.isEmpty ? 'Pick an occasion' : occasion,
+                                    style: body(16, weight: FontWeight.w600, color: occasion.isEmpty ? HC.muted : HC.ink),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.keyboard_arrow_down_rounded, color: HC.muted),
+                          ],
+                        ),
                       ),
-                      if (!occasions.contains(occasion))
+                      if (occasion.isNotEmpty && !occasions.contains(occasion))
                         Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: Text('Planned like a ${occasionKind(occasion).toLowerCase()}: games, helpers and timeline to match.',
@@ -402,8 +477,22 @@ class _SetupScreenState extends State<SetupScreen> {
                       const SectionLabel('How long?'),
                       Wrap(
                         spacing: 8,
+                        runSpacing: 8,
                         children: [
-                          for (final h in [2, 3, 4, 5]) Pill(label: '$h hrs', selected: h == hours, onTap: () => setState(() => hours = h)),
+                          for (final h in [2, 3, 4, 5])
+                            Pill(
+                              label: '$h hrs',
+                              selected: h == hours && days == 1,
+                              onTap: () => setState(() {
+                                hours = h;
+                                days = 1;
+                              }),
+                            ),
+                          Pill(
+                            label: days == 1 && [2, 3, 4, 5].contains(hours) ? '✏️ Other' : '✏️ ${durationLabel(hours, days)}',
+                            selected: !(days == 1 && [2, 3, 4, 5].contains(hours)),
+                            onTap: _otherLength,
+                          ),
                         ],
                       ),
                       const SizedBox(height: 20),
@@ -413,8 +502,22 @@ class _SetupScreenState extends State<SetupScreen> {
                       const SectionLabel('Who\'s coming?'),
                       Wrap(
                         spacing: 8,
+                        runSpacing: 8,
                         children: [
-                          for (final a in Audience.values) Pill(label: a.label, selected: a == audience, onTap: () => setState(() => audience = a)),
+                          for (final a in Audience.values)
+                            Pill(
+                              label: a.label,
+                              selected: a == audience && audienceNote.isEmpty,
+                              onTap: () => setState(() {
+                                audience = a;
+                                audienceNote = '';
+                              }),
+                            ),
+                          Pill(
+                            label: audienceNote.isEmpty ? '✏️ Other' : '✏️ $audienceNote',
+                            selected: audienceNote.isNotEmpty,
+                            onTap: _otherAudience,
+                          ),
                         ],
                       ),
                       const SizedBox(height: 12),
@@ -655,6 +758,106 @@ class _VenueTile extends StatelessWidget {
           ),
           const Icon(Icons.chevron_right_rounded, color: HC.muted),
         ],
+      ),
+    );
+  }
+}
+
+/// "How long?" → Other: a few quick picks plus hours-per-day and days steppers.
+class _LengthSheet extends StatefulWidget {
+  const _LengthSheet({required this.hours, required this.days});
+  final int hours;
+  final int days;
+
+  @override
+  State<_LengthSheet> createState() => _LengthSheetState();
+}
+
+class _LengthSheetState extends State<_LengthSheet> {
+  late int hours = widget.hours;
+  late int days = widget.days;
+
+  Widget _stepper(String label, String value, VoidCallback minus, VoidCallback plus) {
+    return CardBox(
+      padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: body(12, color: HC.muted)),
+                Text(value, style: body(17, weight: FontWeight.w700)),
+              ],
+            ),
+          ),
+          _StepButton(icon: Icons.remove_rounded, label: 'Less', dark: false, onTap: minus),
+          const SizedBox(width: 8),
+          _StepButton(icon: Icons.add_rounded, label: 'More', dark: true, onTap: plus),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final quick = <(String, int, int)>[
+      ('1 hr', 1, 1),
+      ('6 hrs', 6, 1),
+      ('Full day', 10, 1),
+      ('2 days', 10, 2),
+      ('3 days', 10, 3),
+    ];
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('How long is it?', style: display(22)),
+            const SizedBox(height: 4),
+            Text('Weddings and festivals can run several days.', style: body(13, color: HC.muted)),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final q in quick)
+                  Pill(
+                    label: q.$1,
+                    small: true,
+                    selectedColor: HC.violet,
+                    selected: hours == q.$2 && days == q.$3,
+                    onTap: () => setState(() {
+                      hours = q.$2;
+                      days = q.$3;
+                    }),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _stepper(
+              days > 1 ? 'Hours each day' : 'Hours',
+              hours >= 10 ? 'Full day' : '$hours hr${hours == 1 ? '' : 's'}',
+              () => setState(() => hours = (hours - 1).clamp(1, 10).toInt()),
+              () => setState(() => hours = (hours + 1).clamp(1, 10).toInt()),
+            ),
+            const SizedBox(height: 10),
+            _stepper(
+              'Days',
+              '$days day${days == 1 ? '' : 's'}',
+              () => setState(() => days = (days - 1).clamp(1, 7).toInt()),
+              () => setState(() => days = (days + 1).clamp(1, 7).toInt()),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: HC.ink, minimumSize: const Size(0, 52)),
+              onPressed: () => Navigator.pop(context, (hours, days)),
+              child: Text('Use ${durationLabel(hours, days)}'),
+            ),
+          ],
+        ),
       ),
     );
   }

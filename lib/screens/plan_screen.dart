@@ -116,8 +116,9 @@ class _PlanScreenState extends State<PlanScreen> {
         ),
         const SizedBox(height: 12),
         Text(
-          '${DateFormat('EEE, MMM d').format(e.date)} · ${clockAmPm(e.startMinutes)}–${clockAmPm(e.startMinutes + e.hours * 60)} · '
-          '${e.indoor ? 'indoor' : 'outdoor'} · ${e.guests} guests',
+          '${DateFormat('EEE, MMM d').format(e.date)} · ${clockAmPm(e.startMinutes)}–${clockAmPm(e.startMinutes + e.hours * 60)}'
+          '${e.days > 1 ? ' · ${e.days} days' : ''} · ${e.indoor ? 'indoor' : 'outdoor'} · ${e.guests} guests'
+          '${e.audienceNote.isNotEmpty ? ' · ${e.audienceNote}' : ''}',
           style: body(13, color: HC.muted),
         ),
         const SizedBox(height: 12),
