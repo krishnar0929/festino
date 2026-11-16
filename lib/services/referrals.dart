@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'site.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 /// Refer a friend: each person who joins with your code gives you both
@@ -32,10 +33,10 @@ String? normalizeCode(String? input) {
   return c;
 }
 
-/// The code in an invite link like https://hoopla-894ca.web.app/?ref=ABC123.
+/// The code in an invite link like https://festino.web.app/?ref=ABC123.
 String? codeFromUri(Uri uri) => normalizeCode(uri.queryParameters['ref']);
 
-String inviteLink(String code) => 'https://hoopla-894ca.web.app/?ref=$code';
+String inviteLink(String code) => '$siteUrl/?ref=$code';
 
 String inviteMessage(String code) =>
     'Planning a party? I use Festino for the plan, the games and finding helpers nearby. '

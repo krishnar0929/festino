@@ -52,13 +52,13 @@ Future<void> main() async {
   applyAppColor(state.themeColor);
   await state.load();
 
-  // Invite links: https://hoopla-894ca.web.app/?ref=CODE
+  // Invite links: https://festino.web.app/?ref=CODE
   if (kIsWeb) {
     final code = codeFromUri(Uri.base);
     if (code != null && state.referral.usedCode == null) await state.setPendingRefCode(code);
   }
-  // Party invites: https://hoopla-894ca.web.app/?invite=<hostUid>_<eventId>
-  // or the short form https://hoopla-894ca.web.app/i/<hostUid>_<eventId>
+  // Party invites: https://festino.web.app/?invite=<hostUid>_<eventId>
+  // or the short form https://festino.web.app/i/<hostUid>_<eventId>
   final (invite, guest) = kIsWeb ? inviteFromUri(Uri.base) : (null, '');
   runApp(FestinoApp(state: state, inviteId: invite, guestKey: guest));
 }

@@ -10,6 +10,7 @@ import '../services/shared_reels.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../services/site.dart';
 import '../widgets/locked.dart';
 
 /// Browse games with how-to videos, add them to the plan, and save reels.
@@ -122,7 +123,7 @@ class _GamesScreenState extends State<GamesScreen> {
   void _shareGame(BuildContext ctx, Game g) {
     final text = 'Party game idea: ${g.name}\n${g.howTo}\n'
         '${g.needs.isEmpty ? '' : 'You need: ${g.needs.join(', ')}\n'}'
-        '\nMore games and a ready-made party plan: https://hoopla-894ca.web.app';
+        '\nMore games and a ready-made party plan: $siteUrl';
     openLink(ctx, Uri.https('wa.me', '/', {'text': text}));
   }
 
