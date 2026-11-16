@@ -1,5 +1,6 @@
 import '../services/invite_service.dart';
 import '../services/location_service.dart';
+import 'photo_frame.dart';
 
 /// Who the event is mainly for. Drives which games get suggested.
 enum Audience { kids, adults, everyone }
@@ -76,6 +77,12 @@ class EventDetails {
     this.budgetItems,
     List<TodoItem>? todos,
     this.inviteMessage = '',
+    this.inviteTitle = '',
+    this.invitePhoto = '',
+    this.inviteTheme = 'midnight',
+    this.inviteHost = '',
+    this.inviteExtra = '',
+    this.invitePhotoFrame = const PhotoFrame(),
     this.budget,
     this.venue,
     this.status = 'active',
@@ -132,6 +139,27 @@ class EventDetails {
   /// The host's note on the invite.
   String inviteMessage;
 
+  /// The invitation's headline ('' = the event title).
+  String inviteTitle;
+
+  /// Photo on the invitation (download link in Firebase Storage), or ''.
+  String invitePhoto;
+
+  /// Look of the invitation card (see inviteThemes).
+  String inviteTheme;
+
+  /// "Hosted by" names on the invitation ('' = not shown).
+  String inviteHost;
+
+  /// Any other text on the invitation: dress code, parking, RSVP by…
+  String inviteExtra;
+
+  /// How the invitation photo is cropped.
+  PhotoFrame invitePhotoFrame;
+
+  /// What the invitation says at the top.
+  String get inviteHeadline => inviteTitle.trim().isNotEmpty ? inviteTitle.trim() : title;
+
   /// Reminders the user set on checklist tasks: task id → when to remind.
   Map<String, DateTime> taskReminders;
   double? budget;
@@ -177,6 +205,12 @@ class EventDetails {
         'budgetItems': budgetItems?.map((b) => b.toMap()).toList(),
         'todos': todos.map((t) => t.toMap()).toList(),
         'inviteMessage': inviteMessage,
+        'inviteTitle': inviteTitle,
+        'invitePhoto': invitePhoto,
+        'inviteTheme': inviteTheme,
+        'inviteHost': inviteHost,
+        'inviteExtra': inviteExtra,
+        'invitePhotoFrame': invitePhotoFrame.toMap(),
         'taskReminders': {for (final r in taskReminders.entries) r.key: r.value.toUtc().toIso8601String()},
         'budget': budget,
         'venue': venue?.toMap(),
@@ -209,6 +243,12 @@ class EventDetails {
       budgetItems: m['budgetItems'] is List ? maps(m['budgetItems']).map(BudgetItem.fromMap).toList() : null,
       todos: maps(m['todos']).map(TodoItem.fromMap).toList(),
       inviteMessage: m['inviteMessage'] as String? ?? '',
+      inviteTitle: m['inviteTitle'] as String? ?? '',
+      invitePhoto: m['invitePhoto'] as String? ?? '',
+      inviteTheme: m['inviteTheme'] as String? ?? 'midnight',
+      inviteHost: m['inviteHost'] as String? ?? '',
+      inviteExtra: m['inviteExtra'] as String? ?? '',
+      invitePhotoFrame: PhotoFrame.fromMap(m['invitePhotoFrame']),
       taskReminders: {
         for (final r in (m['taskReminders'] as Map? ?? const {}).entries)
           if (DateTime.tryParse('${r.value}') != null) '${r.key}': DateTime.parse('${r.value}').toLocal(),

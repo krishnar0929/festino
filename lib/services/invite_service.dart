@@ -1,29 +1,55 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 
 import '../models/event_details.dart';
+import '../models/photo_frame.dart';
 
 /// Someone the host invited (from contacts, or typed in).
 class Invitee {
-  Invitee({required this.name, this.phone = '', this.email = '', DateTime? addedAt}) : addedAt = addedAt ?? DateTime.now();
+  Invitee({required this.name, this.phone = '', this.email = '', DateTime? addedAt, this.sentAt}) : addedAt = addedAt ?? DateTime.now();
   final String name;
   final String phone;
   final String email;
   final DateTime addedAt;
 
+  /// When the host last sent this person the invite from Hoopla (null = not yet).
+  DateTime? sentAt;
+
   String get phoneDigits => phone.replaceAll(RegExp(r'[^0-9+]'), '');
   String get key => phoneDigits.isNotEmpty ? phoneDigits : email.toLowerCase();
 
-  Map<String, dynamic> toMap() => {'name': name, 'phone': phone, 'email': email, 'addedAt': addedAt.toIso8601String()};
+  /// Short code in this person's own invite link, so their reply is matched to them.
+  String get guestKey => guestKeyFor(key);
+
+  Map<String, dynamic> toMap() => {
+        'name': name,
+        'phone': phone,
+        'email': email,
+        'addedAt': addedAt.toIso8601String(),
+        if (sentAt != null) 'sentAt': sentAt!.toUtc().toIso8601String(),
+      };
 
   factory Invitee.fromMap(Map<String, dynamic> m) => Invitee(
         name: m['name'] as String? ?? '',
         phone: m['phone'] as String? ?? '',
         email: m['email'] as String? ?? '',
         addedAt: DateTime.tryParse(m['addedAt'] as String? ?? ''),
+        sentAt: DateTime.tryParse(m['sentAt'] as String? ?? '')?.toLocal(),
       );
+}
+
+/// A short, stable code for a phone number or email (same on iPhone and web).
+/// It goes in the guest's invite link instead of their number.
+String guestKeyFor(String key) {
+  if (key.isEmpty) return '';
+  var h = 7;
+  for (final c in key.codeUnits) {
+    h = (h * 31 + c) % 2147483647;
+  }
+  return h.toRadixString(36);
 }
 
 /// Turns pasted text ("Priya 732-555-0100, sam@x.com; +91 98480 12345") into invitees.
@@ -69,8 +95,12 @@ class Rsvp {
     this.note = '',
     this.diet = const [],
     this.updatedAt,
+    this.guestKey = '',
   });
   final String uid;
+
+  /// From the guest's personal invite link ('' when they opened a shared link).
+  final String guestKey;
 
   /// Food preferences, from [foodPreferences].
   final List<String> diet;
@@ -92,7 +122,75 @@ class Rsvp {
         note: m['note'] as String? ?? '',
         diet: [for (final d in (m['diet'] as List? ?? const [])) if (d is String) d],
         updatedAt: (m['updatedAt'] as Timestamp?)?.toDate(),
+        guestKey: m['guestKey'] as String? ?? '',
       );
+}
+
+/// One row on the host's guest board: someone invited, someone who replied, or both.
+class GuestEntry {
+  const GuestEntry({this.invitee, this.rsvp});
+  final Invitee? invitee;
+  final Rsvp? rsvp;
+
+  String get name => (rsvp?.name.trim().isNotEmpty ?? false) ? rsvp!.name : (invitee?.name ?? 'Guest');
+  bool get replied => rsvp != null;
+}
+
+/// Guests split the way hosts think about them: going, still pending, can't go.
+class GuestBoard {
+  const GuestBoard({this.going = const [], this.pending = const [], this.cantGo = const []});
+  final List<GuestEntry> going;
+
+  /// "Maybe" replies first, then people who haven't replied.
+  final List<GuestEntry> pending;
+  final List<GuestEntry> cantGo;
+
+  int get total => going.length + pending.length + cantGo.length;
+
+  /// Adults + kids coming.
+  int get people => going.fold(0, (n, g) => n + (g.rsvp?.people ?? 0));
+}
+
+/// Matches replies to the guest list (by personal link, then by name) and groups everyone.
+GuestBoard groupGuests(List<Invitee> invitees, List<Rsvp> rsvps) {
+  String norm(String s) => s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+  String first(String s) => norm(s).split(' ').first;
+  final open = List<Invitee>.of(invitees);
+  final going = <GuestEntry>[], maybe = <GuestEntry>[], no = <GuestEntry>[];
+
+  Invitee? match(Rsvp r) {
+    if (r.guestKey.isNotEmpty) {
+      for (final i in open) {
+        if (i.guestKey == r.guestKey) return i;
+      }
+    }
+    final n = norm(r.name);
+    if (n.isEmpty) return null;
+    for (final i in open) {
+      if (norm(i.name) == n) return i;
+    }
+    final byFirst = [for (final i in open) if (first(i.name) == first(r.name)) i];
+    return byFirst.length == 1 ? byFirst.first : null;
+  }
+
+  for (final r in rsvps) {
+    final i = match(r);
+    if (i != null) open.remove(i);
+    final entry = GuestEntry(invitee: i, rsvp: r);
+    switch (r.status) {
+      case RsvpStatus.going:
+        going.add(entry);
+      case RsvpStatus.maybe:
+        maybe.add(entry);
+      case RsvpStatus.no:
+        no.add(entry);
+    }
+  }
+  return GuestBoard(
+    going: going,
+    pending: [...maybe, for (final i in open) GuestEntry(invitee: i)],
+    cantGo: no,
+  );
 }
 
 /// 🥗 Food preferences guests can tick on the RSVP page.
@@ -244,7 +342,22 @@ class InviteInfo {
     required this.message,
     this.lat,
     this.lng,
+    this.photoUrl = '',
+    this.theme = 'midnight',
+    this.photoFrame = const PhotoFrame(),
+    this.extra = '',
   });
+
+  /// Extra text under the message (dress code, parking, …).
+  final String extra;
+
+  /// For sentences: the host's names, or "your host".
+  String get hostLabel => hostName.trim().isEmpty ? 'your host' : hostName;
+
+  final PhotoFrame photoFrame;
+
+  final String photoUrl;
+  final String theme;
 
   final String id;
   final String hostUid;
@@ -279,7 +392,7 @@ class InviteInfo {
       'action': 'TEMPLATE',
       'text': title,
       'dates': '${t(start)}/${t(end)}',
-      'details': '${message.isEmpty ? '' : '$message\n\n'}Invited by $hostName on Hoopla',
+      'details': '${message.isEmpty ? '' : '$message\n\n'}${hostName.trim().isEmpty ? 'Invitation' : 'Invited by $hostName'} on Hoopla',
       'location': venueAddress.isNotEmpty ? venueAddress : venue,
     });
   }
@@ -287,7 +400,8 @@ class InviteInfo {
   factory InviteInfo.fromDoc(String id, Map<String, dynamic> m) => InviteInfo(
         id: id,
         hostUid: m['hostUid'] as String? ?? '',
-        hostName: m['hostName'] as String? ?? 'Your host',
+        hostName: m['hostName'] as String? ?? '',
+        extra: m['extra'] as String? ?? '',
         title: m['title'] as String? ?? 'A party',
         occasion: m['occasion'] as String? ?? '',
         date: DateTime.tryParse(m['date'] as String? ?? '') ?? DateTime.now(),
@@ -298,21 +412,27 @@ class InviteInfo {
         message: m['message'] as String? ?? '',
         lat: (m['lat'] as num?)?.toDouble(),
         lng: (m['lng'] as num?)?.toDouble(),
+        photoUrl: m['photoUrl'] as String? ?? '',
+        theme: m['theme'] as String? ?? 'midnight',
+        photoFrame: PhotoFrame.fromMap(m['photoFrame']),
       );
 }
 
 String inviteIdFor(String hostUid, String eventId) => '${hostUid}_$eventId';
 
-String inviteUrl(String inviteId) => 'https://hoopla-894ca.web.app/?invite=$inviteId';
+/// The invite link. With [guest], the link is personal so the reply is matched to that guest.
+String inviteUrl(String inviteId, {String guest = ''}) =>
+    'https://hoopla-894ca.web.app/?invite=$inviteId${guest.isEmpty ? '' : '&g=$guest'}';
 
 /// The text sent with every invite.
 String inviteText(EventDetails e, String url, {String hostName = '', String message = ''}) {
   final when = '${DateFormat('EEE, MMM d').format(e.date)} at ${DateFormat('h:mm a').format(DateTime(2000, 1, 1, e.startMinutes ~/ 60, e.startMinutes % 60))}';
   final where = e.venue == null ? '' : '\n📍 ${e.venue!.address.isNotEmpty ? e.venue!.address : e.venue!.label}';
   return [
-    '🎉 You\'re invited: ${e.title}!',
+    '🎉 You\'re invited: ${e.inviteHeadline}!',
     '🗓 $when$where',
     if (message.trim().isNotEmpty) '\n${message.trim()}',
+    if (e.inviteExtra.trim().isNotEmpty) e.inviteExtra.trim(),
     '\nPlease RSVP here: $url',
     if (hostName.isNotEmpty) '— $hostName',
   ].join('\n');
@@ -332,8 +452,12 @@ class InviteService {
     await _doc(id).set({
       'hostUid': u.uid,
       'eventId': e.id,
-      'hostName': hostName,
-      'title': e.title,
+      'hostName': hostName.trim(),
+      'extra': e.inviteExtra.trim(),
+      'title': e.inviteHeadline,
+      'photoUrl': e.invitePhoto,
+      'theme': e.inviteTheme,
+      'photoFrame': e.invitePhotoFrame.toMap(),
       'occasion': e.occasion,
       'date': DateFormat('yyyy-MM-dd').format(e.date),
       'startMinutes': e.startMinutes,
@@ -346,6 +470,24 @@ class InviteService {
       'updatedAt': FieldValue.serverTimestamp(),
     });
     return id;
+  }
+
+  /// Uploads the invitation photo (already resized) and returns its download link.
+  static Future<String> uploadPhoto(String eventId, Uint8List bytes, {String contentType = 'image/jpeg'}) async {
+    final u = FirebaseAuth.instance.currentUser;
+    if (u == null || u.isAnonymous) throw StateError('Sign in to add a photo.');
+    if (bytes.length > 8 * 1024 * 1024) throw StateError('That photo is too big (8 MB max).');
+    final ref = FirebaseStorage.instance.ref('invites/${u.uid}/${eventId}_${DateTime.now().millisecondsSinceEpoch}.jpg');
+    await ref.putData(bytes, SettableMetadata(contentType: contentType));
+    return ref.getDownloadURL();
+  }
+
+  /// Removes an old invitation photo. Ignores photos that are already gone.
+  static Future<void> deletePhoto(String url) async {
+    if (url.isEmpty) return;
+    try {
+      await FirebaseStorage.instance.refFromURL(url).delete();
+    } catch (_) {}
   }
 
   static Future<InviteInfo?> load(String id) async {
@@ -382,6 +524,7 @@ class InviteService {
     int kids = 0,
     String note = '',
     List<String> diet = const [],
+    String guestKey = '',
   }) async {
     var uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
@@ -395,6 +538,7 @@ class InviteService {
       'kids': status == RsvpStatus.no ? 0 : kids,
       'note': note.trim(),
       'diet': status == RsvpStatus.no ? const <String>[] : diet.take(8).toList(),
+      if (guestKey.isNotEmpty) 'guestKey': guestKey,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }

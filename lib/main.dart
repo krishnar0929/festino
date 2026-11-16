@@ -56,12 +56,16 @@ Future<void> main() async {
   }
   // Party invites: https://hoopla-894ca.web.app/?invite=<hostUid>_<eventId>
   final invite = kIsWeb ? Uri.base.queryParameters['invite'] : null;
-  runApp(HooplaApp(state: state, inviteId: (invite == null || invite.isEmpty) ? null : invite));
+  final guest = kIsWeb ? (Uri.base.queryParameters['g'] ?? '') : '';
+  runApp(HooplaApp(state: state, inviteId: (invite == null || invite.isEmpty) ? null : invite, guestKey: guest));
 }
 
 class HooplaApp extends StatefulWidget {
-  const HooplaApp({super.key, required this.state, this.inviteId});
+  const HooplaApp({super.key, required this.state, this.inviteId, this.guestKey = ''});
   final AppState state;
+
+  /// From a personal invite link: who this guest is on the host's list.
+  final String guestKey;
 
   /// Opened from a party invite link: show the RSVP page first.
   final String? inviteId;
@@ -124,7 +128,7 @@ class _HooplaAppState extends State<HooplaApp> with WidgetsBindingObserver {
           debugShowCheckedModeBanner: false,
           theme: buildTheme(),
           home: _inviteId != null
-              ? RsvpScreen(inviteId: _inviteId!, onPlanOwn: () => setState(() => _inviteId = null))
+              ? RsvpScreen(inviteId: _inviteId!, guestKey: widget.guestKey, onPlanOwn: () => setState(() => _inviteId = null))
               : _home(state),
         ),
       ),

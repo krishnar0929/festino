@@ -132,7 +132,9 @@ class _PlanScreenState extends State<PlanScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
             child: InkWell(
               borderRadius: BorderRadius.circular(18),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const InviteScreen())),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => InviteScreen(initialTab: state.event!.invitees.isEmpty ? 0 : 2),
+              )),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
                 child: Row(
@@ -143,11 +145,10 @@ class _PlanScreenState extends State<PlanScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Invite guests', style: body(15, color: Colors.white, weight: FontWeight.w700)),
-                          Text(
-                            state.event!.invitees.isEmpty
-                                ? 'WhatsApp, iMessage, text or email · RSVPs · Pitch In'
-                                : '${state.event!.invitees.length} on your list · see who\'s coming',
+                          Text('Invitation & guests', style: body(15, color: Colors.white, weight: FontWeight.w700)),
+                          InviteStatusLine(
+                            event: state.event!,
+                            hostUid: state.isSignedIn ? state.accounts?.user?.uid : null,
                             style: body(12, color: const Color(0xFFE4DDFF)),
                           ),
                         ],
