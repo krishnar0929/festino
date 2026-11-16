@@ -210,22 +210,34 @@ class _PlanScreenState extends State<PlanScreen> {
           child: CardBox(
             color: HC.lime,
             padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('This plan needs ${plan.helpers.length} helpers', style: body(14, weight: FontWeight.w600)),
-                      Text(plan.helpers.join(' · '), style: body(12, color: const Color(0xFF2F3A10))),
-                    ],
-                  ),
+                Row(
+                  children: [
+                    const Text('🎁', style: TextStyle(fontSize: 30)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Book helpers with Hoopla, save up to 20%', style: body(15, weight: FontWeight.w800)),
+                          const SizedBox(height: 2),
+                          Text('Your plan needs ${plan.helpers.length}: ${plan.helpers.join(' · ')}', style: body(12, color: const Color(0xFF2F3A10))),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: HC.ink, minimumSize: const Size(0, 44), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                const SizedBox(height: 8),
+                Text('Look for the 🎁 Hoopla deal badge. Your discount code is added when you ask for a quote.',
+                    style: body(12, color: const Color(0xFF2F3A10))),
+                const SizedBox(height: 10),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(backgroundColor: HC.ink, minimumSize: const Size(0, 46), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                   onPressed: () => widget.onNavigate(1),
-                  child: Text('Find nearby', style: body(13, color: Colors.white, weight: FontWeight.w600)),
+                  icon: const Icon(Icons.local_offer_outlined, size: 18, color: HC.lime),
+                  label: Text('Find helpers and deals', style: body(14, color: Colors.white, weight: FontWeight.w700)),
                 ),
               ],
             ),

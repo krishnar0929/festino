@@ -354,6 +354,8 @@ class TaskTile extends StatelessWidget {
                     children: [
                       Text(
                         t.label,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: body(15, weight: FontWeight.w600, color: done ? HC.muted : HC.ink)
                             .copyWith(decoration: done ? TextDecoration.lineThrough : null),
                       ),

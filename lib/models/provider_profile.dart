@@ -25,7 +25,7 @@ class ProviderProfile {
   });
 
   /// Choices for the Hoopla deal (0 = no deal).
-  static const dealChoices = [0, 10, 15, 20, 25];
+  static const dealChoices = [0, 10, 15, 20];
 
   /// Most featured post links (reels, videos) a provider can show.
   static const maxFeatured = 6;
