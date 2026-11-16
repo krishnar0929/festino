@@ -80,7 +80,7 @@ class PlanGenerator {
     BudgetLine('Games & extras', 0.10),
   ];
 
-  static _Moment _momentFor(EventDetails e) => switch (e.occasion) {
+  static _Moment _momentFor(EventDetails e) => switch (e.kind) {
         'Birthday' => _Moment('Cake cutting', 'Song, candles and the cake moment. Photographer on standby.', 20),
         'Housewarming' => _Moment('House tour + toast', 'Show guests around, then a welcome toast for the new home.', 20),
         'Baby shower' => _Moment('Blessings + gifts', 'Elders bless the parents-to-be; open a few gifts.', 30),
@@ -120,7 +120,7 @@ class PlanGenerator {
 
     int score(Game g) {
       var s = 10 - (g.energy - target).abs() * 3;
-      if (g.occasions.contains(e.occasion)) s += 5;
+      if (g.occasions.contains(e.kind)) s += 5;
       if (_fitsAudience(g, e.audience)) s += 4;
       return s;
     }
@@ -203,7 +203,7 @@ class PlanGenerator {
         timeline: customSteps(e),
         backupGames: const [],
         tasks: _tasks(e, games),
-        helpers: helpersByOccasion[e.occasion] ?? helpersByOccasion['Get-together']!,
+        helpers: helpersByOccasion[e.kind] ?? helpersByOccasion['Get-together']!,
         budget: _budgetSplit,
         gamesMinutes: budget,
       );
@@ -213,7 +213,7 @@ class PlanGenerator {
       timeline: steps,
       backupGames: backup,
       tasks: _tasks(e, games),
-      helpers: helpersByOccasion[e.occasion] ?? helpersByOccasion['Get-together']!,
+      helpers: helpersByOccasion[e.kind] ?? helpersByOccasion['Get-together']!,
       budget: _budgetSplit,
       gamesMinutes: budget,
     );
@@ -310,7 +310,7 @@ class PlanGenerator {
       ];
 
   static List<PlanTask> _tasks(EventDetails e, List<Game> games) {
-    final helpers = helpersByOccasion[e.occasion] ?? const <String>[];
+    final helpers = helpersByOccasion[e.kind] ?? const <String>[];
     final tasks = <PlanTask>[
       const PlanTask('invites', 'Send invites', 28),
       for (final h in helpers) PlanTask('book_$h', 'Book ${_singular(h)}', h == 'Cleaners & maids' ? 7 : 21),

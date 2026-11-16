@@ -278,15 +278,15 @@ List<PitchItem> suggestPitchIn(EventDetails e) {
     item('🍉', 'Fruit platter'),
     item('🍿', 'Snacks & chips'),
     item('🍮', 'Dessert or sweets'),
-    if (e.occasion == 'Pooja' || e.occasion == 'Housewarming') ...[
+    if (e.kind == 'Pooja' || e.kind == 'Housewarming') ...[
       item('🌼', 'Flowers & garlands'),
       item('🥥', 'Coconuts & fruits for pooja'),
     ],
-    if (e.occasion == 'Birthday') ...[
+    if (e.kind == 'Birthday') ...[
       item('🎈', 'Balloons & decorations'),
       item('🎁', 'Return gift bags'),
     ],
-    if (e.occasion == 'Baby shower') item('🧸', 'Games prizes'),
+    if (e.kind == 'Baby shower') item('🧸', 'Games prizes'),
     item('🍽️', 'Plates, cups & napkins'),
     if (!e.indoor) item('🪑', 'Extra chairs or a canopy'),
     item('🔊', 'Speaker for music'),

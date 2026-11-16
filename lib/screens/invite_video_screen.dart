@@ -96,7 +96,7 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
     _started = true;
     final e = AppScope.of(context).event!;
     final v = e.inviteVideo;
-    style = v.isEmpty ? suggestedVideoStyle(e.occasion) : v.style;
+    style = v.isEmpty ? suggestedVideoStyle(e.kind) : v.style;
     music = v.isEmpty ? InviteVideo.defaultMusic : v.music;
     generated = v.photos.isNotEmpty;
     look = v.look;
@@ -349,7 +349,7 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
           childAspectRatio: 0.78,
-          children: [for (var i = 0; i < slides.length; i++) _thumb(i, e.occasion, size: double.infinity)],
+          children: [for (var i = 0; i < slides.length; i++) _thumb(i, e.kind, size: double.infinity)],
         ),
         const SizedBox(height: 16),
         FilledButton.icon(
@@ -600,7 +600,7 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
                     scrollDirection: Axis.horizontal,
                     itemCount: slides.length,
                     separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (_, i) => _thumb(i, e.occasion),
+                    itemBuilder: (_, i) => _thumb(i, e.kind),
                   ),
                 ),
               ],
@@ -614,7 +614,7 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
                 children: [
                   for (final s in InviteVideo.styles.entries)
                     Pill(
-                      label: '${s.value}${s.key == suggestedVideoStyle(e.occasion) ? ' ⭐' : ''}',
+                      label: '${s.value}${s.key == suggestedVideoStyle(e.kind) ? ' ⭐' : ''}',
                       small: true,
                       selected: style == s.key,
                       selectedColor: HC.violet,
@@ -711,7 +711,7 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
   }
 
   Widget _ideas(EventDetails e) {
-    final shots = videoShotIdeas[e.occasion] ?? videoShotIdeas['Get-together']!;
+    final shots = videoShotIdeas[e.kind] ?? videoShotIdeas['Get-together']!;
     return CardBox(
       padding: const EdgeInsets.all(14),
       child: Column(

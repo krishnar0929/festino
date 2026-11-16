@@ -91,4 +91,24 @@ void main() {
       expect((l!.props.length >= 3, l.cheers.isNotEmpty, l.banner.isNotEmpty), (true, true, true));
     }
   });
+
+  test('more occasions and typed ones plan like the closest main occasion', () {
+    expect(occasionKind('Birthday'), 'Birthday');
+    expect(occasionKind('Diwali'), 'Pooja');
+    expect(occasionKind('Wedding'), 'Anniversary');
+    expect(occasionKind('Graduation'), 'Get-together');
+    expect(occasionKind('Sweet 16'), 'Birthday');
+    expect(occasionKind("Pet's birthday"), 'Birthday');
+    expect(occasionKind('Lakshmi puja'), 'Pooja');
+    expect(occasionKind('Cricket finals'), 'Get-together');
+    expect(occasionIcon('Christmas'), '🎄');
+    expect(occasionIcon('Cricket finals'), '🎉');
+    final names = [for (final g in moreOccasions.values) ...g.keys];
+    expect(names.length, names.toSet().length);
+    expect(names.where(occasions.contains), isEmpty);
+    final e = party()..occasion = 'Diwali';
+    expect(e.kind, 'Pooja');
+    expect(PlanGenerator.build(e).helpers, isNotEmpty);
+    expect(EventDetails.fromMap(e.toMap()).occasion, 'Diwali');
+  });
 }

@@ -141,7 +141,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
     super.dispose();
   }
 
-  static String _defaultMessage(EventDetails e) => switch (e.occasion) {
+  static String _defaultMessage(EventDetails e) => switch (e.kind) {
         'Birthday' => 'Come celebrate with us! Cake, games and lots of fun. 🎂',
         'Housewarming' => 'We\'ve moved in! Join us to bless our new home. 🏡',
         'Baby shower' => 'A little one is on the way! Celebrate with us. 🍼',
@@ -383,7 +383,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
   }
 
   Widget _templates(EventDetails e) {
-    final list = templatesFor(e.occasion);
+    final list = templatesFor(e.kind);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
