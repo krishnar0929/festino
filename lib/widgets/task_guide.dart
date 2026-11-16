@@ -176,7 +176,7 @@ class _TaskSheet extends StatelessWidget {
     final t = state.plan.tasks.firstWhere((x) => x.id == task.id, orElse: () => task);
     final done = e.doneTasks.contains(t.id);
     final g = guideFor(t, e, switchTab: switchTab);
-    final (_, bg, fg, when) = dueInfo(t, e, done);
+    final (_, bg, fg, dueLabel) = dueInfo(t, e, done);
 
 
     return SingleChildScrollView(
@@ -203,7 +203,7 @@ class _TaskSheet extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
-                      child: Text(when, style: body(12, color: fg, weight: FontWeight.w700)),
+                      child: Text(dueLabel, style: body(12, color: fg, weight: FontWeight.w700)),
                     ),
                   ],
                 ),
@@ -305,7 +305,7 @@ class TaskTile extends StatelessWidget {
     final t = task;
     final done = e.doneTasks.contains(t.id);
     final g = guideFor(t, e, switchTab: switchTab);
-    final (_, bg, fg, when) = dueInfo(t, e, done);
+    final (_, bg, fg, dueLabel) = dueInfo(t, e, done);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
@@ -363,7 +363,7 @@ class TaskTile extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-                            child: Text(when, style: body(11, color: fg, weight: FontWeight.w700)),
+                            child: Text(dueLabel, style: body(11, color: fg, weight: FontWeight.w700)),
                           ),
                           if (!done && e.taskReminders.containsKey(t.id)) ...[
                             const SizedBox(width: 6),
