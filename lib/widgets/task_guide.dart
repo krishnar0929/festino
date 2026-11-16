@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../data/helpers.dart';
 import '../models/event_details.dart';
+import '../screens/home_shell.dart' show HomeTab;
 import '../screens/invite_screen.dart';
 import '../screens/nearby_screen.dart';
 import '../screens/plan_tabs.dart';
@@ -29,7 +30,7 @@ class TaskGuide {
 
 void _push(BuildContext context, Widget page) => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
 
-/// The guide for one task. [switchTab] moves the bottom bar (2 = Games).
+/// The guide for one task. [switchTab] moves the bottom bar or opens a page (see [HomeTab]).
 TaskGuide guideFor(PlanTask t, EventDetails e, {ValueChanged<int>? switchTab}) {
   if (t.id.startsWith('book_')) {
     final service = t.id.substring(5);
@@ -86,7 +87,7 @@ TaskGuide guideFor(PlanTask t, EventDetails e, {ValueChanged<int>? switchTab}) {
         action: switchTab == null ? null : 'See your games',
         go: switchTab == null
             ? null
-            : (c) => switchTab(2),
+            : (c) => switchTab(HomeTab.games),
       ),
     'weather' => TaskGuide(
         emoji: '🌤️',

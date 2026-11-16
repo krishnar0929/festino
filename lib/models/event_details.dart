@@ -14,6 +14,13 @@ extension AudienceLabel on Audience {
       };
 }
 
+/// "3 hrs", "Full day", "3 days · 6 hrs a day".
+String durationLabel(int hours, int days) {
+  final h = hours >= 10 ? 'Full day' : '$hours hr${hours == 1 ? '' : 's'}';
+  if (days <= 1) return h;
+  return '$days days · ${hours >= 10 ? 'full days' : '$hours hrs a day'}';
+}
+
 const occasions = ['Birthday', 'Housewarming', 'Baby shower', 'Pooja', 'Anniversary', 'Get-together'];
 
 /// More occasions, by group: name → (emoji, the main occasion whose plan,
@@ -155,6 +162,8 @@ class EventDetails {
     required this.guests,
     required this.audience,
     required this.energy,
+    this.days = 1,
+    this.audienceNote = '',
     List<String>? gameIds,
     List<String>? doneTasks,
     List<ShortlistVendor>? shortlist,
@@ -174,6 +183,7 @@ class EventDetails {
     this.inviteMotif = '',
     this.guestNotice = '',
     this.costLevel = 'medium',
+    this.costOn = false,
     this.costPicks,
     this.venueKind = '',
     this.areaCost = 'average',
@@ -207,9 +217,15 @@ class EventDetails {
   /// Start time as minutes after midnight (16:00 = 960).
   int startMinutes;
   int hours;
+
+  /// How many days the event runs (weddings, festivals). [hours] is per day.
+  int days;
   bool indoor;
   int guests;
   Audience audience;
+
+  /// "Who's coming?" typed by the host (e.g. "Seniors", "Colleagues"); '' when a standard choice.
+  String audienceNote;
   int energy;
 
   /// Games the user has in their plan, in play order.
@@ -261,6 +277,9 @@ class EventDetails {
   /// Cost estimate choices: level (simple…lux), ticked items (null = suggested),
   /// venue type (home, hall, restaurant, park; '' = guess) and area cost (lower, average, higher).
   String costLevel;
+
+  /// The host asked for a cost estimate (off until they tick it or pick a level).
+  bool costOn;
   List<String>? costPicks;
   String venueKind;
   String areaCost;
@@ -309,9 +328,11 @@ class EventDetails {
         'date': DateTime(date.year, date.month, date.day).toIso8601String(),
         'startMinutes': startMinutes,
         'hours': hours,
+        'days': days,
         'indoor': indoor,
         'guests': guests,
         'audience': audience.name,
+        'audienceNote': audienceNote,
         'energy': energy,
         'gameIds': gameIds,
         'doneTasks': doneTasks,
@@ -331,6 +352,7 @@ class EventDetails {
         'inviteMotif': inviteMotif,
         'guestNotice': guestNotice,
         'costLevel': costLevel,
+        'costOn': costOn,
         if (costPicks != null) 'costPicks': costPicks,
         'venueKind': venueKind,
         'areaCost': areaCost,
@@ -355,6 +377,8 @@ class EventDetails {
       date: DateTime.tryParse(m['date'] as String? ?? '') ?? DateTime.now(),
       startMinutes: (m['startMinutes'] as num?)?.toInt() ?? 16 * 60,
       hours: (m['hours'] as num?)?.toInt() ?? 3,
+      days: (m['days'] as num?)?.toInt() ?? 1,
+      audienceNote: m['audienceNote'] as String? ?? '',
       indoor: m['indoor'] as bool? ?? true,
       guests: (m['guests'] as num?)?.toInt() ?? 30,
       audience: Audience.values.firstWhere((a) => a.name == m['audience'], orElse: () => Audience.kids),
@@ -377,6 +401,7 @@ class EventDetails {
       inviteMotif: m['inviteMotif'] as String? ?? '',
       guestNotice: m['guestNotice'] as String? ?? '',
       costLevel: m['costLevel'] as String? ?? 'medium',
+      costOn: m['costOn'] as bool? ?? false,
       costPicks: (m['costPicks'] as List?)?.whereType<String>().toList(),
       venueKind: m['venueKind'] as String? ?? '',
       areaCost: m['areaCost'] as String? ?? 'average',

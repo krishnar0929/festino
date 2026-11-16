@@ -66,7 +66,7 @@ class _WeatherReportScreenState extends State<WeatherReportScreen> {
       appBar: AppBar(
         leading: const Padding(padding: EdgeInsets.only(left: 8), child: Center(child: BackArrow())),
         leadingWidth: 60,
-        title: const Text('Party-day weather'),
+        title: const Text('Weather'),
         actions: [IconButton(tooltip: 'Refresh', onPressed: _refresh, icon: const Icon(Icons.refresh_rounded))],
       ),
       body: e == null
@@ -143,23 +143,28 @@ class _WeatherReportScreenState extends State<WeatherReportScreen> {
           title: v.title,
           message: v.message,
         ),
-        if (v.level != WeatherLevel.good && !e.indoor) ...[
-          const SizedBox(height: 12),
-          WeatherFixes(event: e, risky: v.level == WeatherLevel.risky),
-        ],
         if (w.hours.isNotEmpty) ...[
           const SizedBox(height: 20),
-          Text('During your party', style: display(18)),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 118,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: w.hours.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (_, i) => _HourChip(h: w.hours[i], unit: w.unit),
-            ),
+          Text('DURING YOUR PARTY', style: overline()),
+          const SizedBox(height: 8),
+          CardBox(
+            padding: const EdgeInsets.all(6),
+            child: w.hours.length <= 6
+                ? Row(children: [for (final h in w.hours) Expanded(child: _HourChip(h: h, unit: w.unit))])
+                : SizedBox(
+                    height: 112,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [for (final h in w.hours) SizedBox(width: 64, child: _HourChip(h: h, unit: w.unit))],
+                    ),
+                  ),
           ),
+        ],
+        if (v.level != WeatherLevel.good && !e.indoor) ...[
+          const SizedBox(height: 20),
+          Text('WHAT YOU CAN DO', style: overline()),
+          const SizedBox(height: 8),
+          const _WeatherActions(),
         ],
         const SizedBox(height: 20),
         GridView.count(
@@ -217,8 +222,8 @@ class _WeatherReportScreenState extends State<WeatherReportScreen> {
                   message: v.message,
                 ),
                 if (v.level != WeatherLevel.good && !e.indoor) ...[
-                  const SizedBox(height: 12),
-                  WeatherFixes(event: e, risky: false),
+                  const SizedBox(height: 14),
+                  const _WeatherActions(),
                 ],
                 const SizedBox(height: 10),
                 Text('Based on ${DateFormat('MMMM d').format(e.date)} ±2 days over the past ${t.years} years.', style: body(12, color: HC.muted)),
@@ -281,24 +286,63 @@ class _HourChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final wet = h.rainChance >= 40;
+    final wet = h.rainChance >= 50;
     return Container(
-      width: 72,
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        color: wet ? const Color(0xFFE5F0FF) : HC.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: HC.line),
+        color: wet ? const Color(0xFFFFF4E5) : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(clockAmPm(h.hour * 60).replaceAll(':00', ''), style: body(12, color: HC.muted, weight: FontWeight.w600)),
-          Text(weatherEmoji(h.code), style: const TextStyle(fontSize: 24)),
-          Text('${h.temp.round()}°', style: body(15, weight: FontWeight.w700)),
-          Text('💧${h.rainChance}%', style: body(11, color: wet ? const Color(0xFF1F5FBF) : HC.muted, weight: FontWeight.w600)),
+          Text(clockAmPm(h.hour * 60).replaceAll(':00', ''), maxLines: 1, style: body(11, color: HC.muted, weight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          Text(weatherEmoji(h.code), style: const TextStyle(fontSize: 22)),
+          const SizedBox(height: 6),
+          Text('${h.temp.round()}°', style: body(14, weight: FontWeight.w700)),
+          Text('${h.rainChance}%', style: body(11, color: const Color(0xFF1F5FBF), weight: FontWeight.w600)),
         ],
       ),
+    );
+  }
+}
+
+/// The two choices when the weather may spoil an outdoor party.
+class _WeatherActions extends StatelessWidget {
+  const _WeatherActions();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FilledButton.icon(
+          style: FilledButton.styleFrom(
+            backgroundColor: HC.violet,
+            minimumSize: const Size(0, 54),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const RainPlanScreen())),
+          icon: const Icon(Icons.alt_route_rounded, size: 20),
+          label: Text('See Plan B options', style: body(15, color: Colors.white, weight: FontWeight.w700)),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(0, 52),
+            side: const BorderSide(color: HC.line),
+            backgroundColor: HC.card,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          onPressed: () {
+            toast(context, 'Keeping your plan. We\'ll keep checking the forecast.');
+            Navigator.of(context).maybePop();
+          },
+          child: Text('Keep the plan', style: body(15, weight: FontWeight.w600)),
+        ),
+        const SizedBox(height: 8),
+        Text('Forecasts change. Check back a few days before the party.', textAlign: TextAlign.center, style: body(12, color: HC.muted)),
+      ],
     );
   }
 }

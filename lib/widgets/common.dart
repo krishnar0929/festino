@@ -95,8 +95,15 @@ class Segmented extends StatelessWidget {
                   child: Semantics(
                     button: true,
                     selected: i == selected,
-                    child: Text(options[i],
-                        style: body(15, color: i == selected ? HC.ink : HC.muted, weight: i == selected ? FontWeight.w600 : FontWeight.w500)),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(options[i],
+                            maxLines: 1,
+                            style: body(15, color: i == selected ? HC.ink : HC.muted, weight: i == selected ? FontWeight.w600 : FontWeight.w500)),
+                      ),
+                    ),
                   ),
                 ),
               ),

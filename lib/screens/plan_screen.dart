@@ -11,18 +11,19 @@ import '../widgets/locked.dart';
 import '../widgets/reminder_ui.dart';
 import '../widgets/task_guide.dart';
 import '../widgets/timeline_editor.dart';
-import '../widgets/weather_card.dart';
-import 'account_sheet.dart';
+import '../services/cost_estimate.dart';
+import '../widgets/weather_brief.dart';
+import 'cost_estimate_screen.dart';
 import 'event_actions.dart';
 import 'setup_screen.dart';
-import 'invite_screen.dart';
 import 'plan_tabs.dart';
+import 'weather_screen.dart';
 
-/// The generated plan: timeline, checklist and budget.
+/// The Plan tab: timeline, to-dos, budget and your own list, with weather and cost at a glance.
 class PlanScreen extends StatefulWidget {
   const PlanScreen({super.key, required this.onNavigate});
 
-  /// Switch to another tab (1 = Nearby).
+  /// Switch tab or open a page (see [HomeTab]).
   final ValueChanged<int> onNavigate;
 
   @override
@@ -37,194 +38,112 @@ class _PlanScreenState extends State<PlanScreen> {
     final state = AppScope.of(context);
     final e = state.event!;
     final plan = state.plan;
-    final days = e.daysToGo;
+
+    final open = plan.tasks.where((t) => !e.doneTasks.contains(t.id)).length;
+    final cost = estimateCost(e);
 
     return ListView(
-      padding: EdgeInsets.zero,
+      padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 16, 20, 24),
       children: [
-        Container(
-          decoration: const BoxDecoration(
-            color: HC.ink,
-            borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
-          ),
-          padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 14, 20, 22),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  _RoundIcon(
-                    icon: Icons.edit_outlined,
-                    tooltip: 'Edit event details',
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => SetupScreen(existing: e))),
-                  ),
-                  const SizedBox(width: 8),
-                  Material(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    shape: const CircleBorder(),
-                    child: PopupMenuButton<String>(
-                      tooltip: 'Event options',
-                      icon: const Icon(Icons.more_horiz_rounded, color: Colors.white, size: 20),
-                      onSelected: (v) {
-                        switch (v) {
-                          case 'new':
-                            startNewEvent(context);
-                          case 'events':
-                            showMyEvents(context);
-                          case 'cancel':
-                            confirmCancelEvent(context, e);
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        _menuItem('new', Icons.add_rounded, 'Start new event'),
-                        _menuItem('events', Icons.event_note_outlined, 'My events · ${state.upcomingEvents.length} upcoming'),
-                        _menuItem('cancel', Icons.event_busy_outlined, 'Cancel this event', danger: true),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(color: HC.lime, borderRadius: BorderRadius.circular(16)),
-                    child: Text(
-                      days > 1 ? '$days days to go' : days == 1 ? 'Tomorrow!' : days == 0 ? 'Today!' : 'Party done',
-                      style: body(13, weight: FontWeight.w600),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _RoundIcon(
-                    icon: state.isSignedIn ? Icons.person_rounded : Icons.person_outline_rounded,
-                    tooltip: 'Account',
-                    onTap: () => showAccountSheet(context),
-                  ),
+        Row(
+          children: [
+            Expanded(child: Text('Plan', style: display(28))),
+            _RoundIcon(
+              icon: Icons.edit_outlined,
+              tooltip: 'Edit event details',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => SetupScreen(existing: e))),
+            ),
+            const SizedBox(width: 8),
+            Material(
+              color: HC.card,
+              shape: const CircleBorder(side: BorderSide(color: HC.line)),
+              child: PopupMenuButton<String>(
+                tooltip: 'Event options',
+                icon: const Icon(Icons.more_horiz_rounded, color: HC.ink, size: 20),
+                onSelected: (v) {
+                  switch (v) {
+                    case 'new':
+                      startNewEvent(context);
+                    case 'events':
+                      showMyEvents(context);
+                    case 'cancel':
+                      confirmCancelEvent(context, e);
+                  }
+                },
+                itemBuilder: (_) => [
+                  _menuItem('new', Icons.add_rounded, 'Start new event'),
+                  _menuItem('events', Icons.event_note_outlined, 'My events · ${state.upcomingEvents.length} upcoming'),
+                  _menuItem('cancel', Icons.event_busy_outlined, 'Cancel this event', danger: true),
                 ],
               ),
-              const SizedBox(height: 16),
-              Text(e.title, style: display(30, color: Colors.white)),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final t in [
-                    DateFormat('EEE, MMM d').format(e.date),
-                    '${clock(e.startMinutes)}–${clockAmPm(e.startMinutes + e.hours * 60)}',
-                    e.indoor ? 'Indoor' : 'Outdoor',
-                    '${e.guests} guests',
-                  ])
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
-                      child: Text(t, style: body(12, color: Colors.white)),
-                    ),
-                ],
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-          child: WeatherCard(event: state.event!),
+        const SizedBox(height: 14),
+        Segmented(
+          options: ['Timeline', open == 0 ? 'To-dos' : 'To-dos · $open', 'Budget', 'My list'],
+          selected: tab,
+          height: 40,
+          onChanged: (i) => setState(() => tab = i),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-          child: Material(
-            color: HC.violet,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(18),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                builder: (_) => InviteScreen(initialTab: state.event!.invitees.isEmpty ? 0 : 2),
-              )),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
-                child: Row(
-                  children: [
-                    const Text('💌', style: TextStyle(fontSize: 26)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Invitation & guests', style: body(15, color: Colors.white, weight: FontWeight.w700)),
-                          InviteStatusLine(
-                            event: state.event!,
-                            hostUid: state.isSignedIn ? state.accounts?.user?.uid : null,
-                            style: body(12, color: const Color(0xFFE4DDFF)),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.chevron_right_rounded, color: Colors.white),
-                  ],
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: WeatherBriefBuilder(
+                event: e,
+                builder: (context, brief) => _Chip(
+                  emoji: brief?.emoji ?? '🌤️',
+                  label: brief == null
+                      ? (e.venue == null ? 'Add venue for weather' : 'Weather')
+                      : brief.worry && !e.indoor
+                          ? '${brief.short} · Plan B'
+                          : brief.short,
+                  warn: brief?.worry ?? false,
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WeatherReportScreen())),
                 ),
               ),
             ),
-          ),
-        ),
-        // Helpers, without scrolling to the bottom.
-        if (plan.helpers.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-            child: Material(
-              color: HC.lime,
-              borderRadius: BorderRadius.circular(16),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () => widget.onNavigate(1),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
-                  child: Row(
-                    children: [
-                      const Text('🎁', style: TextStyle(fontSize: 22)),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Need helpers for this party?', style: body(14, weight: FontWeight.w700)),
-                            Text('${plan.helpers.length} suggested · save up to 20% with Hoopla deals',
-                                maxLines: 1, overflow: TextOverflow.ellipsis, style: body(12, color: const Color(0xFF2F3A10))),
-                          ],
-                        ),
-                      ),
-                      Text('Find', style: body(13, weight: FontWeight.w800)),
-                      const Icon(Icons.chevron_right_rounded, color: HC.ink),
-                    ],
-                  ),
-                ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _Chip(
+                emoji: '💰',
+                label: !e.costOn ? 'Cost estimate' : (cost.high <= 0 ? 'Cost estimate' : 'About ${cost.money(cost.mid)}'),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const CostEstimateScreen())),
               ),
             ),
-          ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
-          child: Segmented(options: const ['Timeline', 'Checklist', 'Budget', 'My list'], selected: tab, height: 40, onChanged: (i) => setState(() => tab = i)),
+          ],
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: switch (tab) {
-            0 => _Timeline(plan: plan, showOnly: state.limitedGuest ? 3 : null),
-            1 => state.limitedGuest
-                ? const LockedCard(
-                    needs: Access.member,
-                    title: 'Your checklist',
-                    message: 'Sign in free to get a to-do list with due dates for invites, bookings and supplies.',
-                  )
-                : _Checklist(onNavigate: widget.onNavigate),
-            3 => const MyListTab(),
-            _ => !state.limitedGuest
-                ? const BudgetTab()
-                : const LockedCard(
-                    needs: Access.member,
-                    title: 'Budget planner',
-                    message: 'Sign in free to split your budget into food, decor, photos, cake and return gifts.',
-                  ),
-          },
+        const SizedBox(height: 12),
+        Text(
+          '${DateFormat('EEE, MMM d').format(e.date)} · ${clockAmPm(e.startMinutes)}–${clockAmPm(e.startMinutes + e.hours * 60)}'
+          '${e.days > 1 ? ' · ${e.days} days' : ''} · ${e.indoor ? 'indoor' : 'outdoor'} · ${e.guests} guests'
+          '${e.audienceNote.isNotEmpty ? ' · ${e.audienceNote}' : ''}',
+          style: body(13, color: HC.muted),
         ),
+        const SizedBox(height: 12),
+        switch (tab) {
+          0 => _Timeline(plan: plan, showOnly: state.limitedGuest ? 3 : null),
+          1 => state.limitedGuest
+              ? const LockedCard(
+                  needs: Access.member,
+                  title: 'Your checklist',
+                  message: 'Sign in free to get a to-do list with due dates for invites, bookings and supplies.',
+                )
+              : _Checklist(onNavigate: widget.onNavigate),
+          3 => const MyListTab(),
+          _ => !state.limitedGuest
+              ? const BudgetTab()
+              : const LockedCard(
+                  needs: Access.member,
+                  title: 'Budget planner',
+                  message: 'Sign in free to split your budget into food, decor, photos, cake and return gifts.',
+                ),
+        },
         // Everything is free; signing in just keeps the plan safe on every device.
         if (!state.isSignedIn && state.usingCloud)
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            padding: const EdgeInsets.only(top: 12),
             child: CardBox(
               padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
               child: Row(
@@ -239,45 +158,41 @@ class _PlanScreenState extends State<PlanScreen> {
               ),
             ),
           ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-          child: CardBox(
-            color: HC.lime,
-            padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    const Text('🎁', style: TextStyle(fontSize: 30)),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Book helpers with Hoopla, save up to 20%', style: body(15, weight: FontWeight.w800)),
-                          const SizedBox(height: 2),
-                          Text('Your plan needs ${plan.helpers.length}: ${plan.helpers.join(' · ')}', style: body(12, color: const Color(0xFF2F3A10))),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text('Look for the 🎁 Hoopla deal badge. Your discount code is added when you ask for a quote.',
-                    style: body(12, color: const Color(0xFF2F3A10))),
-                const SizedBox(height: 10),
-                FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: HC.ink, minimumSize: const Size(0, 46), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                  onPressed: () => widget.onNavigate(1),
-                  icon: const Icon(Icons.local_offer_outlined, size: 18, color: HC.lime),
-                  label: Text('Find helpers and deals', style: body(14, color: Colors.white, weight: FontWeight.w700)),
-                ),
-              ],
-            ),
+      ],
+    );
+  }
+}
+
+/// A small tappable chip under the tabs: weather or cost.
+class _Chip extends StatelessWidget {
+  const _Chip({required this.emoji, required this.label, required this.onTap, this.warn = false});
+  final String emoji;
+  final String label;
+  final VoidCallback onTap;
+  final bool warn;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: warn ? const Color(0xFFFFF4E5) : HC.card,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: warn ? const Color(0xFFF5D9A8) : HC.line),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+          child: Row(
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 18)),
+              const SizedBox(width: 8),
+              Expanded(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: body(13, weight: FontWeight.w600))),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -305,9 +220,9 @@ class _RoundIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white.withValues(alpha: 0.1),
-      shape: const CircleBorder(),
-      child: IconButton(tooltip: tooltip, onPressed: onTap, icon: Icon(icon, color: Colors.white, size: 20)),
+      color: HC.card,
+      shape: const CircleBorder(side: BorderSide(color: HC.line)),
+      child: IconButton(tooltip: tooltip, onPressed: onTap, icon: Icon(icon, color: HC.ink, size: 20)),
     );
   }
 }

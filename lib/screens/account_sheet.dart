@@ -6,6 +6,7 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import 'feedback_sheet.dart';
 import 'help_screen.dart';
+import 'my_events_screen.dart';
 import 'refer_screen.dart';
 import 'sign_in_screen.dart';
 import 'upgrade_screen.dart';
@@ -273,9 +274,14 @@ class _AccountSheet extends StatelessWidget {
         ],
 
         const SizedBox(height: 18),
-        const _AppColorPicker(),
-        const SizedBox(height: 18),
         _Group(title: 'Hoopla', rows: [
+          _Row(
+            icon: Icons.event_note_outlined,
+            color: const Color(0xFF1F6FEB),
+            title: 'My events',
+            subtitle: '${state.upcomingEvents.length} upcoming · ${state.pastEvents.length} celebrated · ${state.cancelledEvents.length} cancelled',
+            onTap: () => open(const MyEventsScreen()),
+          ),
           _Row(
             icon: Icons.celebration_outlined,
             color: HC.coral,
@@ -307,6 +313,9 @@ class _AccountSheet extends StatelessWidget {
             },
           ),
         ]),
+
+        const SizedBox(height: 18),
+        const _AppColorPicker(),
 
         if (signedIn) ...[
           const SizedBox(height: 18),
@@ -431,27 +440,51 @@ class _Row extends StatelessWidget {
 
 
 /// Account → App color: pick the app's main color. It changes right away.
-class _AppColorPicker extends StatelessWidget {
+/// Theme: one row showing the current color; tap to open all colors.
+class _AppColorPicker extends StatefulWidget {
   const _AppColorPicker();
+
+  @override
+  State<_AppColorPicker> createState() => _AppColorPickerState();
+}
+
+class _AppColorPickerState extends State<_AppColorPicker> {
+  bool open = false;
 
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
     final current = appColorFor(state.themeColor);
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: HC.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: HC.line)),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.palette_outlined, color: HC.violet),
-              const SizedBox(width: 10),
-              Expanded(child: Text('App color', style: body(15, weight: FontWeight.w700))),
-              Text(current.name, style: body(13, color: HC.muted, weight: FontWeight.w600)),
-            ],
+          InkWell(
+            onTap: () => setState(() => open = !open),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+              child: Row(
+                children: [
+                  Icon(Icons.palette_outlined, color: HC.violet),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text('Theme', style: body(15, weight: FontWeight.w700))),
+                  Container(width: 18, height: 18, decoration: BoxDecoration(color: current.color, shape: BoxShape.circle)),
+                  const SizedBox(width: 8),
+                  Text(current.name, style: body(13, color: HC.muted, weight: FontWeight.w600)),
+                  const SizedBox(width: 4),
+                  Icon(open ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, color: HC.muted),
+                ],
+              ),
+            ),
           ),
+          if (open)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
           const SizedBox(height: 12),
           Wrap(
             spacing: 10,
@@ -501,6 +534,9 @@ class _AppColorPicker extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text('Changes buttons, links and highlights everywhere. Saved to your account.', style: body(12, color: HC.muted)),
+                ],
+              ),
+            ),
         ],
       ),
     );

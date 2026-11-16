@@ -4,14 +4,14 @@ import '../models/event_details.dart';
 import '../theme.dart';
 
 /// "More occasions": every common occasion by group, with search. Returns the pick.
-Future<String?> pickMoreOccasion(BuildContext context, {String? current}) {
+Future<String?> pickMoreOccasion(BuildContext context, {String? current, bool all = false}) {
   return showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
     backgroundColor: HC.ground,
-    builder: (_) => _MoreOccasions(current: current),
+    builder: (_) => _MoreOccasions(current: current, all: all),
   );
 }
 
@@ -49,8 +49,11 @@ Future<String?> typeOccasion(BuildContext context, {String initial = ''}) async 
 }
 
 class _MoreOccasions extends StatefulWidget {
-  const _MoreOccasions({this.current});
+  const _MoreOccasions({this.current, this.all = false});
   final String? current;
+
+  /// Every occasion (popular ones first), for the main "What's the occasion?" picker.
+  final bool all;
 
   @override
   State<_MoreOccasions> createState() => _MoreOccasionsState();
@@ -58,6 +61,17 @@ class _MoreOccasions extends StatefulWidget {
 
 class _MoreOccasionsState extends State<_MoreOccasions> {
   String q = '';
+
+  Widget _chip(String label, String value) => ChoiceChip(
+        label: Text(label, style: body(14, weight: FontWeight.w600, color: value == widget.current ? Colors.white : HC.ink)),
+        selected: value == widget.current,
+        selectedColor: HC.ink,
+        backgroundColor: HC.card,
+        showCheckmark: false,
+        side: const BorderSide(color: HC.line),
+        shape: const StadiumBorder(),
+        onSelected: (_) => Navigator.pop(context, value),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -70,13 +84,26 @@ class _MoreOccasionsState extends State<_MoreOccasions> {
         controller: scroll,
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
         children: [
-          Text('More occasions', style: display(24)),
+          Text(widget.all ? 'What\'s the occasion?' : 'More occasions', style: display(24)),
           const SizedBox(height: 10),
           TextField(
             decoration: const InputDecoration(prefixIcon: Icon(Icons.search_rounded), hintText: 'Search: wedding, Diwali, graduation…'),
             onChanged: (v) => setState(() => q = v),
           ),
           const SizedBox(height: 8),
+          if (widget.all && occasions.any((o) => query.isEmpty || o.toLowerCase().contains(query))) ...[
+            const SizedBox(height: 14),
+            Text('POPULAR', style: overline()),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final o in occasions)
+                  if (query.isEmpty || o.toLowerCase().contains(query)) _chip('${occasionIcon(o)} $o', o),
+              ],
+            ),
+          ],
           for (final group in moreOccasions.entries) ...[
             if (group.value.keys.any((o) => query.isEmpty || o.toLowerCase().contains(query))) ...[
               const SizedBox(height: 14),
@@ -88,16 +115,7 @@ class _MoreOccasionsState extends State<_MoreOccasions> {
                 children: [
                   for (final o in group.value.entries)
                     if (query.isEmpty || o.key.toLowerCase().contains(query))
-                      ChoiceChip(
-                        label: Text('${o.value.$1} ${o.key}', style: body(14, weight: FontWeight.w600, color: o.key == widget.current ? Colors.white : HC.ink)),
-                        selected: o.key == widget.current,
-                        selectedColor: HC.ink,
-                        backgroundColor: HC.card,
-                        showCheckmark: false,
-                        side: const BorderSide(color: HC.line),
-                        shape: const StadiumBorder(),
-                        onSelected: (_) => Navigator.pop(context, o.key),
-                      ),
+                      _chip('${o.value.$1} ${o.key}', o.key),
                 ],
               ),
             ],

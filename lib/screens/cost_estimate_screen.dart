@@ -20,7 +20,8 @@ class CostEstimateScreen extends StatefulWidget {
 }
 
 class _CostEstimateScreenState extends State<CostEstimateScreen> {
-  late String level;
+  /// Null until the host picks a level (cost estimates are opt-in).
+  String? level;
   late String venue;
   late String area;
   late Set<String> picks;
@@ -32,7 +33,7 @@ class _CostEstimateScreenState extends State<CostEstimateScreen> {
     if (_started) return;
     _started = true;
     final e = AppScope.of(context).event!;
-    level = costLevels.containsKey(e.costLevel) ? e.costLevel : 'medium';
+    level = e.costOn && costLevels.containsKey(e.costLevel) ? e.costLevel : null;
     venue = venueKindFor(e);
     area = areaCosts.containsKey(e.areaCost) ? e.areaCost : 'average';
     picks = e.costPicks?.toSet() ?? defaultCostPicks(e).toSet();
@@ -41,8 +42,11 @@ class _CostEstimateScreenState extends State<CostEstimateScreen> {
   /// Remembers the choices on the event (quietly, as they change).
   void _set(VoidCallback f) {
     setState(f);
+    final lvl = level;
+    if (lvl == null) return;
     AppScope.of(context).update((e) {
-      e.costLevel = level;
+      e.costOn = true;
+      e.costLevel = lvl;
       e.venueKind = venue;
       e.areaCost = area;
       e.costPicks = picks.toList();
@@ -82,7 +86,8 @@ class _CostEstimateScreenState extends State<CostEstimateScreen> {
   @override
   Widget build(BuildContext context) {
     final e = AppScope.of(context).event!;
-    final est = estimateCost(e, level: level, picks: picks, venueKind: venue, area: area);
+    final chosen = level != null;
+    final est = estimateCost(e, level: level ?? 'medium', picks: picks, venueKind: venue, area: area);
     final usable = [for (final l in est.lines) if (l.included) l.item.id];
     final allOn = usable.every(picks.contains);
 
@@ -93,27 +98,37 @@ class _CostEstimateScreenState extends State<CostEstimateScreen> {
         title: const Text('Cost estimate'),
       ),
       bottomNavigationBar: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-          decoration: const BoxDecoration(color: HC.card, border: Border(top: BorderSide(color: HC.line))),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Estimated total · ${est.picked.length} items', style: body(12, color: HC.muted)),
-                    Text(est.picked.isEmpty ? '—' : '${est.money(est.low)}–${est.money(est.high)}', style: display(22)),
-                  ],
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
+            decoration: BoxDecoration(color: HC.ink, borderRadius: BorderRadius.circular(22)),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Estimated total · ${est.picked.length} items', style: body(12, color: const Color(0xFFBDB8D6))),
+                      Text(!chosen ? 'Pick a style' : (est.picked.isEmpty ? '—' : est.money(est.mid)), style: display(chosen ? 26 : 20, color: Colors.white)),
+                      if (chosen && est.picked.isNotEmpty)
+                        Text('range ${est.money(est.low)} – ${est.money(est.high)}', style: body(12, color: const Color(0xFFBDB8D6))),
+                    ],
+                  ),
                 ),
-              ),
-              FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: HC.violet, minimumSize: const Size(0, 48)),
-                onPressed: est.picked.isEmpty ? null : () => _useAsBudget(est),
-                child: const Text('Use as budget'),
-              ),
-            ],
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: HC.ink,
+                    minimumSize: const Size(0, 46),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: !chosen || est.picked.isEmpty ? null : () => _useAsBudget(est),
+                  child: Text('Use as budget', style: body(14, weight: FontWeight.w700)),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -130,34 +145,51 @@ class _CostEstimateScreenState extends State<CostEstimateScreen> {
                 style: body(13, color: HC.muted),
               ),
               const SizedBox(height: 18),
-              const SectionLabel('Level'),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final l in costLevels.entries)
-                    Pill(label: l.value.$1, small: true, selected: level == l.key, selectedColor: HC.violet, onTap: () => _set(() => level = l.key)),
-                ],
+              Segmented(
+                options: [for (final l in costLevels.keys) costLevelName(l)],
+                selected: level == null ? -1 : costLevels.keys.toList().indexOf(level!),
+                height: 38,
+                onChanged: (i) => _set(() => level = costLevels.keys.elementAt(i)),
               ),
-              const SizedBox(height: 16),
-              const SectionLabel('Venue'),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final v in venueKinds.entries)
-                    Pill(label: v.value, small: true, selected: venue == v.key, selectedColor: HC.violet, onTap: () => _set(() => venue = v.key)),
-                ],
+              const SizedBox(height: 6),
+              Text(
+                level == null ? 'Pick a party style to see your estimate.' : costLevelHint(level!),
+                style: body(12, color: level == null ? const Color(0xFFB26A00) : HC.muted),
               ),
-              const SizedBox(height: 16),
-              const SectionLabel('Area'),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final a in areaCosts.entries)
-                    Pill(label: a.value.$1, small: true, selected: area == a.key, selectedColor: HC.violet, onTap: () => _set(() => area = a.key)),
-                ],
+              const SizedBox(height: 12),
+              Material(
+                color: HC.card,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: const BorderSide(color: HC.line)),
+                clipBehavior: Clip.antiAlias,
+                child: Theme(
+                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    tilePadding: const EdgeInsets.symmetric(horizontal: 14),
+                    childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                    expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                    title: Text('Venue and area', style: body(14, weight: FontWeight.w600)),
+                    subtitle: Text('${venueKinds[venue] ?? ''} · ${areaCosts[area]?.$1 ?? ''}', style: body(12, color: HC.muted)),
+                    children: [
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          for (final v in venueKinds.entries)
+                            Pill(label: v.value, small: true, selected: venue == v.key, selectedColor: HC.violet, onTap: () => _set(() => venue = v.key)),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          for (final a in areaCosts.entries)
+                            Pill(label: a.value.$1, small: true, selected: area == a.key, selectedColor: HC.violet, onTap: () => _set(() => area = a.key)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
               for (final n in est.notes)
@@ -166,30 +198,32 @@ class _CostEstimateScreenState extends State<CostEstimateScreen> {
                   child: Text('• $n', style: body(12, color: HC.muted)),
                 ),
               const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(child: Text('WHAT YOU NEED', style: overline())),
+                  TextButton(
+                    onPressed: () => _set(() {
+                      if (allOn) {
+                        picks.clear();
+                      } else {
+                        picks.addAll(usable);
+                      }
+                    }),
+                    child: Text(allOn ? 'Clear all' : 'Select all'),
+                  ),
+                ],
+              ),
               Material(
                 color: HC.card,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: const BorderSide(color: HC.line)),
                 clipBehavior: Clip.antiAlias,
                 child: Column(
                   children: [
-                    CheckboxListTile(
-                      value: allOn,
-                      activeColor: HC.violet,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      title: Text('Select all', style: body(15, weight: FontWeight.w700)),
-                      subtitle: Text('Full party cost', style: body(12, color: HC.muted)),
-                      onChanged: (v) => _set(() {
-                        if (v == true) {
-                          picks.addAll(usable);
-                        } else {
-                          picks.clear();
-                        }
-                      }),
-                    ),
-                    for (final l in est.lines) ...[
-                      const Divider(height: 1, color: HC.line),
+                    for (final (i, l) in est.lines.indexed) ...[
+                      if (i > 0) const Divider(height: 1, color: HC.line),
                       _LineRow(
                         line: l,
+                        showPrice: chosen,
                         est: est,
                         checked: picks.contains(l.item.id) && l.included,
                         onChanged: l.included ? (v) => _set(() => v ? picks.add(l.item.id) : picks.remove(l.item.id)) : null,
@@ -210,7 +244,8 @@ class _CostEstimateScreenState extends State<CostEstimateScreen> {
 }
 
 class _LineRow extends StatelessWidget {
-  const _LineRow({required this.line, required this.est, required this.checked, required this.onChanged});
+  const _LineRow({required this.line, required this.est, required this.checked, required this.onChanged, this.showPrice = true});
+  final bool showPrice;
   final CostLine line;
   final CostEstimate est;
   final bool checked;
@@ -249,7 +284,7 @@ class _LineRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Text(off ? '—' : est.range(line),
+            Text(off || !showPrice ? '—' : est.range(line),
                 style: body(14, weight: FontWeight.w700, color: checked ? HC.ink : HC.muted)),
           ],
         ),

@@ -25,11 +25,29 @@ class RainPlanScreen extends StatefulWidget {
 class _RainPlanScreenState extends State<RainPlanScreen> {
   Future<List<DayOutlook>>? outlook;
 
+  /// 0 indoors, 1 tent, 2 drier day, 3 covered venue.
+  int? picked;
+
+  /// The dry day picked from the forecast (option 2).
+  DayOutlook? day;
+
+  /// Send guests a note about the change (date, place or moving indoors).
+  bool tellGuests = true;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final v = AppScope.of(context).event?.venue;
+    final e = AppScope.of(context).event;
+    final v = e?.venue;
     if (outlook == null && v != null) outlook = WeatherService.outlook(v).catchError((_) => <DayOutlook>[]);
+    // The easiest backup is picked to start with.
+    picked ??= (e?.indoor ?? false) ? 1 : 0;
+  }
+
+  /// After a change guests should hear about: offer the note (if the switch is on).
+  Future<void> _notify(NavigatorState nav, AppState state) async {
+    final ev = state.event;
+    if (tellGuests && ev != null) await offerGuestNotice(nav.context, ev, 'updated');
   }
 
   Future<void> _moveIndoors() async {
@@ -37,8 +55,10 @@ class _RainPlanScreenState extends State<RainPlanScreen> {
     final swaps = PlanGenerator.indoorSwaps(state.event!);
     await state.update(PlanGenerator.moveIndoors);
     if (!mounted) return;
+    final nav = Navigator.of(context, rootNavigator: true);
     toast(context, swaps.isEmpty ? 'Moved indoors. Your games already work inside.' : 'Moved indoors and swapped ${swaps.length} outdoor game${swaps.length == 1 ? '' : 's'}.');
     Navigator.of(context).pop();
+    await _notify(nav, state);
   }
 
   Future<void> _addTent() async {
@@ -58,8 +78,7 @@ class _RainPlanScreenState extends State<RainPlanScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Move to ${DateFormat('EEEE, MMM d').format(d.date)}?'),
-        content: Text('${weatherEmoji(d.code)} ${weatherText(d.code)}, ${d.rainChance}% chance of rain. Same time and place. '
-            'Remember to tell your guests about the new date.'),
+        content: Text('${weatherEmoji(d.code)} ${weatherText(d.code)}, ${d.rainChance}% chance of rain. Same time and place.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Not now')),
           FilledButton(style: FilledButton.styleFrom(backgroundColor: HC.violet), onPressed: () => Navigator.pop(ctx, true), child: const Text('Move party')),
@@ -73,19 +92,43 @@ class _RainPlanScreenState extends State<RainPlanScreen> {
     final nav = Navigator.of(context, rootNavigator: true);
     toast(context, 'Party moved to ${DateFormat('EEE, MMM d').format(d.date)}.');
     Navigator.of(context).pop();
-    final ev = state.event;
-    if (ev != null) await offerGuestNotice(nav.context, ev, 'updated');
+    await _notify(nav, state);
   }
 
   Future<void> _changeVenue() async {
     final state = AppScope.of(context);
     final p = await pickPlace(context);
-    if (p != null) await state.update((e) => e.venue = p);
+    if (p == null || !mounted) return;
+    await state.update((e) => e.venue = p);
+    if (!mounted) return;
+    final nav = Navigator.of(context, rootNavigator: true);
+    toast(context, 'Venue changed to ${p.label}.');
+    Navigator.of(context).pop();
+    await _notify(nav, state);
+  }
+
+  void _pickDate(EventDetails e) => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SetupScreen(existing: e)));
+
+  /// The one button at the bottom, for whichever option is picked.
+  (String, VoidCallback)? _action(EventDetails e) {
+    switch (picked) {
+      case 0:
+        return e.indoor ? null : ('Move indoors', _moveIndoors);
+      case 1:
+        return e.customTasks.any((t) => t.id == 'weather_tent') ? null : ('Add a tent to my plan', _addTent);
+      case 2:
+        final d = day;
+        return d == null ? ('Pick another date', () => _pickDate(e)) : ('Move to ${DateFormat('EEE, MMM d').format(d.date)}', () => _moveTo(d));
+      case 3:
+        return ('Change venue', _changeVenue);
+    }
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
     final e = AppScope.of(context).event;
+    final action = e == null ? null : _action(e);
     return Scaffold(
       appBar: AppBar(
         leading: const Padding(padding: EdgeInsets.only(left: 8), child: Center(child: BackArrow())),
@@ -98,18 +141,51 @@ class _RainPlanScreenState extends State<RainPlanScreen> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 640),
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
                   children: [
-                    Text('Keep the party on, rain or shine ☂️', style: display(24)),
-                    const SizedBox(height: 4),
-                    Text('Pick the backup that suits you. You can mix them, like a tent plus indoor games.', style: body(14, color: HC.muted)),
-                    const SizedBox(height: 18),
+                    Text('Pick one. We\'ll update your plan, and you can tell your guests.', style: body(15, color: HC.muted)),
+                    const SizedBox(height: 16),
                     _indoors(e),
                     _tent(e),
                     _drierDay(e),
                     _venue(e),
-                    const SizedBox(height: 6),
-                    Text('Changed the date or place? Let guests know from Invitation & guests on the Plan page.', style: body(12, color: HC.muted)),
+                  ],
+                ),
+              ),
+            ),
+      bottomNavigationBar: e == null
+          ? null
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (picked != 1)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.fromLTRB(14, 2, 6, 2),
+                        decoration: BoxDecoration(color: HC.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: HC.line)),
+                        child: Row(
+                          children: [
+                            Icon(Icons.notifications_active_outlined, size: 20, color: HC.violet),
+                            const SizedBox(width: 10),
+                            Expanded(child: Text('Tell guests about the change', style: body(14))),
+                            Switch.adaptive(value: tellGuests, activeTrackColor: HC.violet, onChanged: (v) => setState(() => tellGuests = v)),
+                          ],
+                        ),
+                      ),
+                    if (action != null)
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: HC.ink,
+                          minimumSize: const Size(0, 54),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        onPressed: action.$2,
+                        child: Text(action.$1, style: body(15, color: Colors.white, weight: FontWeight.w700)),
+                      ),
                   ],
                 ),
               ),
@@ -117,46 +193,58 @@ class _RainPlanScreenState extends State<RainPlanScreen> {
     );
   }
 
+  Widget _option(int i, {required String emoji, required String title, required String subtitle, String? tag, List<Widget> children = const []}) {
+    return _Option(
+      emoji: emoji,
+      title: title,
+      subtitle: subtitle,
+      tag: tag,
+      selected: picked == i,
+      onTap: () => setState(() => picked = i),
+      children: children,
+    );
+  }
+
   Widget _indoors(EventDetails e) {
     final swaps = e.indoor ? const <(Game, Game?)>[] : PlanGenerator.indoorSwaps(e);
-    return _Option(
+    return _option(
+      0,
       emoji: '🏠',
-      title: 'Move it indoors',
-      subtitle: e.indoor ? 'Your party is already indoors. 👍' : 'Same day, same time, under a roof. We swap outdoor-only games for indoor ones.',
+      title: 'Move indoors',
+      subtitle: e.indoor ? 'Your party is already indoors. 👍' : 'Same day and time, under a roof.',
+      tag: e.indoor ? null : 'Easiest',
       children: [
         if (!e.indoor && swaps.isNotEmpty) ...[
+          Text('We\'ll swap these games:', style: body(13, weight: FontWeight.w600)),
+          const SizedBox(height: 4),
           for (final (old, neu) in swaps)
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: Text(neu == null ? '• ${old.name} → removed' : '• ${old.name} → ${neu.name}', style: body(13)),
             ),
-          const SizedBox(height: 6),
         ],
-        if (!e.indoor) _Primary(label: 'Move indoors', icon: Icons.home_rounded, onTap: _moveIndoors),
       ],
     );
   }
 
   Widget _tent(EventDetails e) {
     final added = e.customTasks.any((t) => t.id == 'weather_tent');
-    return _Option(
+    return _option(
+      1,
       emoji: '⛺',
-      title: 'Stay outside under a tent',
-      subtitle: 'A pop-up canopy or rented tent keeps guests dry. Rentals usually run \$150–400 with setup.',
+      title: 'Rent a tent',
+      subtitle: 'Keeps the party outside. Usually \$150–400 with setup.',
+      tag: 'Keeps the outdoors',
       children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _Secondary(
-              label: 'Find tent rentals nearby',
-              icon: Icons.search_rounded,
-              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                builder: (_) => const NearbyScreen(initialCategory: 'Rentals', standalone: true),
-              )),
-            ),
-            if (!added) _Secondary(label: 'Add tent to my plan', icon: Icons.add_rounded, onTap: _addTent),
-          ],
+        Align(
+          alignment: Alignment.centerLeft,
+          child: _Secondary(
+            label: 'Find tent rentals nearby',
+            icon: Icons.search_rounded,
+            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const NearbyScreen(initialCategory: 'Rentals', standalone: true),
+            )),
+          ),
         ),
         if (added) ...[
           const SizedBox(height: 8),
@@ -167,10 +255,11 @@ class _RainPlanScreenState extends State<RainPlanScreen> {
   }
 
   Widget _drierDay(EventDetails e) {
-    return _Option(
+    return _option(
+      2,
       emoji: '📅',
-      title: 'Move to a drier day',
-      subtitle: 'Dry days near your date from the 16-day forecast.',
+      title: 'Pick a drier day',
+      subtitle: 'Dry days near your date from the forecast.',
       children: [
         if (e.venue == null)
           Text('Add your venue to see the forecast.', style: body(13, color: HC.muted))
@@ -191,13 +280,19 @@ class _RainPlanScreenState extends State<RainPlanScreen> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Material(
-                        color: HC.ground,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: HC.line)),
+                        color: day?.date == d.date ? const Color(0xFFEEEAFE) : HC.ground,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          side: BorderSide(color: day?.date == d.date ? HC.violet : HC.line),
+                        ),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(14),
-                          onTap: () => _moveTo(d),
+                          onTap: () => setState(() {
+                            picked = 2;
+                            day = d;
+                          }),
                           child: Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+                            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                             child: Row(
                               children: [
                                 Text(weatherEmoji(d.code), style: const TextStyle(fontSize: 26)),
@@ -211,8 +306,7 @@ class _RainPlanScreenState extends State<RainPlanScreen> {
                                     ],
                                   ),
                                 ),
-                                Text('Pick', style: body(13, color: HC.violet, weight: FontWeight.w700)),
-                                Icon(Icons.chevron_right_rounded, color: HC.violet),
+                                if (day?.date == d.date) Icon(Icons.check_circle_rounded, color: HC.violet),
                               ],
                             ),
                           ),
@@ -223,93 +317,115 @@ class _RainPlanScreenState extends State<RainPlanScreen> {
               );
             },
           ),
-        _Secondary(
-          label: 'Pick another date',
-          icon: Icons.event_rounded,
-          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SetupScreen(existing: e))),
-        ),
       ],
     );
   }
 
   Widget _venue(EventDetails e) {
     final near = e.venue?.label ?? 'me';
-    return _Option(
+    return _option(
+      3,
       emoji: '🏛️',
-      title: 'Find a covered venue',
-      subtitle: 'Community halls, restaurant party rooms, clubhouses, or a friend\'s garage or porch.',
+      title: 'Covered venue',
+      subtitle: 'Community halls, party rooms, clubhouses.',
       children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _Secondary(
-              label: 'Party halls near $near',
-              icon: Icons.map_rounded,
-              onTap: () => openLink(context, Uri.https('www.google.com', '/maps/search/', {'api': '1', 'query': 'party hall near $near'})),
-            ),
-            _Secondary(label: 'Change venue', icon: Icons.place_rounded, onTap: _changeVenue),
-          ],
+        Align(
+          alignment: Alignment.centerLeft,
+          child: _Secondary(
+            label: 'Party halls near $near',
+            icon: Icons.map_rounded,
+            onTap: () => openLink(context, Uri.https('www.google.com', '/maps/search/', {'api': '1', 'query': 'party hall near $near'})),
+          ),
         ),
       ],
     );
   }
 }
 
+/// One Plan B choice: a card with a round selector. Details show when it's picked.
 class _Option extends StatelessWidget {
-  const _Option({required this.emoji, required this.title, required this.subtitle, required this.children});
+  const _Option({
+    required this.emoji,
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+    this.tag,
+    this.children = const [],
+  });
   final String emoji;
   final String title;
   final String subtitle;
+  final String? tag;
+  final bool selected;
+  final VoidCallback onTap;
   final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: CardBox(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(emoji, style: const TextStyle(fontSize: 30)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      child: Semantics(
+        selected: selected,
+        button: true,
+        child: Material(
+          color: HC.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: selected ? HC.violet : HC.line, width: selected ? 2 : 1),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Text(title, style: display(18)),
-                      const SizedBox(height: 2),
-                      Text(subtitle, style: body(13, color: HC.muted)),
+                      Container(
+                        width: 48,
+                        height: 48,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(color: const Color(0xFFEEEAFE), borderRadius: BorderRadius.circular(16)),
+                        child: Text(emoji, style: const TextStyle(fontSize: 24)),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(title, style: body(16, weight: FontWeight.w700)),
+                            const SizedBox(height: 2),
+                            Text(subtitle, style: body(13, color: HC.muted)),
+                            if (tag != null) ...[
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(color: const Color(0xFFE3F6EC), borderRadius: BorderRadius.circular(8)),
+                                child: Text(tag!, style: body(12, color: const Color(0xFF13895C), weight: FontWeight.w700)),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        selected ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded,
+                        color: selected ? HC.violet : HC.line,
+                      ),
                     ],
                   ),
-                ),
-              ],
+                  if (selected && children.isNotEmpty) ...[const SizedBox(height: 12), ...children],
+                ],
+              ),
             ),
-            if (children.isNotEmpty) ...[const SizedBox(height: 12), ...children],
-          ],
+          ),
         ),
       ),
     );
   }
-}
-
-class _Primary extends StatelessWidget {
-  const _Primary({required this.label, required this.icon, required this.onTap});
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => FilledButton.icon(
-        style: FilledButton.styleFrom(backgroundColor: HC.violet, minimumSize: const Size(0, 46)),
-        onPressed: onTap,
-        icon: Icon(icon, size: 18),
-        label: Text(label),
-      );
 }
 
 class _Secondary extends StatelessWidget {
