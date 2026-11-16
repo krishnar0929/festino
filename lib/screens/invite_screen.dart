@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart' show ImagePicker, ImageSource;
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -19,6 +20,7 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/invitation_card.dart';
+import '../widgets/invite_clip_player.dart';
 import '../widgets/invite_video_player.dart';
 import 'invite_video_screen.dart';
 import 'sign_in_screen.dart';
@@ -139,7 +141,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
     super.dispose();
   }
 
-  static String _defaultMessage(EventDetails e) => switch (e.occasion) {
+  static String _defaultMessage(EventDetails e) => switch (e.kind) {
         'Birthday' => 'Come celebrate with us! Cake, games and lots of fun. 🎂',
         'Housewarming' => 'We\'ve moved in! Join us to bless our new home. 🏡',
         'Baby shower' => 'A little one is on the way! Celebrate with us. 🍼',
@@ -381,7 +383,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
   }
 
   Widget _templates(EventDetails e) {
-    final list = templatesFor(e.occasion);
+    final list = templatesFor(e.kind);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -459,7 +461,9 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
                     Text(
                       v.isEmpty
                           ? 'Turn 6–10 photos into a 30-second video guests watch when they open your invite.'
-                          : '${v.photos.length} photos · ${InviteVideo.styles[v.style]} · 🎵 ${v.musicLabel} · plays on your invite page',
+                          : v.hasClip
+                              ? 'Your own video · ${v.clipAutoplay ? 'plays when guests open the invite' : 'guests tap to play'}${v.sendClip ? ' · sent with the invitation' : ''}'
+                              : '${v.photos.length} photos · ${InviteVideo.looks[v.look]} · 🎵 ${v.musicLabel} · plays on your invite page',
                       style: body(12, color: HC.muted),
                     ),
                   ],
@@ -467,9 +471,13 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
               ),
             ],
           ),
-          if (!v.isEmpty) ...[
+          if (v.hasClip) ...[
+            const SizedBox(height: 12),
+            InviteClipPlayer(url: v.clip, autoplay: false),
+          ] else if (!v.isEmpty) ...[
             const SizedBox(height: 12),
             InviteVideoPlayer(
+              look: v.look,
               photos: v.photos,
               captions: v.captions,
               style: v.style,
@@ -543,11 +551,49 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
   }
 
   /// Shares the card picture plus the RSVP link (WhatsApp, iMessage, Mail, Instagram, …).
+  Uint8List? _clipBytes;
+  String _clipBytesFor = '';
+
+  /// The host's recorded video as a file to attach (downloaded once).
+  Future<Uint8List?> _clipFile(String url) async {
+    if (_clipBytesFor == url && _clipBytes != null) return _clipBytes;
+    try {
+      final r = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 60));
+      if (r.statusCode != 200) return null;
+      _clipBytes = r.bodyBytes;
+      _clipBytesFor = url;
+      return _clipBytes;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _shareCard(BuildContext from, {Uint8List? png, bool withText = true}) async {
     _hideKeyboard();
     await _ready();
     if (!mounted) return;
     final state = AppScope.of(context);
+    final v = state.event!.inviteVideo;
+    // "Send the video with the invitation": attach the recorded clip so it plays in the chat.
+    if (withText && v.hasClip && v.sendClip && !kIsWeb) {
+      toast(context, 'Getting your video ready…');
+      final bytes = await _clipFile(v.clip);
+      if (!mounted) return;
+      if (bytes != null) {
+        final mov = v.clip.toLowerCase().contains('.mov');
+        try {
+          // ignore: deprecated_member_use
+          await Share.shareXFiles(
+            [XFile.fromData(bytes, mimeType: mov ? 'video/quicktime' : 'video/mp4', name: mov ? 'invitation.mov' : 'invitation.mp4')],
+            text: _text(state),
+            subject: 'You\'re invited: ${state.event!.inviteHeadline}',
+            sharePositionOrigin: from.mounted ? originOf(from) : null,
+          );
+          return;
+        } catch (_) {}
+      }
+      if (mounted) toast(context, 'Couldn\'t attach the video, so sharing the card instead.');
+    }
     final image = png ?? await capturePng(_cardKey) ?? await capturePng(_sendCardKey);
     final rect = from.mounted ? originOf(from) : null;
     try {
@@ -582,7 +628,10 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
       useSafeArea: true,
       showDragHandle: true,
       backgroundColor: HC.ground,
-      builder: (ctx) => _SharePicker(hasImage: image != null),
+      builder: (ctx) {
+        final v = AppScope.of(context).event!.inviteVideo;
+        return _SharePicker(hasImage: image != null, hasVideo: v.hasClip && v.sendClip && !kIsWeb);
+      },
     );
     _hideKeyboard();
     if (pick == null || !mounted) return;
@@ -1873,8 +1922,11 @@ class _InviteStatusLineState extends State<InviteStatusLine> {
 
 /// The share menu: big "all apps" button plus a grid of favourite places to send.
 class _SharePicker extends StatelessWidget {
-  const _SharePicker({required this.hasImage});
+  const _SharePicker({required this.hasImage, this.hasVideo = false});
   final bool hasImage;
+
+  /// The host's recorded video goes along with "any app".
+  final bool hasVideo;
 
   static final _apps = <(String, String, Color, IconData?, String?)>[
     ('whatsapp', 'WhatsApp', Color(0xFF25D366), Icons.chat_rounded, null),
@@ -1906,7 +1958,7 @@ class _SharePicker extends StatelessWidget {
               style: FilledButton.styleFrom(backgroundColor: HC.violet, minimumSize: const Size(0, 52)),
               onPressed: () => Navigator.pop(context, 'all'),
               icon: const Icon(Icons.ios_share_rounded, size: 20),
-              label: Text(hasImage ? 'Picture + link to any app' : 'Share to any app'),
+              label: Text(hasVideo ? 'Video + link to any app' : (hasImage ? 'Picture + link to any app' : 'Share to any app')),
             ),
             const SizedBox(height: 16),
             GridView.count(

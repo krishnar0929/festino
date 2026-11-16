@@ -1,7 +1,41 @@
 /// The 30-second invitation video: photos that play as an animated slideshow
 /// (zoom, fades and captions) when guests open the invite link.
 class InviteVideo {
-  const InviteVideo({this.photos = const [], this.captions = const [], this.style = 'fun', this.music = defaultMusic});
+  const InviteVideo({
+    this.photos = const [],
+    this.captions = const [],
+    this.style = 'fun',
+    this.music = defaultMusic,
+    this.look = 'classic',
+    this.clip = '',
+    this.clipAutoplay = true,
+    this.sendClip = true,
+  });
+
+  /// Fun themes that turn the photos into a "star" video.
+  static const looks = {
+    'classic': '✨ Classic',
+    'soccer': '⚽ Soccer star',
+    'football': '🏈 Football MVP',
+    'superhero': '🦸 Superhero',
+    'rockstar': '🎸 Rock star',
+    'princess': '👑 Princess',
+    'astronaut': '🚀 Astronaut',
+  };
+
+  /// 'classic' or one of [looks].
+  final String look;
+
+  /// The host's own recorded video (download link), or '' to use the photos.
+  final String clip;
+
+  /// Play the recorded video as soon as guests open the invite.
+  final bool clipAutoplay;
+
+  /// Attach the recorded video file when sharing the invitation.
+  final bool sendClip;
+
+  bool get hasClip => clip.isNotEmpty;
 
   /// Built-in background music (30-second clips in assets/music).
   static const tracks = {
@@ -31,7 +65,7 @@ class InviteVideo {
   final List<String> captions;
   final String style;
 
-  bool get isEmpty => photos.isEmpty;
+  bool get isEmpty => photos.isEmpty && clip.isEmpty;
 
   String captionAt(int i) => i < captions.length ? captions[i] : '';
 
@@ -40,6 +74,10 @@ class InviteVideo {
         'captions': [for (var i = 0; i < photos.length && i < maxPhotos; i++) captionAt(i)],
         'style': style,
         'music': music,
+        'look': look,
+        'clip': clip,
+        'clipAutoplay': clipAutoplay,
+        'sendClip': sendClip,
       };
 
   factory InviteVideo.fromMap(Object? v) {
@@ -48,6 +86,17 @@ class InviteVideo {
     final style = v['style'] is String && styles.containsKey(v['style']) ? v['style'] as String : 'fun';
     final m = v['music'];
     final music = m is String && (m == 'none' || tracks.containsKey(m) || (m.startsWith('https://') && m.length <= 500)) ? m : defaultMusic;
-    return InviteVideo(photos: strings(v['photos']).take(maxPhotos).toList(), captions: strings(v['captions']), style: style, music: music);
+    final look = v['look'] is String && looks.containsKey(v['look']) ? v['look'] as String : 'classic';
+    final clip = v['clip'] is String && (v['clip'] as String).startsWith('https://') ? v['clip'] as String : '';
+    return InviteVideo(
+      photos: strings(v['photos']).take(maxPhotos).toList(),
+      captions: strings(v['captions']),
+      style: style,
+      music: music,
+      look: look,
+      clip: clip,
+      clipAutoplay: v['clipAutoplay'] is bool ? v['clipAutoplay'] as bool : true,
+      sendClip: v['sendClip'] is bool ? v['sendClip'] as bool : true,
+    );
   }
 }

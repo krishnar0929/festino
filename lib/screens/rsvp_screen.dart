@@ -7,6 +7,7 @@ import '../theme.dart';
 import '../widgets/celebration.dart';
 import '../widgets/common.dart';
 import '../widgets/invitation_card.dart';
+import '../widgets/invite_clip_player.dart';
 import '../widgets/invite_video_player.dart';
 
 /// What a guest sees when they open an invite link
@@ -238,8 +239,12 @@ class _RsvpScreenState extends State<RsvpScreen> {
                       text: info.notice.isNotEmpty ? info.notice : 'The party is happening. Please RSVP below.',
                       by: info.hostName,
                     ),
-                  if (!info.video.isEmpty && !info.cancelled) ...[
+                  if (info.video.hasClip && !info.cancelled) ...[
+                    InviteClipPlayer(url: info.video.clip, autoplay: info.video.clipAutoplay),
+                    const SizedBox(height: 14),
+                  ] else if (!info.video.isEmpty && !info.cancelled) ...[
                     InviteVideoPlayer(
+                      look: info.video.look,
                       photos: info.video.photos,
                       captions: info.video.captions,
                       style: info.video.style,

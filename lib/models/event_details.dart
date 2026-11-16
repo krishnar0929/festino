@@ -16,6 +16,95 @@ extension AudienceLabel on Audience {
 
 const occasions = ['Birthday', 'Housewarming', 'Baby shower', 'Pooja', 'Anniversary', 'Get-together'];
 
+/// More occasions, by group: name → (emoji, the main occasion whose plan,
+/// games and helpers fit it best).
+const moreOccasions = <String, Map<String, (String, String)>>{
+  'Life events': {
+    'Graduation': ('🎓', 'Get-together'),
+    'Engagement': ('💍', 'Anniversary'),
+    'Wedding': ('💒', 'Anniversary'),
+    'Wedding reception': ('🥂', 'Anniversary'),
+    'Sangeet / Mehndi': ('💃', 'Anniversary'),
+    'Bridal shower': ('👰', 'Baby shower'),
+    'Bachelor / bachelorette': ('🍾', 'Get-together'),
+    'Retirement party': ('🎊', 'Get-together'),
+    'Farewell': ('👋', 'Get-together'),
+    'Welcome party': ('🤗', 'Get-together'),
+    'Promotion / new job': ('🏆', 'Get-together'),
+  },
+  'Kids and family': {
+    'Gender reveal': ('🎈', 'Baby shower'),
+    'Naming ceremony': ('👶', 'Pooja'),
+    'Annaprasana (first rice)': ('🍚', 'Pooja'),
+    'Upanayanam (thread ceremony)': ('🧵', 'Pooja'),
+    'Half saree / dhoti ceremony': ('🥻', 'Pooja'),
+    'Sweet 16': ('🎀', 'Birthday'),
+    'Quinceañera': ('👑', 'Birthday'),
+    'Bar / Bat Mitzvah': ('✡️', 'Birthday'),
+    'Baptism / christening': ('🕊️', 'Pooja'),
+    'First Communion': ('✝️', 'Pooja'),
+    'Kids playdate': ('🧸', 'Birthday'),
+    'Family reunion': ('🫂', 'Get-together'),
+  },
+  'Festivals and holidays': {
+    'Diwali': ('🪔', 'Pooja'),
+    'Holi': ('🎨', 'Get-together'),
+    'Ganesh Chaturthi': ('🐘', 'Pooja'),
+    'Navratri / Garba': ('💃', 'Get-together'),
+    'Sankranti / Pongal': ('🪁', 'Pooja'),
+    'Ugadi': ('🌿', 'Pooja'),
+    'Satyanarayana Pooja': ('🙏', 'Pooja'),
+    'Varalakshmi Vratham': ('🪷', 'Pooja'),
+    'Eid': ('🌙', 'Get-together'),
+    'Christmas': ('🎄', 'Get-together'),
+    'Thanksgiving': ('🦃', 'Get-together'),
+    'Friendsgiving': ('🥧', 'Get-together'),
+    'New Year': ('🎆', 'Get-together'),
+    'Lunar New Year': ('🧧', 'Get-together'),
+    'Hanukkah': ('🕎', 'Get-together'),
+    'Easter': ('🐣', 'Get-together'),
+    'Halloween': ('🎃', 'Get-together'),
+    'Fourth of July': ('🎇', 'Get-together'),
+  },
+  'Get-togethers': {
+    'Game night': ('🎲', 'Get-together'),
+    'Potluck': ('🍲', 'Get-together'),
+    'BBQ / cookout': ('🍔', 'Get-together'),
+    'Game-day watch party': ('📺', 'Get-together'),
+    'Kitty party': ('👛', 'Get-together'),
+    'Office party': ('💼', 'Get-together'),
+    'Book club': ('📚', 'Get-together'),
+    'Dinner party': ('🍽️', 'Get-together'),
+  },
+};
+
+const _mainEmoji = {'Birthday': '🎂', 'Housewarming': '🏡', 'Baby shower': '🍼', 'Pooja': '🪔', 'Anniversary': '💍', 'Get-together': '🎉'};
+
+(String, String)? _findMore(String occasion) {
+  for (final g in moreOccasions.values) {
+    final hit = g[occasion];
+    if (hit != null) return hit;
+  }
+  return null;
+}
+
+/// The main occasion whose plan fits [occasion] (typed-in occasions are guessed from their words).
+String occasionKind(String occasion) {
+  if (occasions.contains(occasion)) return occasion;
+  final more = _findMore(occasion);
+  if (more != null) return more.$2;
+  final o = occasion.toLowerCase();
+  if (RegExp(r'birthday|bday|b-day|turning \d').hasMatch(o)) return 'Birthday';
+  if (RegExp(r'wedding|anniversar|engage').hasMatch(o)) return 'Anniversary';
+  if (RegExp(r'house|home').hasMatch(o)) return 'Housewarming';
+  if (RegExp(r'baby|shower|seemantham').hasMatch(o)) return 'Baby shower';
+  if (RegExp(r'pooja|puja|vrat|havan|prayer|temple|blessing').hasMatch(o)) return 'Pooja';
+  return 'Get-together';
+}
+
+/// An emoji for any occasion.
+String occasionIcon(String occasion) => _mainEmoji[occasion] ?? _findMore(occasion)?.$1 ?? _mainEmoji[occasionKind(occasion)] ?? '🎉';
+
 /// How lively the party should be: 0 Calm, 1 Lively, 2 Loud, 3 Wild.
 const energyLevels = ['Calm', 'Lively', 'Loud', 'Wild'];
 
@@ -84,6 +173,10 @@ class EventDetails {
     this.inviteHost = '',
     this.inviteMotif = '',
     this.guestNotice = '',
+    this.costLevel = 'medium',
+    this.costPicks,
+    this.venueKind = '',
+    this.areaCost = 'average',
     this.noticeKind = '',
     this.inviteVideo = const InviteVideo(),
     this.inviteExtra = '',
@@ -105,6 +198,9 @@ class EventDetails {
 
   final String id;
   String occasion;
+
+  /// The main occasion whose plan fits this one (a Graduation plans like a Get-together).
+  String get kind => occasionKind(occasion);
   String title;
   DateTime date;
 
@@ -161,6 +257,13 @@ class EventDetails {
 
   /// Emoji decoration from the chosen design, e.g. "🦖🎈🌴".
   String inviteMotif;
+
+  /// Cost estimate choices: level (simple…lux), ticked items (null = suggested),
+  /// venue type (home, hall, restaurant, park; '' = guess) and area cost (lower, average, higher).
+  String costLevel;
+  List<String>? costPicks;
+  String venueKind;
+  String areaCost;
 
   /// News for guests on the invite page (reason and note), and what it's about:
   /// '' (nothing), 'cancelled', 'updated' or 'back'.
@@ -227,6 +330,10 @@ class EventDetails {
         'inviteHost': inviteHost,
         'inviteMotif': inviteMotif,
         'guestNotice': guestNotice,
+        'costLevel': costLevel,
+        if (costPicks != null) 'costPicks': costPicks,
+        'venueKind': venueKind,
+        'areaCost': areaCost,
         'noticeKind': noticeKind,
         'inviteVideo': inviteVideo.toMap(),
         'inviteExtra': inviteExtra,
@@ -269,6 +376,10 @@ class EventDetails {
       inviteHost: m['inviteHost'] as String? ?? '',
       inviteMotif: m['inviteMotif'] as String? ?? '',
       guestNotice: m['guestNotice'] as String? ?? '',
+      costLevel: m['costLevel'] as String? ?? 'medium',
+      costPicks: (m['costPicks'] as List?)?.whereType<String>().toList(),
+      venueKind: m['venueKind'] as String? ?? '',
+      areaCost: m['areaCost'] as String? ?? 'average',
       noticeKind: m['noticeKind'] as String? ?? '',
       inviteVideo: InviteVideo.fromMap(m['inviteVideo']),
       inviteExtra: m['inviteExtra'] as String? ?? '',

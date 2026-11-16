@@ -288,12 +288,30 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
                   runSpacing: 6,
                   children: [
                     for (final c in helperCategories)
+                      if (!artistCategories.contains(c.label))
+                        Pill(
+                          label: c.label,
+                          small: true,
+                          selectedColor: HC.violet,
+                          selected: c.label == serviceType,
+                          onTap: () => setState(() => serviceType = c.label),
+                        ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text('Artists & entertainers', style: body(13, color: HC.muted, weight: FontWeight.w700)),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final a in artistCategories)
                       Pill(
-                        label: c.label,
+                        label: a,
                         small: true,
                         selectedColor: HC.violet,
-                        selected: c.label == serviceType,
-                        onTap: () => setState(() => serviceType = c.label),
+                        selected: a == serviceType,
+                        onTap: () => setState(() => serviceType = a),
                       ),
                   ],
                 ),

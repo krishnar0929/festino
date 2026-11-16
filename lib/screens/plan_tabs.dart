@@ -4,10 +4,12 @@ import 'package:intl/intl.dart';
 
 import '../models/event_details.dart';
 import '../services/budget_match.dart';
+import '../services/cost_estimate.dart';
 import '../services/plan_generator.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import 'cost_estimate_screen.dart';
 import 'nearby_screen.dart';
 
 final _money = NumberFormat.simpleCurrency(decimalDigits: 0);
@@ -213,10 +215,44 @@ class _BudgetTabState extends State<BudgetTab> {
     final committed = items.fold<double>(0, (a, b) => a + (b.vendor.isNotEmpty || b.actual != null ? b.cost : 0));
     final paid = items.fold<double>(0, (a, b) => a + (b.paid ? b.cost : 0));
     final custom = e.budgetItems != null;
+    final est = estimateCost(e);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Material(
+          color: HC.ink,
+          borderRadius: BorderRadius.circular(18),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const CostEstimateScreen())),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+              child: Row(
+                children: [
+                  const Text('💰', style: TextStyle(fontSize: 28)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('What will it cost?', style: body(15, color: Colors.white, weight: FontWeight.w700)),
+                        Text(
+                          est.picked.isEmpty
+                              ? 'Tick what you need and get an estimate'
+                              : 'About ${est.money(est.low)}–${est.money(est.high)} · ${costLevels[e.costLevel]?.$1 ?? 'Medium'} · ${est.picked.length} items',
+                          style: body(12, color: HC.nightMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, color: HC.lime),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
         CardBox(
           padding: const EdgeInsets.all(16),
           child: Column(

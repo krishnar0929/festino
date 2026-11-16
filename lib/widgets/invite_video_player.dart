@@ -8,6 +8,61 @@ import '../models/invite_video.dart';
 import '../theme.dart';
 import 'invitation_card.dart';
 
+/// A fun "star" theme: scene colors, flying props, a banner and cheers.
+class StarLook {
+  const StarLook({required this.banner, required this.colors, required this.props, required this.cheers, this.field = false, this.text = Colors.white});
+  final String banner;
+  final List<Color> colors;
+  final List<String> props;
+  final List<String> cheers;
+
+  /// Draw sports-field lines behind the player card.
+  final bool field;
+  final Color text;
+}
+
+const starLooks = <String, StarLook>{
+  'soccer': StarLook(
+    banner: 'BIRTHDAY ALL-STAR',
+    colors: [Color(0xFF0B7A3B), Color(0xFF39B54A)],
+    props: ['⚽', '🥅', '👟', '🏆', '👏', '⭐'],
+    cheers: ['GOOOAL! ⚽', 'What a shot!', 'Team captain! 🏆', 'Crowd goes wild! 👏'],
+    field: true,
+  ),
+  'football': StarLook(
+    banner: 'BIRTHDAY MVP',
+    colors: [Color(0xFF1B4D1B), Color(0xFF3E7D2C)],
+    props: ['🏈', '🏆', '📣', '👏', '⭐', '🎉'],
+    cheers: ['TOUCHDOWN! 🏈', 'MVP! MVP!', 'What a throw!', 'Hall of fame! 🏆'],
+    field: true,
+  ),
+  'superhero': StarLook(
+    banner: 'HERO OF THE DAY',
+    colors: [Color(0xFFC1121F), Color(0xFF1D3557)],
+    props: ['💥', '⚡', '🦸', '✨', '🌟', '🛡️'],
+    cheers: ['POW! 💥', 'Super strength! 💪', 'To the rescue! 🦸', 'Saving the day ⚡'],
+  ),
+  'rockstar': StarLook(
+    banner: 'ROCK STAR',
+    colors: [Color(0xFF1A1A2E), Color(0xFF7B2CBF)],
+    props: ['🎸', '🎤', '🎶', '⭐', '🤘', '🔥'],
+    cheers: ['Encore! 🎤', 'Rock on! 🤘', 'Sold-out show!', 'Living legend 🔥'],
+  ),
+  'princess': StarLook(
+    banner: 'PRINCESS PARTY',
+    colors: [Color(0xFFFF8FB1), Color(0xFFFFD6E7)],
+    props: ['👑', '✨', '🦄', '💖', '🏰', '🌸'],
+    cheers: ['Your royal highness 👑', 'So magical ✨', 'Once upon a time…', 'Sparkle on! 💖'],
+    text: Color(0xFF5A1033),
+  ),
+  'astronaut': StarLook(
+    banner: 'BLAST OFF!',
+    colors: [Color(0xFF0B1026), Color(0xFF2B2D6E)],
+    props: ['🚀', '🪐', '⭐', '🌙', '👽', '☄️'],
+    cheers: ['To the moon! 🚀', 'Out of this world!', 'Star explorer ⭐', 'Houston, we have a party!'],
+  ),
+};
+
 /// Plays the invitation video: a title card, the photos with zooms, fades and
 /// captions, and a "see you there" card. 30 seconds, story-style progress bars.
 /// Tap to pause; a replay button shows at the end.
@@ -23,7 +78,11 @@ class InviteVideoPlayer extends StatefulWidget {
     this.motif = '',
     this.autoplay = true,
     this.music = 'none',
+    this.look = 'classic',
   });
+
+  /// 'classic' or a [starLooks] theme (Soccer star, Football MVP, …).
+  final String look;
 
   /// Background music: a built-in track id, 'none', or an https link to a song.
   final String music;
@@ -124,7 +183,7 @@ class _InviteVideoPlayerState extends State<InviteVideoPlayer> with SingleTicker
       audio = null;
       _loadMusic();
     }
-    if (old.photos.length != widget.photos.length || old.style != widget.style) {
+    if (old.photos.length != widget.photos.length || old.style != widget.style || old.look != widget.look) {
       segments = _segments();
       clock.forward(from: 0);
       _syncMusic();
@@ -256,9 +315,145 @@ class _InviteVideoPlayerState extends State<InviteVideoPlayer> with SingleTicker
 
   Widget _segment(_Segment s, double t) {
     final p = s.progress(t);
+    final star = starLooks[widget.look];
+    if (star != null) {
+      if (s.photo < 0) return _starCard(star, opening: s.photo == -1, p: p, t: t);
+      return _starPhoto(star, s.photo, p, t);
+    }
     if (s.photo == -1) return _card(opening: true, p: p);
     if (s.photo == -2) return _card(opening: false, p: p);
     return _photo(s.photo, p);
+  }
+
+  /// Scene behind a star slide: colors, field lines and flying props.
+  Widget _scene(StarLook look, double t, {required Widget child}) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        final w = box.maxWidth, h = box.maxHeight;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            Container(decoration: BoxDecoration(gradient: LinearGradient(colors: look.colors, begin: Alignment.topCenter, end: Alignment.bottomCenter))),
+            if (look.field) CustomPaint(painter: _FieldPainter()),
+            for (var k = 0; k < 9; k++)
+              Positioned(
+                left: (((k * 0.137 + t * (k.isEven ? 0.035 : -0.028)) % 1.0 + 1.0) % 1.0) * w - 16,
+                top: (0.08 + ((k * 0.381) % 0.84)) * h + math.sin(t * 2.4 + k) * 14,
+                child: Transform.rotate(
+                  angle: math.sin(t * 1.7 + k * 2) * 0.5,
+                  child: Opacity(opacity: 0.85, child: Text(look.props[k % look.props.length], style: TextStyle(fontSize: 22.0 + (k % 3) * 8))),
+                ),
+              ),
+            child,
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _banner(StarLook look, double p) {
+    final pop = Curves.easeOutBack.transform((p / 0.25).clamp(0.0, 1.0));
+    return Transform.scale(
+      scale: 0.6 + 0.4 * pop,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(color: const Color(0xFFFFD84D), borderRadius: BorderRadius.circular(10)),
+        child: Text(look.banner, style: display(20, color: HC.ink)),
+      ),
+    );
+  }
+
+  Widget _starPhoto(StarLook look, int i, double p, double t) {
+    final pop = Curves.easeOutBack.transform((p / 0.25).clamp(0.0, 1.0));
+    final caption = i < widget.captions.length && widget.captions[i].trim().isNotEmpty ? widget.captions[i].trim() : look.cheers[i % look.cheers.length];
+    final capIn = ((p - 0.2) / 0.2).clamp(0.0, 1.0);
+    final flash = (1 - p * 6).clamp(0.0, 1.0);
+    return _scene(
+      look,
+      t,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned(top: 34, left: 0, right: 0, child: Center(child: _banner(look, p))),
+          Center(
+            child: Transform.rotate(
+              angle: math.sin(p * math.pi * 2) * 0.05 + (i.isEven ? -0.03 : 0.03),
+              child: Transform.scale(
+                scale: (0.55 + 0.45 * pop) * (1 + 0.06 * p),
+                child: FractionallySizedBox(
+                  widthFactor: 0.66,
+                  child: AspectRatio(
+                    aspectRatio: 3 / 4,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: const [BoxShadow(color: Color(0x66000000), blurRadius: 18, offset: Offset(0, 8))],
+                      ),
+                      padding: const EdgeInsets.all(6),
+                      child: ClipRRect(borderRadius: BorderRadius.circular(15), child: _image(widget.photos[i])),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 24,
+            child: Opacity(
+              opacity: capIn,
+              child: Transform.translate(
+                offset: Offset(0, 20 * (1 - Curves.easeOutBack.transform(capIn))),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(14)),
+                    child: Text(caption, textAlign: TextAlign.center, style: display(20, color: Colors.white)),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (flash > 0) IgnorePointer(child: Container(color: Colors.white.withValues(alpha: flash * 0.7))),
+        ],
+      ),
+    );
+  }
+
+  Widget _starCard(StarLook look, {required bool opening, required double p, required double t}) {
+    final pop = Curves.easeOutBack.transform((p / 0.35).clamp(0.0, 1.0));
+    return _scene(
+      look,
+      t,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Transform.scale(
+            scale: 0.8 + 0.2 * pop,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _banner(look, p),
+                const SizedBox(height: 16),
+                Text(opening ? 'YOU\'RE INVITED' : 'SEE YOU THERE!', style: overline(color: look.text)),
+                const SizedBox(height: 8),
+                Text(widget.title, textAlign: TextAlign.center, style: display(30, color: look.text)),
+                if (widget.when.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(widget.when, textAlign: TextAlign.center, style: body(15, color: look.text, weight: FontWeight.w700)),
+                ],
+                if (!opening) ...[
+                  const SizedBox(height: 14),
+                  Text('Tap RSVP below 👇', style: body(15, color: look.text, weight: FontWeight.w800)),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -353,4 +548,24 @@ class _InviteVideoPlayerState extends State<InviteVideoPlayer> with SingleTicker
       ),
     );
   }
+}
+
+
+/// White field lines for the soccer and football themes.
+class _FieldPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final line = Paint()
+      ..color = Colors.white.withValues(alpha: 0.22)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+    for (var k = 1; k < 6; k++) {
+      final y = size.height * k / 6;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), line);
+    }
+    canvas.drawCircle(Offset(size.width / 2, size.height / 2), size.width * 0.18, line);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

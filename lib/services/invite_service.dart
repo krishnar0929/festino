@@ -278,15 +278,15 @@ List<PitchItem> suggestPitchIn(EventDetails e) {
     item('🍉', 'Fruit platter'),
     item('🍿', 'Snacks & chips'),
     item('🍮', 'Dessert or sweets'),
-    if (e.occasion == 'Pooja' || e.occasion == 'Housewarming') ...[
+    if (e.kind == 'Pooja' || e.kind == 'Housewarming') ...[
       item('🌼', 'Flowers & garlands'),
       item('🥥', 'Coconuts & fruits for pooja'),
     ],
-    if (e.occasion == 'Birthday') ...[
+    if (e.kind == 'Birthday') ...[
       item('🎈', 'Balloons & decorations'),
       item('🎁', 'Return gift bags'),
     ],
-    if (e.occasion == 'Baby shower') item('🧸', 'Games prizes'),
+    if (e.kind == 'Baby shower') item('🧸', 'Games prizes'),
     item('🍽️', 'Plates, cups & napkins'),
     if (!e.indoor) item('🪑', 'Extra chairs or a canopy'),
     item('🔊', 'Speaker for music'),
@@ -444,9 +444,22 @@ class InviteInfo {
 
 String inviteIdFor(String hostUid, String eventId) => '${hostUid}_$eventId';
 
+/// Short invite links (/i/<id>) show a personal preview card in WhatsApp,
+/// iMessage and others (cover photo, title, date). They need the invitePreview
+/// Firebase function; set to false to go back to plain ?invite= links.
+const usePreviewLinks = false; // Turn on after the Blaze plan + `firebase deploy --only functions:invitePreview`.
+
 /// The invite link. With [guest], the link is personal so the reply is matched to that guest.
-String inviteUrl(String inviteId, {String guest = ''}) =>
-    'https://hoopla-894ca.web.app/?invite=$inviteId${guest.isEmpty ? '' : '&g=$guest'}';
+String inviteUrl(String inviteId, {String guest = ''}) => usePreviewLinks
+    ? 'https://hoopla-894ca.web.app/i/$inviteId${guest.isEmpty ? '' : '?g=$guest'}'
+    : 'https://hoopla-894ca.web.app/?invite=$inviteId${guest.isEmpty ? '' : '&g=$guest'}';
+
+/// Reads an invite from a link: /i/<id>?g=… or ?invite=<id>&g=…
+(String?, String) inviteFromUri(Uri u) {
+  final seg = u.pathSegments;
+  final id = seg.length >= 2 && seg[0] == 'i' ? seg[1] : u.queryParameters['invite'];
+  return (id == null || id.isEmpty ? null : id, u.queryParameters['g'] ?? '');
+}
 
 /// The text sent with every invite.
 String inviteText(EventDetails e, String url, {String hostName = '', String message = ''}) {
@@ -507,6 +520,20 @@ class InviteService {
     if (u == null || u.isAnonymous) throw StateError('Sign in to add a photo.');
     if (bytes.length > 8 * 1024 * 1024) throw StateError('That photo is too big (8 MB max).');
     final ref = FirebaseStorage.instance.ref('invites/${u.uid}/${eventId}_${DateTime.now().millisecondsSinceEpoch}.jpg');
+    await ref.putData(bytes, SettableMetadata(contentType: contentType));
+    return ref.getDownloadURL();
+  }
+
+  /// Most a recorded invitation video may weigh.
+  static const maxVideoBytes = 100 * 1024 * 1024;
+
+  /// Uploads the host's recorded video and returns its download link.
+  static Future<String> uploadVideo(String eventId, Uint8List bytes, {String contentType = 'video/mp4'}) async {
+    final u = FirebaseAuth.instance.currentUser;
+    if (u == null || u.isAnonymous) throw StateError('Sign in to add a video.');
+    if (bytes.length > maxVideoBytes) throw StateError('That video is too big. Try a shorter clip.');
+    final ext = contentType.contains('quicktime') ? 'mov' : 'mp4';
+    final ref = FirebaseStorage.instance.ref('invites/${u.uid}/${eventId}_clip_${DateTime.now().millisecondsSinceEpoch}.$ext');
     await ref.putData(bytes, SettableMetadata(contentType: contentType));
     return ref.getDownloadURL();
   }

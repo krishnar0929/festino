@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart' show ImagePicker;
+import 'package:image_picker/image_picker.dart' show ImagePicker, ImageSource;
 import 'package:intl/intl.dart';
 
 import '../models/event_details.dart';
@@ -11,6 +11,7 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/invitation_card.dart';
+import '../widgets/invite_clip_player.dart';
 import '../widgets/invite_video_player.dart';
 
 /// Photos that make a great invitation video, by event type.
@@ -74,6 +75,15 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
   /// False while the host reviews the photos; true once the video is made.
   bool generated = false;
   bool making = false;
+
+  /// 0 = video made from photos, 1 = the host's own recorded video.
+  int mode = 0;
+  String look = 'classic';
+  String clip = '';
+  String _savedClip = '';
+  bool clipAutoplay = true;
+  bool sendClip = true;
+  bool uploadingClip = false;
   bool busy = false;
   bool changed = false;
   int version = 0;
@@ -86,9 +96,15 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
     _started = true;
     final e = AppScope.of(context).event!;
     final v = e.inviteVideo;
-    style = v.isEmpty ? suggestedVideoStyle(e.occasion) : v.style;
+    style = v.isEmpty ? suggestedVideoStyle(e.kind) : v.style;
     music = v.isEmpty ? InviteVideo.defaultMusic : v.music;
-    generated = !v.isEmpty;
+    generated = v.photos.isNotEmpty;
+    look = v.look;
+    clip = v.clip;
+    _savedClip = v.clip;
+    clipAutoplay = v.clipAutoplay;
+    sendClip = v.sendClip;
+    mode = v.hasClip ? 1 : 0;
     for (var i = 0; i < v.photos.length; i++) {
       slides.add(_Slide(url: v.photos[i], caption: v.captionAt(i)));
     }
@@ -184,6 +200,8 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
     if (text != null) _edit(() => slides[i].caption = text.trim());
   }
 
+  bool get _canSave => mode == 1 ? clip.isNotEmpty && !uploadingClip : generated && slides.isNotEmpty;
+
   Future<void> _save({bool clear = false}) async {
     final state = AppScope.of(context);
     final e = state.event!;
@@ -192,7 +210,10 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
       if (clear) {
         removed.addAll([for (final s in slides) if (s.url != null) s.url!]);
         slides.clear();
+        clip = '';
       }
+      final keepClip = mode == 1 && !clear ? clip : '';
+      if (_savedClip.isNotEmpty && _savedClip != keepClip) removed.add(_savedClip);
       for (final s in slides) {
         if (s.url == null && s.bytes != null) s.url = await InviteService.uploadPhoto(e.id, s.bytes!);
       }
@@ -201,8 +222,13 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
         captions: [for (final s in slides) s.caption],
         style: style,
         music: music,
+        look: look,
+        clip: keepClip,
+        clipAutoplay: clipAutoplay,
+        sendClip: sendClip,
       );
       await state.update((ev) => ev.inviteVideo = video);
+      _savedClip = keepClip;
       await InviteService.publish(state.event!, hostName: state.event!.inviteHost, message: state.event!.inviteMessage);
       for (final url in removed) {
         InviteService.deletePhoto(url);
@@ -323,7 +349,7 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
           childAspectRatio: 0.78,
-          children: [for (var i = 0; i < slides.length; i++) _thumb(i, e.occasion, size: double.infinity)],
+          children: [for (var i = 0; i < slides.length; i++) _thumb(i, e.kind, size: double.infinity)],
         ),
         const SizedBox(height: 16),
         FilledButton.icon(
@@ -339,6 +365,145 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
             padding: const EdgeInsets.only(top: 6),
             child: Text('Tip: 6–10 photos make the best video. You have ${slides.length}.', textAlign: TextAlign.center, style: body(12, color: HC.muted)),
           ),
+      ],
+    );
+  }
+
+  /// Record with the camera or pick a video (up to 30 seconds), then upload it.
+  Future<void> _pickClip(ImageSource source) async {
+    final e = AppScope.of(context).event!;
+    try {
+      final file = await ImagePicker().pickVideo(source: source, maxDuration: const Duration(seconds: InviteVideo.seconds));
+      if (file == null) return;
+      setState(() => uploadingClip = true);
+      final bytes = await file.readAsBytes();
+      final name = file.name.toLowerCase();
+      final type = file.mimeType ?? (name.endsWith('.mov') ? 'video/quicktime' : 'video/mp4');
+      final url = await InviteService.uploadVideo(e.id, bytes, contentType: type.startsWith('video/') ? type : 'video/mp4');
+      if (clip.isNotEmpty && clip != _savedClip) InviteService.deletePhoto(clip);
+      _edit(() => clip = url);
+      if (mounted) toast(context, 'Video added! Check it below, then tap Save.');
+    } catch (err) {
+      if (mounted) toast(context, 'Couldn\'t add that video. ${err is StateError ? err.message : err}');
+    } finally {
+      if (mounted) setState(() => uploadingClip = false);
+    }
+  }
+
+  Widget _clipSection(EventDetails e) {
+    final camera = !kIsWeb;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (clip.isEmpty)
+          CardBox(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              children: [
+                const Text('🎥', style: TextStyle(fontSize: 44)),
+                const SizedBox(height: 6),
+                Text('Your own video, up to 30 seconds', style: display(18)),
+                const SizedBox(height: 4),
+                Text('Say hi, show the birthday star, or give a sneak peek of the venue.', textAlign: TextAlign.center, style: body(13, color: HC.muted)),
+                const SizedBox(height: 14),
+                if (uploadingClip)
+                  Column(children: [
+                    const CircularProgressIndicator(strokeWidth: 2.5),
+                    const SizedBox(height: 8),
+                    Text('Uploading your video…', style: body(13, color: HC.muted)),
+                  ])
+                else ...[
+                  if (camera)
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(backgroundColor: HC.violet, minimumSize: const Size(240, 50)),
+                      onPressed: () => _pickClip(ImageSource.camera),
+                      icon: const Icon(Icons.videocam_rounded),
+                      label: const Text('Record a video'),
+                    ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(minimumSize: const Size(240, 48), side: const BorderSide(color: HC.line)),
+                    onPressed: () => _pickClip(ImageSource.gallery),
+                    icon: Icon(Icons.video_library_outlined, color: HC.violet),
+                    label: Text('Choose a video', style: body(14, weight: FontWeight.w600)),
+                  ),
+                ],
+              ],
+            ),
+          )
+        else ...[
+          InviteClipPlayer(url: clip, autoplay: false),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              if (camera)
+                TextButton.icon(onPressed: uploadingClip ? null : () => _pickClip(ImageSource.camera), icon: const Icon(Icons.videocam_outlined), label: const Text('Record again')),
+              TextButton.icon(onPressed: uploadingClip ? null : () => _pickClip(ImageSource.gallery), icon: const Icon(Icons.swap_horiz_rounded), label: const Text('Choose another')),
+              if (uploadingClip) const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+            ],
+          ),
+        ],
+        const SizedBox(height: 14),
+        CardBox(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          child: Column(
+            children: [
+              SwitchListTile(
+                value: clipAutoplay,
+                activeColor: HC.violet,
+                title: Text('Play when guests open the invite', style: body(14, weight: FontWeight.w600)),
+                subtitle: Text('Starts right away at the top of your invite page', style: body(12, color: HC.muted)),
+                onChanged: (v) => _edit(() => clipAutoplay = v),
+              ),
+              const Divider(height: 1, color: HC.line),
+              SwitchListTile(
+                value: sendClip,
+                activeColor: HC.violet,
+                title: Text('Send the video with the invitation', style: body(14, weight: FontWeight.w600)),
+                subtitle: Text('"Share" attaches the video so it plays right in WhatsApp or iMessage', style: body(12, color: HC.muted)),
+                onChanged: (v) => _edit(() => sendClip = v),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        CardBox(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('💡 Tips for a great video', style: body(15, weight: FontWeight.w700)),
+              const SizedBox(height: 6),
+              for (final t in const [
+                'Hold the phone upright and face the light.',
+                'Start with a big hello and say what you\'re celebrating.',
+                'Mention the date, then "Tap RSVP below!"',
+                'Keep it short and happy: 15–30 seconds is perfect.',
+              ])
+                Text('• $t', style: body(13)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _lookPicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionLabel('Make it fun'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final l in InviteVideo.looks.entries)
+              Pill(label: l.value, small: true, selected: look == l.key, selectedColor: HC.violet, onTap: () => _edit(() => look = l.key)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text('Star themes put your photos on a player card with a stadium, stage or space scene, cheers and banners. Clear photos of one person work best.',
+            style: body(12, color: HC.muted)),
       ],
     );
   }
@@ -375,7 +540,7 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
         leadingWidth: 60,
         title: const Text('Invitation video'),
         actions: [
-          if (generated && slides.isNotEmpty)
+          if (_canSave)
             TextButton(onPressed: busy ? null : _save, child: Text(busy ? 'Saving…' : 'Save')),
         ],
       ),
@@ -387,9 +552,23 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
             children: [
               Text('30 seconds that make guests say "wow" 🎬', style: display(22)),
               const SizedBox(height: 4),
-              Text('Your photos become an animated video with zooms and captions. Guests watch it when they open your invite link.', style: body(13, color: HC.muted)),
+              Text(
+                mode == 0
+                    ? 'Your photos become an animated video with zooms, captions and music. Guests watch it when they open your invite link.'
+                    : 'Record yourself or pick a clip. Guests watch it on your invite page, and it can go along with the invitation.',
+                style: body(13, color: HC.muted),
+              ),
+              const SizedBox(height: 14),
+              Segmented(
+                options: const ['📸 From photos', '🎥 My own video'],
+                selected: mode,
+                height: 42,
+                onChanged: (i) => _edit(() => mode = i),
+              ),
               const SizedBox(height: 16),
-              if (slides.isEmpty)
+              if (mode == 1)
+                _clipSection(e)
+              else if (slides.isEmpty)
                 _emptyState(e)
               else if (!generated)
                 _review(e)
@@ -404,6 +583,7 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
                   title: e.inviteHeadline,
                   when: '${DateFormat('EEE, MMM d').format(e.date)} · ${clockAmPm(e.startMinutes)}',
                   motif: e.inviteMotif,
+                  look: look,
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -420,10 +600,13 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
                     scrollDirection: Axis.horizontal,
                     itemCount: slides.length,
                     separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (_, i) => _thumb(i, e.occasion),
+                    itemBuilder: (_, i) => _thumb(i, e.kind),
                   ),
                 ),
               ],
+              if (mode == 0) ...[
+              const SizedBox(height: 20),
+              _lookPicker(),
               const SizedBox(height: 20),
               const SectionLabel('Style'),
               Wrap(
@@ -431,7 +614,7 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
                 children: [
                   for (final s in InviteVideo.styles.entries)
                     Pill(
-                      label: '${s.value}${s.key == suggestedVideoStyle(e.occasion) ? ' ⭐' : ''}',
+                      label: '${s.value}${s.key == suggestedVideoStyle(e.kind) ? ' ⭐' : ''}',
                       small: true,
                       selected: style == s.key,
                       selectedColor: HC.violet,
@@ -445,7 +628,8 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
               _musicPicker(),
               const SizedBox(height: 20),
               _ideas(e),
-              if (slides.isNotEmpty && generated) ...[
+              ],
+              if (_canSave) ...[
                 const SizedBox(height: 20),
                 FilledButton(
                   style: FilledButton.styleFrom(backgroundColor: HC.violet, minimumSize: const Size(0, 52)),
@@ -527,7 +711,7 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
   }
 
   Widget _ideas(EventDetails e) {
-    final shots = videoShotIdeas[e.occasion] ?? videoShotIdeas['Get-together']!;
+    final shots = videoShotIdeas[e.kind] ?? videoShotIdeas['Get-together']!;
     return CardBox(
       padding: const EdgeInsets.all(14),
       child: Column(

@@ -5,6 +5,7 @@ import 'package:hoopla/screens/guest_notice.dart';
 import 'package:hoopla/services/invite_service.dart';
 import 'package:hoopla/services/plan_generator.dart';
 import 'package:hoopla/theme.dart';
+import 'package:hoopla/widgets/invite_video_player.dart';
 import 'package:hoopla/widgets/task_guide.dart';
 
 EventDetails party() => EventDetails(
@@ -71,5 +72,43 @@ void main() {
     expect(InviteVideo.fromMap({'music': 'http://insecure.mp3'}).music, 'celebration');
     expect(InviteVideo.fromMap({'music': 'none'}).hasMusic, isFalse);
     expect(InviteVideo.fromMap(const InviteVideo(photos: ['a'], music: 'none').toMap()).music, 'none');
+  });
+
+  test('recorded video and star themes are saved', () {
+    const v = InviteVideo(clip: 'https://x/clip.mp4', clipAutoplay: false, sendClip: true, look: 'soccer');
+    final back = InviteVideo.fromMap(v.toMap());
+    expect((back.hasClip, back.clipAutoplay, back.sendClip, back.look), (true, false, true, 'soccer'));
+    expect(back.isEmpty, isFalse);
+    expect(InviteVideo.fromMap({'clip': 'http://insecure', 'look': 'nope'}).hasClip, isFalse);
+    expect(InviteVideo.fromMap({'look': 'nope'}).look, 'classic');
+    expect(InviteVideo.looks.keys, containsAll(['soccer', 'football', 'superhero', 'rockstar', 'princess', 'astronaut']));
+  });
+
+  test('every star theme has a scene', () {
+    for (final id in InviteVideo.looks.keys.where((k) => k != 'classic')) {
+      final l = starLooks[id];
+      expect(l, isNotNull, reason: id);
+      expect((l!.props.length >= 3, l.cheers.isNotEmpty, l.banner.isNotEmpty), (true, true, true));
+    }
+  });
+
+  test('more occasions and typed ones plan like the closest main occasion', () {
+    expect(occasionKind('Birthday'), 'Birthday');
+    expect(occasionKind('Diwali'), 'Pooja');
+    expect(occasionKind('Wedding'), 'Anniversary');
+    expect(occasionKind('Graduation'), 'Get-together');
+    expect(occasionKind('Sweet 16'), 'Birthday');
+    expect(occasionKind("Pet's birthday"), 'Birthday');
+    expect(occasionKind('Lakshmi puja'), 'Pooja');
+    expect(occasionKind('Cricket finals'), 'Get-together');
+    expect(occasionIcon('Christmas'), '🎄');
+    expect(occasionIcon('Cricket finals'), '🎉');
+    final names = [for (final g in moreOccasions.values) ...g.keys];
+    expect(names.length, names.toSet().length);
+    expect(names.where(occasions.contains), isEmpty);
+    final e = party()..occasion = 'Diwali';
+    expect(e.kind, 'Pooja');
+    expect(PlanGenerator.build(e).helpers, isNotEmpty);
+    expect(EventDetails.fromMap(e.toMap()).occasion, 'Diwali');
   });
 }

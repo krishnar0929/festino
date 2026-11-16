@@ -116,6 +116,41 @@ const _samples = <String, List<List<String>>>{
     ['Bounce House Bonanza', '\$150–\$400', 'Bounce houses and kids\' games for backyard parties.'],
     ['Royal Seating Rentals', '\$300–\$1,500', 'Throne chairs, sofas and lounge setups.'],
   ],
+  'Kids entertainers': [
+    ['Giggles the Clown', '\$200–\$450', 'Clown show, balloon animals and party games for ages 3–10.'],
+    ['Twist & Shout Balloons', '\$150–\$400', 'Balloon twisting and balloon arches, booked by the hour.'],
+    ['Painted Smiles', '\$150–\$350', 'Face painting and glitter tattoos, about 12 kids an hour.'],
+  ],
+  'Magicians': [
+    ['Marvelous Max', '\$250–\$600', 'Kids\' magic show with a bunny finale. 45 minutes.'],
+    ['Close-Up Kiran', '\$300–\$800', 'Table-to-table close-up magic for grown-up parties.'],
+    ['Abracadabra Arjun', '\$200–\$500', 'Comedy magic with lots of audience participation.'],
+  ],
+  'Stand-up comedians': [
+    ['Desi Laughs Live', '\$400–\$1,200', 'Clean family-friendly stand-up, 20–40 minute sets.'],
+    ['Roast Master Raj', '\$500–\$1,500', 'Birthday and retirement roasts, written for your guest of honour.'],
+    ['Open Mic Maya', '\$250–\$700', 'Light, clean comedy for office parties and reunions.'],
+  ],
+  'Live bands': [
+    ['The Sangeet Collective', '\$1,000–\$3,000', 'Five-piece band: Bollywood, ghazals and retro hits.'],
+    ['Backyard Beats', '\$800–\$2,000', 'Acoustic trio for backyard parties and anniversaries.'],
+    ['Rock On Revival', '\$1,200–\$3,500', 'Classic rock and pop covers, with their own sound system.'],
+  ],
+  'Instrumentalists': [
+    ['Tabla Tarang', '\$200–\$600', 'Tabla and harmonium duo for poojas and sangeets.'],
+    ['Strings by Sruthi', '\$250–\$700', 'Solo violin for ceremonies and dinners.'],
+    ['Nadaswaram Narayan', '\$300–\$900', 'Traditional nadaswaram and thavil for gruhapravesams.'],
+  ],
+  'Mehndi artists': [
+    ['Henna by Hema', '\$10–\$40 per guest', 'Quick guest mehndi at parties, bridal designs too.'],
+    ['Mehndi Moments', '\$150–\$500', 'Arabic and Rajasthani designs for sangeets and showers.'],
+    ['Little Hands Henna', '\$100–\$300', 'Kid-friendly natural henna for birthday parties.'],
+  ],
+  'Caricature artists': [
+    ['Quick Sketch Sam', '\$200–\$500', 'Live caricatures, 3–5 minutes each. Guests take them home.'],
+    ['Doodle Divas', '\$250–\$600', 'Color caricatures and digital portraits on iPad.'],
+    ['Funny Faces Studio', '\$180–\$450', 'Black-and-white caricatures for kids\' parties.'],
+  ],
 };
 
 /// Sample reviews: [service type, provider index, name, event type, stars, comment, reply].
@@ -148,7 +183,8 @@ const _serviceEmoji = {
   'Photographers': '📸', 'Videographers': '🎥', 'Decorators': '🎈', 'Stage decor': '🌸', 'Event planners': '📋',
   'Designers': '🎨', 'Cake makers': '🎂', 'Panthulu': '🪔', 'Makeup': '💄', 'Cleaners & maids': '🧹',
   'Helpers': '🙌', 'Transport': '🚐', 'Anchors / MC': '🎤', 'DJs': '🎧', 'Singers': '🎶', 'Dancers': '💃',
-  'Caterers': '🍛', 'Rentals': '🪑',
+  'Caterers': '🍛', 'Rentals': '🪑', 'Kids entertainers': '🤡', 'Magicians': '🎩', 'Stand-up comedians': '😂',
+  'Live bands': '🎸', 'Instrumentalists': '🎻', 'Mehndi artists': '🌿', 'Caricature artists': '✏️',
 };
 const _partyEmoji = ['🎉', '🎈', '✨', '🥳', '🎁', '🌼', '🍰', '🎊'];
 

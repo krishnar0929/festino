@@ -11,14 +11,7 @@ import 'guest_notice.dart';
 
 const _danger = Color(0xFFB42318);
 
-String occasionEmoji(String occasion) => switch (occasion) {
-      'Birthday' => '🎂',
-      'Housewarming' => '🏡',
-      'Baby shower' => '🍼',
-      'Pooja' => '🪔',
-      'Anniversary' => '💍',
-      _ => '🎉',
-    };
+String occasionEmoji(String occasion) => occasionIcon(occasion);
 
 /// My events: what's coming up, what's been celebrated, and what was cancelled.
 class MyEventsScreen extends StatefulWidget {

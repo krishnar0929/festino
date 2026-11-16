@@ -30,7 +30,18 @@ const helperCategories = <HelperCategory>[
   HelperCategory('Dancers', 'dance performers for events'),
   HelperCategory('Caterers', 'indian caterers'),
   HelperCategory('Rentals', 'party rentals chairs tables'),
+  // Artists & entertainers
+  HelperCategory('Kids entertainers', 'kids party entertainer clown balloon artist face painter'),
+  HelperCategory('Magicians', 'magician for parties'),
+  HelperCategory('Stand-up comedians', 'stand up comedian for private events'),
+  HelperCategory('Live bands', 'live band for events'),
+  HelperCategory('Instrumentalists', 'live musician tabla violin for events'),
+  HelperCategory('Mehndi artists', 'mehndi henna artist'),
+  HelperCategory('Caricature artists', 'caricature artist for parties'),
 ];
+
+/// Performers, grouped as "Artists & entertainers".
+const artistCategories = ['Anchors / MC', 'DJs', 'Singers', 'Dancers', 'Kids entertainers', 'Magicians', 'Stand-up comedians', 'Live bands', 'Instrumentalists', 'Mehndi artists', 'Caricature artists'];
 
 /// Helpers most events of each kind need.
 const helpersByOccasion = <String, List<String>>{

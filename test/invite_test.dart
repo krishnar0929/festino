@@ -43,7 +43,7 @@ void main() {
     expect(t, contains("Vir's 1st birthday"));
     expect(t, contains('Fri, Feb 26 at 4:00 PM'));
     expect(t, contains('12 Oak Tree Rd, Edison'));
-    expect(t, contains('https://hoopla-894ca.web.app/?invite=u1_e1'));
+    expect(t, contains(inviteUrl('u1_e1')));
     expect(inviteIdFor('u1', 'e1'), 'u1_e1');
   });
 
@@ -97,8 +97,11 @@ void main() {
     expect(p.guestKey, isNotEmpty);
     expect(p.guestKey, guestKeyFor('+17325550100'));
     expect(p.guestKey, isNot(Invitee(name: 'Sam', email: 'sam@example.com').guestKey));
-    expect(inviteUrl('u1_e1', guest: p.guestKey), 'https://hoopla-894ca.web.app/?invite=u1_e1&g=${p.guestKey}');
-    expect(inviteUrl('u1_e1'), 'https://hoopla-894ca.web.app/?invite=u1_e1');
+    expect(inviteUrl('u1_e1', guest: p.guestKey), endsWith(usePreviewLinks ? '/i/u1_e1?g=${p.guestKey}' : '/?invite=u1_e1&g=${p.guestKey}'));
+    expect(inviteUrl('u1_e1'), endsWith(usePreviewLinks ? '/i/u1_e1' : '/?invite=u1_e1'));
+    expect(inviteFromUri(Uri.parse(inviteUrl('u1_e1', guest: 'k9'))), ('u1_e1', 'k9'));
+    expect(inviteFromUri(Uri.parse('https://hoopla-894ca.web.app/?invite=u1_e1&g=k9')), ('u1_e1', 'k9'));
+    expect(inviteFromUri(Uri.parse('https://hoopla-894ca.web.app/')), (null, ''));
   });
 
   test('guests split into going, pending and can\'t go', () {

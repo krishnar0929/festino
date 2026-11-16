@@ -18,6 +18,7 @@ import '../widgets/place_picker.dart';
 import '../data/party_stories.dart';
 import 'party_stories_screen.dart';
 import 'guest_notice.dart';
+import '../widgets/occasion_picker.dart';
 
 /// "Tell us about your event" — used to create a new event or edit one.
 class SetupScreen extends StatefulWidget {
@@ -169,6 +170,16 @@ class _SetupScreenState extends State<SetupScreen> {
       initialTime: TimeOfDay(hour: startMinutes ~/ 60, minute: startMinutes % 60),
     );
     if (picked != null) setState(() => startMinutes = picked.hour * 60 + picked.minute);
+  }
+
+  Future<void> _moreOccasions() async {
+    final o = await pickMoreOccasion(context, current: occasion);
+    if (o != null && mounted) setState(() => occasion = o);
+  }
+
+  Future<void> _otherOccasion() async {
+    final o = await typeOccasion(context, initial: occasions.contains(occasion) ? '' : occasion);
+    if (o != null && mounted) setState(() => occasion = o);
   }
 
   Future<void> _save() async {
@@ -343,8 +354,19 @@ class _SetupScreenState extends State<SetupScreen> {
                         runSpacing: 8,
                         children: [
                           for (final o in occasions) Pill(label: o, selected: o == occasion, onTap: () => setState(() => occasion = o)),
+                          // A picked "more" or typed occasion shows here, selected.
+                          if (!occasions.contains(occasion))
+                            Pill(label: '${occasionIcon(occasion)} $occasion', selected: true, onTap: _moreOccasions),
+                          Pill(label: 'More ▾', selected: false, onTap: _moreOccasions),
+                          Pill(label: '✏️ Other', selected: false, onTap: _otherOccasion),
                         ],
                       ),
+                      if (!occasions.contains(occasion))
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text('Planned like a ${occasionKind(occasion).toLowerCase()}: games, helpers and timeline to match.',
+                              style: body(12, color: HC.muted)),
+                        ),
                       const SizedBox(height: 20),
                       const SectionLabel("Who's it for?"),
                       TextField(

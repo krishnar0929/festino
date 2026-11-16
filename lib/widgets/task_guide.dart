@@ -125,6 +125,13 @@ const _serviceEmoji = {
   'Dancers': '💃',
   'Caterers': '🍛',
   'Rentals': '🪑',
+  'Kids entertainers': '🤡',
+  'Magicians': '🎩',
+  'Stand-up comedians': '😂',
+  'Live bands': '🎸',
+  'Instrumentalists': '🎻',
+  'Mehndi artists': '🌿',
+  'Caricature artists': '✏️',
 };
 
 /// Ticks a task on or off.
