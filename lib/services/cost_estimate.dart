@@ -13,6 +13,23 @@ const costLevels = <String, (String, double)>{
   'lux': ('Very high', 3.6),
 };
 
+/// Short name for a level: Simple, Medium, High, Pro, Luxe.
+String costLevelName(String key) => switch (key) {
+      'pro' => 'Pro',
+      'lux' => 'Luxe',
+      _ => costLevels[key]?.$1 ?? key,
+    };
+
+/// One line on what a level means.
+String costLevelHint(String key) => switch (key) {
+      'simple' => 'Home-style: do-it-yourself food and decor, few extras.',
+      'medium' => 'Typical: catered food, cake, some decor and a photographer.',
+      'high' => 'Nicer venue, fuller menu, more decor and entertainment.',
+      'pro' => 'Professional everything: planner-style decor, pro photo and video.',
+      'lux' => 'Top end: premium venue, designer decor, live entertainment.',
+      _ => '',
+    };
+
 /// Where the party happens (changes the venue line and food).
 const venueKinds = <String, String>{
   'home': '🏠 Home / backyard',

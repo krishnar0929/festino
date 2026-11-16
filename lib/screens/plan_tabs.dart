@@ -238,7 +238,9 @@ class _BudgetTabState extends State<BudgetTab> {
                       children: [
                         Text('What will it cost?', style: body(15, color: Colors.white, weight: FontWeight.w700)),
                         Text(
-                          est.picked.isEmpty
+                          !e.costOn
+                              ? 'Optional · pick a party style to get an estimate'
+                              : est.picked.isEmpty
                               ? 'Tick what you need and get an estimate'
                               : 'About ${est.money(est.low)}–${est.money(est.high)} · ${costLevels[e.costLevel]?.$1 ?? 'Medium'} · ${est.picked.length} items',
                           style: body(12, color: HC.nightMuted),

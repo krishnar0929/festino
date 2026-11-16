@@ -174,6 +174,7 @@ class EventDetails {
     this.inviteMotif = '',
     this.guestNotice = '',
     this.costLevel = 'medium',
+    this.costOn = false,
     this.costPicks,
     this.venueKind = '',
     this.areaCost = 'average',
@@ -261,6 +262,9 @@ class EventDetails {
   /// Cost estimate choices: level (simple…lux), ticked items (null = suggested),
   /// venue type (home, hall, restaurant, park; '' = guess) and area cost (lower, average, higher).
   String costLevel;
+
+  /// The host asked for a cost estimate (off until they tick it or pick a level).
+  bool costOn;
   List<String>? costPicks;
   String venueKind;
   String areaCost;
@@ -331,6 +335,7 @@ class EventDetails {
         'inviteMotif': inviteMotif,
         'guestNotice': guestNotice,
         'costLevel': costLevel,
+        'costOn': costOn,
         if (costPicks != null) 'costPicks': costPicks,
         'venueKind': venueKind,
         'areaCost': areaCost,
@@ -377,6 +382,7 @@ class EventDetails {
       inviteMotif: m['inviteMotif'] as String? ?? '',
       guestNotice: m['guestNotice'] as String? ?? '',
       costLevel: m['costLevel'] as String? ?? 'medium',
+      costOn: m['costOn'] as bool? ?? false,
       costPicks: (m['costPicks'] as List?)?.whereType<String>().toList(),
       venueKind: m['venueKind'] as String? ?? '',
       areaCost: m['areaCost'] as String? ?? 'average',

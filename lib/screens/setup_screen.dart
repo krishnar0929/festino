@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/event_details.dart';
 import '../services/account_service.dart';
 import '../services/event_parser.dart';
+import '../services/cost_estimate.dart';
 import '../services/plan_generator.dart';
 import '../services/search_log.dart';
 import '../state/app_state.dart';
@@ -48,6 +49,10 @@ class _SetupScreenState extends State<SetupScreen> {
   late Audience audience;
   late int energy;
 
+  /// "Estimate my party cost" ticked, and the level picked (null until the host picks one).
+  late bool costOn;
+  String? costLevel;
+
   /// The party venue. New events start at the current location when allowed.
   Place? venue;
   bool locating = false;
@@ -69,6 +74,8 @@ class _SetupScreenState extends State<SetupScreen> {
     guests = e?.guests ?? preset?.guests ?? 30;
     audience = e?.audience ?? Audience.kids;
     energy = e?.energy ?? 1;
+    costOn = e?.costOn ?? false;
+    costLevel = (e?.costOn ?? false) ? e!.costLevel : null;
     venue = e?.venue;
     if (e == null) {
       locating = true;
@@ -183,6 +190,10 @@ class _SetupScreenState extends State<SetupScreen> {
   }
 
   Future<void> _save() async {
+    if (costOn && costLevel == null) {
+      toast(context, 'Pick a cost level: Simple, Medium, High, Pro or Luxe.');
+      return;
+    }
     setState(() => saving = true);
     final state = AppScope.of(context);
     final overlay = Celebration.overlayOf(context);
@@ -217,7 +228,9 @@ class _SetupScreenState extends State<SetupScreen> {
       ..guests = guests
       ..audience = audience
       ..energy = energy
-      ..venue = venue;
+      ..venue = venue
+      ..costOn = costOn;
+    if (costOn && costLevel != null) e.costLevel = costLevel!;
     e.gameIds = PlanGenerator.suggestGameIds(e);
     await state.saveEvent(e);
     final replaceId = widget.replaceId;
@@ -431,6 +444,56 @@ class _SetupScreenState extends State<SetupScreen> {
                       Segmented(options: energyLevels, selected: energy, height: 40, onChanged: (i) => setState(() => energy = i)),
                       const SizedBox(height: 8),
                       Text(_energyLine(energy), style: body(13, color: HC.muted)),
+                      const SizedBox(height: 20),
+                      const SectionLabel('Cost estimate'),
+                      Material(
+                        color: HC.card,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: const BorderSide(color: HC.line)),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            CheckboxListTile(
+                              value: costOn,
+                              activeColor: HC.violet,
+                              controlAffinity: ListTileControlAffinity.leading,
+                              title: Text('Estimate my party cost', style: body(15, weight: FontWeight.w600)),
+                              subtitle: Text('Optional. Based on your guests, place, season and style.', style: body(12, color: HC.muted)),
+                              onChanged: (v) => setState(() => costOn = v ?? false),
+                            ),
+                            if (costOn)
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('What kind of party?', style: body(13, weight: FontWeight.w600)),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 6,
+                                      children: [
+                                        for (final l in costLevels.entries)
+                                          Pill(
+                                            label: costLevelName(l.key),
+                                            small: true,
+                                            selectedColor: HC.violet,
+                                            selected: costLevel == l.key,
+                                            onTap: () => setState(() => costLevel = l.key),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      costLevel == null ? 'Pick one to see your estimate.' : costLevelHint(costLevel!),
+                                      style: body(12, color: costLevel == null ? const Color(0xFFB26A00) : HC.muted),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                       if (!canPop && state.usingCloud && !state.isSignedIn) ...[
                         const SizedBox(height: 18),
                         Center(

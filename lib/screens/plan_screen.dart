@@ -108,7 +108,7 @@ class _PlanScreenState extends State<PlanScreen> {
             Expanded(
               child: _Chip(
                 emoji: '💰',
-                label: cost.high <= 0 ? 'Cost estimate' : 'About ${cost.money(cost.mid)}',
+                label: !e.costOn ? 'Cost estimate' : (cost.high <= 0 ? 'Cost estimate' : 'About ${cost.money(cost.mid)}'),
                 onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const CostEstimateScreen())),
               ),
             ),

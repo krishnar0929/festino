@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoopla/models/event_details.dart';
 import 'package:hoopla/screens/home_screen.dart';
+import 'package:hoopla/services/cost_estimate.dart';
 import 'package:hoopla/services/location_service.dart';
 import 'package:hoopla/services/plan_generator.dart';
 import 'package:hoopla/services/weather_service.dart';
@@ -57,5 +58,20 @@ void main() {
     expect(const WeatherBrief(verdict: risky, emoji: '🌧️', forecast: true, rainChance: 60).short, 'Rain 60%');
     expect(const WeatherBrief(verdict: risky, emoji: '⛈️', forecast: true, rainChance: 10).short, 'Check weather');
     expect(const WeatherBrief(verdict: risky, emoji: '🌧️', forecast: true).worry, isTrue);
+  });
+
+  test('cost estimate is off until the host turns it on and picks a style', () {
+    final e = party();
+    expect(e.costOn, isFalse);
+    e
+      ..costOn = true
+      ..costLevel = 'lux';
+    final back = EventDetails.fromMap(e.toMap());
+    expect(back.costOn, isTrue);
+    expect(back.costLevel, 'lux');
+    expect([for (final k in costLevels.keys) costLevelName(k)], ['Simple', 'Medium', 'High', 'Pro', 'Luxe']);
+    for (final k in costLevels.keys) {
+      expect(costLevelHint(k), isNotEmpty);
+    }
   });
 }

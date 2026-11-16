@@ -186,7 +186,7 @@ class HomeScreen extends StatelessWidget {
                 icon: Icons.payments_outlined,
                 color: const Color(0xFFB26A00),
                 title: 'Cost',
-                detail: cost.high <= 0 ? 'Estimate' : '~${cost.money(cost.mid)}',
+                detail: !e.costOn ? 'Tap to estimate' : (cost.high <= 0 ? 'Estimate' : '~${cost.money(cost.mid)}'),
                 onTap: () => _push(context, const CostEstimateScreen()),
               ),
             ),

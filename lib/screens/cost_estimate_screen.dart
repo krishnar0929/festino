@@ -20,7 +20,8 @@ class CostEstimateScreen extends StatefulWidget {
 }
 
 class _CostEstimateScreenState extends State<CostEstimateScreen> {
-  late String level;
+  /// Null until the host picks a level (cost estimates are opt-in).
+  String? level;
   late String venue;
   late String area;
   late Set<String> picks;
@@ -32,7 +33,7 @@ class _CostEstimateScreenState extends State<CostEstimateScreen> {
     if (_started) return;
     _started = true;
     final e = AppScope.of(context).event!;
-    level = costLevels.containsKey(e.costLevel) ? e.costLevel : 'medium';
+    level = e.costOn && costLevels.containsKey(e.costLevel) ? e.costLevel : null;
     venue = venueKindFor(e);
     area = areaCosts.containsKey(e.areaCost) ? e.areaCost : 'average';
     picks = e.costPicks?.toSet() ?? defaultCostPicks(e).toSet();
@@ -41,8 +42,11 @@ class _CostEstimateScreenState extends State<CostEstimateScreen> {
   /// Remembers the choices on the event (quietly, as they change).
   void _set(VoidCallback f) {
     setState(f);
+    final lvl = level;
+    if (lvl == null) return;
     AppScope.of(context).update((e) {
-      e.costLevel = level;
+      e.costOn = true;
+      e.costLevel = lvl;
       e.venueKind = venue;
       e.areaCost = area;
       e.costPicks = picks.toList();
@@ -82,7 +86,8 @@ class _CostEstimateScreenState extends State<CostEstimateScreen> {
   @override
   Widget build(BuildContext context) {
     final e = AppScope.of(context).event!;
-    final est = estimateCost(e, level: level, picks: picks, venueKind: venue, area: area);
+    final chosen = level != null;
+    final est = estimateCost(e, level: level ?? 'medium', picks: picks, venueKind: venue, area: area);
     final usable = [for (final l in est.lines) if (l.included) l.item.id];
     final allOn = usable.every(picks.contains);
 
@@ -106,8 +111,8 @@ class _CostEstimateScreenState extends State<CostEstimateScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Estimated total · ${est.picked.length} items', style: body(12, color: const Color(0xFFBDB8D6))),
-                      Text(est.picked.isEmpty ? '—' : est.money(est.mid), style: display(26, color: Colors.white)),
-                      if (est.picked.isNotEmpty)
+                      Text(!chosen ? 'Pick a style' : (est.picked.isEmpty ? '—' : est.money(est.mid)), style: display(chosen ? 26 : 20, color: Colors.white)),
+                      if (chosen && est.picked.isNotEmpty)
                         Text('range ${est.money(est.low)} – ${est.money(est.high)}', style: body(12, color: const Color(0xFFBDB8D6))),
                     ],
                   ),
@@ -119,7 +124,7 @@ class _CostEstimateScreenState extends State<CostEstimateScreen> {
                     minimumSize: const Size(0, 46),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
-                  onPressed: est.picked.isEmpty ? null : () => _useAsBudget(est),
+                  onPressed: !chosen || est.picked.isEmpty ? null : () => _useAsBudget(est),
                   child: Text('Use as budget', style: body(14, weight: FontWeight.w700)),
                 ),
               ],
@@ -141,10 +146,15 @@ class _CostEstimateScreenState extends State<CostEstimateScreen> {
               ),
               const SizedBox(height: 18),
               Segmented(
-                options: [for (final l in costLevels.entries) _short(l.key, l.value.$1)],
-                selected: costLevels.keys.toList().indexOf(level).clamp(0, costLevels.length - 1),
+                options: [for (final l in costLevels.keys) costLevelName(l)],
+                selected: level == null ? -1 : costLevels.keys.toList().indexOf(level!),
                 height: 38,
                 onChanged: (i) => _set(() => level = costLevels.keys.elementAt(i)),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                level == null ? 'Pick a party style to see your estimate.' : costLevelHint(level!),
+                style: body(12, color: level == null ? const Color(0xFFB26A00) : HC.muted),
               ),
               const SizedBox(height: 12),
               Material(
@@ -213,6 +223,7 @@ class _CostEstimateScreenState extends State<CostEstimateScreen> {
                       if (i > 0) const Divider(height: 1, color: HC.line),
                       _LineRow(
                         line: l,
+                        showPrice: chosen,
                         est: est,
                         checked: picks.contains(l.item.id) && l.included,
                         onChanged: l.included ? (v) => _set(() => v ? picks.add(l.item.id) : picks.remove(l.item.id)) : null,
@@ -232,15 +243,9 @@ class _CostEstimateScreenState extends State<CostEstimateScreen> {
   }
 }
 
-/// Short level names so all five fit on one row.
-String _short(String key, String label) => switch (key) {
-      'pro' => 'Pro',
-      'lux' => 'Luxe',
-      _ => label,
-    };
-
 class _LineRow extends StatelessWidget {
-  const _LineRow({required this.line, required this.est, required this.checked, required this.onChanged});
+  const _LineRow({required this.line, required this.est, required this.checked, required this.onChanged, this.showPrice = true});
+  final bool showPrice;
   final CostLine line;
   final CostEstimate est;
   final bool checked;
@@ -279,7 +284,7 @@ class _LineRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Text(off ? '—' : est.range(line),
+            Text(off || !showPrice ? '—' : est.range(line),
                 style: body(14, weight: FontWeight.w700, color: checked ? HC.ink : HC.muted)),
           ],
         ),
