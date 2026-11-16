@@ -5,6 +5,7 @@ import 'package:hoopla/screens/guest_notice.dart';
 import 'package:hoopla/services/invite_service.dart';
 import 'package:hoopla/services/plan_generator.dart';
 import 'package:hoopla/theme.dart';
+import 'package:hoopla/widgets/invite_video_player.dart';
 import 'package:hoopla/widgets/task_guide.dart';
 
 EventDetails party() => EventDetails(
@@ -81,5 +82,13 @@ void main() {
     expect(InviteVideo.fromMap({'clip': 'http://insecure', 'look': 'nope'}).hasClip, isFalse);
     expect(InviteVideo.fromMap({'look': 'nope'}).look, 'classic');
     expect(InviteVideo.looks.keys, containsAll(['soccer', 'football', 'superhero', 'rockstar', 'princess', 'astronaut']));
+  });
+
+  test('every star theme has a scene', () {
+    for (final id in InviteVideo.looks.keys.where((k) => k != 'classic')) {
+      final l = starLooks[id];
+      expect(l, isNotNull, reason: id);
+      expect((l!.props.length >= 3, l.cheers.isNotEmpty, l.banner.isNotEmpty), (true, true, true));
+    }
   });
 }

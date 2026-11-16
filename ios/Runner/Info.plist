@@ -41,6 +41,8 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Hoopla uses the microphone so your invitation video has sound.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Hoopla uses the camera so you can take pictures of your work for your listing.</string>
 	<key>NSContactsUsageDescription</key>
