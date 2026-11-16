@@ -36,7 +36,7 @@ void refreshAllScreens() {
   if (root != null) walk(root);
 }
 
-/// Hoopla colors, taken from the approved design.
+/// Festino colors, taken from the approved design.
 class HC {
   static const ink = Color(0xFF17142B);
 

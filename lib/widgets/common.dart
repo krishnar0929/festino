@@ -1,7 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../theme.dart';
+
+/// The Festino name in brush lettering: the logo. Coral unless told otherwise.
+class BrandName extends StatelessWidget {
+  const BrandName({super.key, this.size = 30, this.color = HC.coral});
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Festino',
+      child: ExcludeSemantics(
+        child: Text('Festino', style: GoogleFonts.kaushanScript(fontSize: size, color: color, height: 1.15)),
+      ),
+    );
+  }
+}
 
 /// Rounded chip that can be selected.
 class Pill extends StatelessWidget {
@@ -145,7 +163,7 @@ void toast(BuildContext context, String message) {
 }
 
 
-/// The one back button used across Hoopla: a round arrow at the top left.
+/// The one back button used across Festino: a round arrow at the top left.
 /// Pops the page, or runs [onPressed] when given.
 class BackArrow extends StatelessWidget {
   const BackArrow({super.key, this.onPressed, this.color = HC.ink, this.tooltip = 'Back'});
@@ -170,7 +188,7 @@ class BackArrow extends StatelessWidget {
 }
 
 
-/// "🎁 20% off with Hoopla" on provider cards and pages.
+/// "🎁 20% off with Festino" on provider cards and pages.
 class DealBadge extends StatelessWidget {
   const DealBadge({super.key, required this.percent, this.large = false});
   final int percent;
@@ -181,7 +199,7 @@ class DealBadge extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: large ? 12 : 8, vertical: large ? 6 : 3),
       decoration: BoxDecoration(color: HC.lime, borderRadius: BorderRadius.circular(20)),
-      child: Text('🎁 $percent% off with Hoopla', style: body(large ? 14 : 12, weight: FontWeight.w700)),
+      child: Text('🎁 $percent% off with Festino', style: body(large ? 14 : 12, weight: FontWeight.w700)),
     );
   }
 }

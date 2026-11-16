@@ -29,7 +29,7 @@ class ProviderHomeScreen extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text('HOOPLA FOR BUSINESS', style: overline()),
+                    Text('FESTINO FOR BUSINESS', style: overline()),
                     const Spacer(),
                     IconButton(tooltip: 'Account', onPressed: () => showAccountSheet(context), icon: const Icon(Icons.person_outline_rounded)),
                   ],

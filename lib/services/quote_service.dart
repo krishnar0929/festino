@@ -60,7 +60,7 @@ class QuoteRequest {
     this.dealCode = '',
   });
 
-  /// The provider's Hoopla deal the customer claimed with this request (0 = none).
+  /// The provider's Festino deal the customer claimed with this request (0 = none).
   final int dealPercent;
   final String dealCode;
 
@@ -109,7 +109,7 @@ class QuoteRequest {
   factory QuoteRequest.fromDoc(String id, Map<String, dynamic> m) => QuoteRequest(
         id: id,
         customerUid: m['customerUid'] as String? ?? '',
-        customerName: m['customerName'] as String? ?? 'Hoopla user',
+        customerName: m['customerName'] as String? ?? 'Festino user',
         customerEmail: m['customerEmail'] as String? ?? '',
         customerPhone: m['customerPhone'] as String? ?? '',
         providerUid: m['providerUid'] as String? ?? '',
@@ -140,9 +140,9 @@ String defaultQuoteMessage(EventDetails e, ProviderProfile p) {
       'Are you available, and could you share a quote?';
 }
 
-/// The line added to a quote or WhatsApp message when the provider has a Hoopla deal.
+/// The line added to a quote or WhatsApp message when the provider has a Festino deal.
 String dealLine(ProviderProfile p, String customerUid) =>
-    p.hasDeal ? ' I\'d like to use my Hoopla deal: ${p.dealPercent}% off (code ${p.dealCodeFor(customerUid)}).' : '';
+    p.hasDeal ? ' I\'d like to use my Festino deal: ${p.dealPercent}% off (code ${p.dealCodeFor(customerUid)}).' : '';
 
 /// Lead numbers for a provider's home screen.
 class LeadStats {
@@ -194,7 +194,7 @@ class QuoteService {
     }
     await ref.set({
       'customerUid': u.uid,
-      'customerName': name.trim().isEmpty ? 'Hoopla user' : name.trim(),
+      'customerName': name.trim().isEmpty ? 'Festino user' : name.trim(),
       'customerEmail': u.email ?? '',
       'customerPhone': phone.trim(),
       'providerUid': provider.uid,

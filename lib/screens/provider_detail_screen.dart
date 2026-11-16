@@ -46,7 +46,7 @@ class ProviderDetailScreen extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'This is a sample listing, so you can see how Hoopla works. Real providers near you will look just like this.',
+                          'This is a sample listing, so you can see how Festino works. Real providers near you will look just like this.',
                           style: body(13),
                         ),
                       ),
@@ -83,7 +83,7 @@ class ProviderDetailScreen extends StatelessWidget {
                     children: [
                       DealBadge(percent: p.dealPercent, large: true),
                       const SizedBox(height: 6),
-                      Text('Book through Hoopla: tap "Get quote" and your deal code is added for you.', style: body(13)),
+                      Text('Book through Festino: tap "Get quote" and your deal code is added for you.', style: body(13)),
                       if (p.dealTerms.isNotEmpty) Text(p.dealTerms, style: body(12, color: HC.muted)),
                     ],
                   ),

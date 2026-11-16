@@ -625,7 +625,7 @@ class _SetupScreenState extends State<SetupScreen> {
                               builder: (_) => const SignInScreen(initialRole: UserRole.provider),
                             )),
                             child: const Text(
-                              'Photographer, baker, DJ, decorator or panthulu? List your business on Hoopla free',
+                              'Photographer, baker, DJ, decorator or panthulu? List your business on Festino free',
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -681,7 +681,7 @@ class _Logo extends StatelessWidget {
           child: const Icon(Icons.celebration_outlined, color: HC.lime, size: 20),
         ),
         const SizedBox(width: 10),
-        Text('Hoopla', style: display(22)),
+        const BrandName(size: 30),
       ],
     );
   }

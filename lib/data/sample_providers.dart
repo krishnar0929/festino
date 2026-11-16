@@ -1,4 +1,4 @@
-// Sample providers and reviews shown in Nearby so people can see how Hoopla
+// Sample providers and reviews shown in Nearby so people can see how Festino
 // listings look before real providers in their area join. Generated from
 // scripts/seed_test_data.mjs. Turn off with [showSampleProviders].
 

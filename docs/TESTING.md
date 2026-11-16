@@ -1,8 +1,8 @@
-# Testing Hoopla with test data
+# Testing Festino with test data
 
 1. `node scripts/seed_test_data.mjs` creates 54 providers (3 per service type), 5 customers with
    parties, 21 reviews, 3 replies, a referral, a free trial and a feedback message.
-2. Every test account's password: `HooplaTest2026!`
+2. Every test account's password: `FestinoTest2026!`
 3. Remove it all later: `node scripts/seed_test_data.mjs --clean`
 
 ## Scenarios
@@ -28,9 +28,9 @@
 | 17 | pro-photographers-1 | Reply on Anjali's review | Reply shows under her review (also for customers) |
 | 18 | pro-photographers-1 | Edit photos & links → Add photos (iPhone) | Needs Firebase Storage turned on; upload spinner then photo |
 | 19 | new account | Sign up as provider → Publish listing | Balloons + "You're live!" |
-| 20 | any | Account → Help, feedback & rate Hoopla → Send feedback | "Thanks!"; shows in Firestore → feedback |
-| 21 | any | Rate Hoopla → 2★ | Feedback form opens (not the App Store) |
-| 22 | any (iPhone) | Party mode → finish 2 game timers | "Enjoying Hoopla? 🎉" once |
+| 20 | any | Account → Help, feedback & rate Festino → Send feedback | "Thanks!"; shows in Firestore → feedback |
+| 21 | any | Rate Festino → 2★ | Feedback form opens (not the App Store) |
+| 22 | any (iPhone) | Party mode → finish 2 game timers | "Enjoying Festino? 🎉" once |
 | 23 | guest (signed out) | Account → Refer a friend | "Sign in to get your code" |
 | 24 | web: open https://hoopla-894ca.web.app/?ref=PRYA26 → sign up | | Code is pre-filled and applied after sign-up |
 

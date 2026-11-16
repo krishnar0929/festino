@@ -56,7 +56,7 @@ void main() {
     expect(shortName('Priya Sharma', null), 'Priya S.');
     expect(shortName('Priya', null), 'Priya');
     expect(shortName(null, 'krishna.m9@gmail.com'), 'Krishnam');
-    expect(shortName(null, null), 'Hoopla user');
+    expect(shortName(null, null), 'Festino user');
     expect(ratingLabel(4.666), '4.7');
   });
 }

@@ -321,7 +321,7 @@ class AppState extends ChangeNotifier {
     return isSignedIn ? Access.member : Access.guest;
   }
 
-  /// Hoopla is free for people planning events. Providers will pay for visibility and
+  /// Festino is free for people planning events. Providers will pay for visibility and
   /// leads instead. Paid user plans (Basic/Pro) stay in the code, switched off here.
   static const userPlansEnabled = false;
 
@@ -472,7 +472,7 @@ class AppState extends ChangeNotifier {
         e.gameIds = ids;
       });
 
-  /// Back to Hoopla's suggested timeline (keeps the chosen games).
+  /// Back to Festino's suggested timeline (keeps the chosen games).
   Future<void> resetTimeline() => update((e) => e.customTimeline = null);
 
   /// Change the current event in place, then save it.
@@ -586,7 +586,7 @@ class AppState extends ChangeNotifier {
     final code = pendingRefCode;
     if (code != null && referral.usedCode == null) {
       final err = await redeemCode(code);
-      _referralNotice = err ?? 'Friend\'s code applied. Welcome to Hoopla! 🎉';
+      _referralNotice = err ?? 'Friend\'s code applied. Welcome to Festino! 🎉';
     }
     if (code != null) await setPendingRefCode(null);
     await _loadEvents(preferId: preferId);

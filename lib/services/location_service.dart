@@ -66,7 +66,7 @@ class LocationService {
   LocationService._();
 
   static const _nominatim = 'nominatim.openstreetmap.org';
-  static Map<String, String> get _headers => kIsWeb ? const {} : const {'User-Agent': 'Hoopla/1.0 (northbitapps@gmail.com)'};
+  static Map<String, String> get _headers => kIsWeb ? const {} : const {'User-Agent': 'Festino/1.0 (northbitapps@gmail.com)'};
 
   /// Asks for permission if needed. Throws a friendly message when it can't.
   static Future<Place> current() async {
@@ -76,7 +76,7 @@ class LocationService {
     var perm = await Geolocator.checkPermission();
     if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
     if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) {
-      throw StateError('Hoopla can\'t see your location. Allow it in Settings, or type an address instead.');
+      throw StateError('Festino can\'t see your location. Allow it in Settings, or type an address instead.');
     }
     final pos = await Geolocator.getCurrentPosition(
       locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium, timeLimit: Duration(seconds: 15)),

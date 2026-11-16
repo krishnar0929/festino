@@ -22,14 +22,14 @@ EventDetails party() => EventDetails(
     );
 
 void main() {
-  group('Hoopla deals', () {
+  group('Festino deals', () {
     final p = ProviderProfile(uid: 'p1', businessName: 'Lens Studio', serviceType: 'Photographers', city: 'Edison', phone: '', dealPercent: 20, dealTerms: 'Over \$300');
 
     test('deal code is stable per customer and saved with the listing', () {
       expect(p.hasDeal, isTrue);
-      expect(p.dealLabel, '20% off with Hoopla');
-      expect(p.dealCodeFor('ab12cd34'), 'HOOPLA20-AB12');
-      expect(p.dealCodeFor('x'), 'HOOPLA20-XXXX');
+      expect(p.dealLabel, '20% off with Festino');
+      expect(p.dealCodeFor('ab12cd34'), 'FESTINO20-AB12');
+      expect(p.dealCodeFor('x'), 'FESTINO20-XXXX');
       final back = ProviderProfile.fromMap(p.toMap());
       expect((back.dealPercent, back.dealTerms), (20, 'Over \$300'));
       expect(ProviderProfile.fromMap({...p.toMap(), 'dealPercent': 90}).dealPercent, 30);
@@ -37,11 +37,11 @@ void main() {
     });
 
     test('quote messages mention the deal', () {
-      expect(dealLine(p, 'ab12cd34'), contains('20% off (code HOOPLA20-AB12)'));
+      expect(dealLine(p, 'ab12cd34'), contains('20% off (code FESTINO20-AB12)'));
       final none = ProviderProfile(uid: 'p2', businessName: 'B', serviceType: 'DJs', city: '', phone: '');
       expect(dealLine(none, 'ab12'), isEmpty);
-      final q = QuoteRequest.fromDoc('x', {'dealPercent': 20, 'dealCode': 'HOOPLA20-AB12'});
-      expect((q.dealPercent, q.dealCode), (20, 'HOOPLA20-AB12'));
+      final q = QuoteRequest.fromDoc('x', {'dealPercent': 20, 'dealCode': 'FESTINO20-AB12'});
+      expect((q.dealPercent, q.dealCode), (20, 'FESTINO20-AB12'));
     });
 
     test('some sample providers show a deal', () {
