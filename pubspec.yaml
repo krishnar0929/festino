@@ -1,7 +1,7 @@
 name: hoopla
 description: Festino - plan your event, find nearby helpers, and play games people remember.
 publish_to: 'none'
-version: 0.1.0+19
+version: 1.0.0+19
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
