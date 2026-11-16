@@ -177,6 +177,8 @@ List<ProviderProfile> sampleProvidersFor(String type) {
         instagram: i == 2 ? '' : _slug(rows[i][0]),
         website: i == 0 ? '${_slug(rows[i][0])}.example.com' : '',
         featured: i == 2 ? const [] : const ['https://www.instagram.com/reel/C0example1/', 'https://www.youtube.com/shorts/example2'],
+        dealPercent: const [20, 10, 0][i % 3],
+        dealTerms: i == 0 ? 'On bookings over \$300.' : '',
       ),
   ];
 }

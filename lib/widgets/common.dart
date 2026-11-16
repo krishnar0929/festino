@@ -161,3 +161,20 @@ class BackArrow extends StatelessWidget {
     );
   }
 }
+
+
+/// "🎁 20% off with Hoopla" on provider cards and pages.
+class DealBadge extends StatelessWidget {
+  const DealBadge({super.key, required this.percent, this.large = false});
+  final int percent;
+  final bool large;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: large ? 12 : 8, vertical: large ? 6 : 3),
+      decoration: BoxDecoration(color: HC.lime, borderRadius: BorderRadius.circular(20)),
+      child: Text('🎁 $percent% off with Hoopla', style: body(large ? 14 : 12, weight: FontWeight.w700)),
+    );
+  }
+}

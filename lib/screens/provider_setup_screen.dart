@@ -29,6 +29,8 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
   late final TextEditingController cityCtrl;
   late final TextEditingController phoneCtrl;
   late final TextEditingController priceCtrl;
+  late final TextEditingController dealCtrl;
+  int dealPercent = 0;
   late final TextEditingController aboutCtrl;
   late final TextEditingController instaCtrl;
   late final TextEditingController webCtrl;
@@ -59,6 +61,8 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
     cityCtrl = TextEditingController(text: p?.city ?? '');
     phoneCtrl = TextEditingController(text: p?.phone ?? '');
     priceCtrl = TextEditingController(text: p?.priceRange ?? '');
+    dealPercent = p?.dealPercent ?? 0;
+    dealCtrl = TextEditingController(text: p?.dealTerms ?? '');
     aboutCtrl = TextEditingController(text: p?.about ?? '');
     instaCtrl = TextEditingController(text: p?.instagram ?? '');
     webCtrl = TextEditingController(text: p?.website ?? '');
@@ -77,6 +81,7 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
     cityCtrl.dispose();
     phoneCtrl.dispose();
     priceCtrl.dispose();
+    dealCtrl.dispose();
     aboutCtrl.dispose();
     instaCtrl.dispose();
     webCtrl.dispose();
@@ -206,6 +211,8 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
         featured: featured,
         lat: lat,
         lng: lng,
+        dealPercent: dealPercent,
+        dealTerms: dealPercent == 0 ? '' : dealCtrl.text.trim(),
       ));
       for (final url in removed) {
         GalleryService.delete(url);
@@ -304,6 +311,33 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
                 const SectionLabel('Price range'),
                 TextField(controller: priceCtrl, decoration: const InputDecoration(hintText: r'e.g. $300–$800 per event')),
                 const SizedBox(height: 18),
+                const SectionLabel('Hoopla deal (optional)'),
+                Text('Offer a discount to customers who book you through Hoopla. Listings with a deal get a 🎁 badge and show up under "Hoopla deals".',
+                    style: body(12, color: HC.muted)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final pct in ProviderProfile.dealChoices)
+                      Pill(
+                        label: pct == 0 ? 'No deal' : '$pct% off',
+                        small: true,
+                        selected: dealPercent == pct,
+                        selectedColor: HC.violet,
+                        onTap: () => setState(() => dealPercent = pct),
+                      ),
+                  ],
+                ),
+                if (dealPercent > 0) ...[
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: dealCtrl,
+                    maxLength: 120,
+                    decoration: const InputDecoration(hintText: r'Fine print, e.g. On bookings over $300. Not valid on holidays.'),
+                  ),
+                ],
+                const SizedBox(height: 18),
                 const SectionLabel('About your work'),
                 TextField(
                   controller: aboutCtrl,
@@ -359,7 +393,7 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
                       padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
                       child: Row(
                         children: [
-                          const Icon(Icons.play_circle_outline_rounded, color: HC.violet, size: 20),
+                          Icon(Icons.play_circle_outline_rounded, color: HC.violet, size: 20),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -487,14 +521,14 @@ class _GalleryEditor extends StatelessWidget {
       if (!full)
         Material(
           color: HC.card,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: HC.violet, width: 1.5)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: HC.violet, width: 1.5)),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: onAdd,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.add_photo_alternate_outlined, color: HC.violet, size: 28),
+                Icon(Icons.add_photo_alternate_outlined, color: HC.violet, size: 28),
                 const SizedBox(height: 4),
                 Text('Add photos', style: body(12, color: HC.violet, weight: FontWeight.w600)),
               ],

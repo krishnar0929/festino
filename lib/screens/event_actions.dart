@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/event_details.dart';
 import '../state/app_state.dart';
+import 'guest_notice.dart';
 import 'my_events_screen.dart';
 import 'setup_screen.dart';
 import 'sign_in_screen.dart';
@@ -57,7 +58,9 @@ Future<void> confirmCancelEvent(BuildContext context, EventDetails e) async {
       ],
     ),
   );
-  if (ok == true) await state.cancelEvent(e.id);
+  if (ok != true) return;
+  await state.cancelEvent(e.id);
+  if (context.mounted) await offerGuestNotice(context, e, 'cancelled');
 }
 
 /// My events: upcoming, celebrated and cancelled events.

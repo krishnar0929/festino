@@ -84,6 +84,51 @@ const inviteThemes = <InviteTheme>[
     muted: Color(0xFFD7F3F0),
     panel: Color(0x26FFFFFF),
   ),
+  InviteTheme(
+    id: 'royal',
+    name: 'Royal',
+    colors: [Color(0xFF6B0F2B), Color(0xFFB0354F)],
+    accent: Color(0xFFFFD27A),
+    text: Colors.white,
+    muted: Color(0xFFFBE3C8),
+    panel: Color(0x26FFFFFF),
+  ),
+  InviteTheme(
+    id: 'gold',
+    name: 'Gold',
+    colors: [Color(0xFF1C1A17), Color(0xFF3A3226)],
+    accent: Color(0xFFE8C46A),
+    text: Colors.white,
+    muted: Color(0xFFE9DFC8),
+    panel: Color(0x1FFFFFFF),
+  ),
+  InviteTheme(
+    id: 'sky',
+    name: 'Sky',
+    colors: [Color(0xFFBFE3FF), Color(0xFFEAF6FF)],
+    accent: Color(0xFF1D5FB8),
+    text: HC.ink,
+    muted: Color(0xFF4B5D78),
+    panel: Color(0x80FFFFFF),
+  ),
+  InviteTheme(
+    id: 'mint',
+    name: 'Mint',
+    colors: [Color(0xFFCFF5E4), Color(0xFFF2FFF8)],
+    accent: Color(0xFF0E8A6A),
+    text: HC.ink,
+    muted: Color(0xFF4F6B60),
+    panel: Color(0x80FFFFFF),
+  ),
+  InviteTheme(
+    id: 'citrus',
+    name: 'Citrus',
+    colors: [Color(0xFFFF7A45), Color(0xFFFFC145)],
+    accent: Colors.white,
+    text: Colors.white,
+    muted: Color(0xFFFFF1DE),
+    panel: Color(0x2EFFFFFF),
+  ),
 ];
 
 InviteTheme inviteThemeFor(String id) => inviteThemes.firstWhere((t) => t.id == id, orElse: () => inviteThemes.first);
@@ -103,7 +148,11 @@ class InvitationCard extends StatelessWidget {
     this.photoBytes,
     this.onPlaceTap,
     this.frame = const PhotoFrame(),
+    this.motif = '',
   });
+
+  /// A few emoji that decorate the card (from the chosen design), e.g. "🦖🎈🌴".
+  final String motif;
 
   final PhotoFrame frame;
 
@@ -141,6 +190,10 @@ class InvitationCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (motif.isNotEmpty) ...[
+                  Text(motif, style: const TextStyle(fontSize: 34, height: 1.1, letterSpacing: 4)),
+                  const SizedBox(height: 10),
+                ],
                 Text('YOU\'RE INVITED', style: overline(color: t.accent)),
                 const SizedBox(height: 8),
                 Text(title.isEmpty ? 'Our party' : title, style: display(30, color: t.text)),

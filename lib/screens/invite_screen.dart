@@ -9,7 +9,9 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../data/invite_templates.dart';
 import '../models/event_details.dart';
+import '../models/invite_video.dart';
 import '../models/photo_frame.dart';
 import '../services/invite_service.dart';
 import '../services/plan_generator.dart';
@@ -17,6 +19,8 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/invitation_card.dart';
+import '../widgets/invite_video_player.dart';
+import 'invite_video_screen.dart';
 import 'sign_in_screen.dart';
 
 /// Turns what's painted inside a [RepaintBoundary] into a PNG.
@@ -70,6 +74,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
   final hostCtrl = TextEditingController();
   final extraCtrl = TextEditingController();
   String theme = 'midnight';
+  String motif = '';
   String photoUrl = '';
   PhotoFrame frame = const PhotoFrame();
   Uint8List? photoBytes;
@@ -107,6 +112,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
       titleCtrl.text = e.inviteTitle;
       messageCtrl.text = e.inviteMessage.isNotEmpty ? e.inviteMessage : _defaultMessage(e);
       theme = e.inviteTheme;
+      motif = e.inviteMotif;
       photoUrl = e.invitePhoto;
       frame = e.invitePhotoFrame;
       hostCtrl.text = e.inviteHost.isNotEmpty ? e.inviteHost : _accountName(state);
@@ -174,6 +180,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
         e.inviteTitle = titleCtrl.text.trim() == e.title ? '' : titleCtrl.text.trim();
         e.inviteMessage = messageCtrl.text.trim();
         e.inviteTheme = theme;
+        e.inviteMotif = motif;
         e.invitePhoto = photoUrl;
         e.invitePhotoFrame = frame;
         e.inviteHost = _host;
@@ -359,6 +366,133 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
     await _saveDesign(quiet: true);
   }
 
+  /// Uses a ready-made design: its style, decoration and words (all still editable).
+  void _applyTemplate(InviteTemplate t, EventDetails e) {
+    _hideKeyboard();
+    final date = DateFormat('EEEE, MMMM d').format(e.date);
+    _changed(() {
+      theme = t.theme;
+      motif = t.motif;
+      titleCtrl.text = fillTemplate(t.title, e, date);
+      messageCtrl.text = fillTemplate(t.message, e, date);
+      if (t.extra.isNotEmpty) extraCtrl.text = fillTemplate(t.extra, e, date);
+    });
+    toast(context, '"${t.name}" applied. Edit the names and words below to make it yours.');
+  }
+
+  Widget _templates(EventDetails e) {
+    final list = templatesFor(e.occasion);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('✨ Designs for your ${e.occasion.toLowerCase()}', style: display(18)),
+        const SizedBox(height: 2),
+        Text('Pick one to start, then change the names and words.', style: body(12, color: HC.muted)),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 150,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: list.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, i) {
+              final t = list[i];
+              final th = inviteThemeFor(t.theme);
+              final on = t.theme == theme && t.motif == motif;
+              return GestureDetector(
+                onTap: () => _applyTemplate(t, e),
+                child: Semantics(
+                  button: true,
+                  selected: on,
+                  label: '${t.name} design',
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 112,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: th.colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: on ? HC.violet : Colors.transparent, width: 3),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(t.motif.isEmpty ? '✨' : t.motif, style: const TextStyle(fontSize: 22, letterSpacing: 2)),
+                        const Spacer(),
+                        Text('YOU\'RE INVITED', style: body(8, color: th.accent, weight: FontWeight.w700)),
+                        Text(t.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: body(13, color: th.text, weight: FontWeight.w700)),
+                        if (on) Text('✓ Using', style: body(11, color: th.accent, weight: FontWeight.w700)),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _videoSection(EventDetails e, AppState state) {
+    final v = e.inviteVideo;
+    Future<void> open() async {
+      await _ready();
+      if (!mounted) return;
+      await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const InviteVideoScreen()));
+    }
+
+    return CardBox(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Text('🎬', style: TextStyle(fontSize: 28)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Invitation video', style: body(16, weight: FontWeight.w700)),
+                    Text(
+                      v.isEmpty
+                          ? 'Turn 6–10 photos into a 30-second video guests watch when they open your invite.'
+                          : '${v.photos.length} photos · ${InviteVideo.styles[v.style]} · 🎵 ${v.musicLabel} · plays on your invite page',
+                      style: body(12, color: HC.muted),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (!v.isEmpty) ...[
+            const SizedBox(height: 12),
+            InviteVideoPlayer(
+              photos: v.photos,
+              captions: v.captions,
+              style: v.style,
+              theme: inviteThemeFor(theme),
+              title: titleCtrl.text.trim().isEmpty ? e.title : titleCtrl.text.trim(),
+              when: '${DateFormat('EEE, MMM d').format(e.date)} · ${clockAmPm(e.startMinutes)}',
+              motif: motif,
+              autoplay: false,
+              music: v.music,
+            ),
+          ],
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 46), side: const BorderSide(color: HC.line)),
+            onPressed: open,
+            icon: Icon(v.isEmpty ? Icons.movie_creation_outlined : Icons.edit_outlined, size: 20, color: HC.violet),
+            label: Text(v.isEmpty ? 'Create a video' : 'Edit video', style: body(14, weight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _card(EventDetails e, AppState state, {GlobalKey? key}) {
     final card = InvitationCard(
       theme: inviteThemeFor(theme),
@@ -371,6 +505,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
       photoUrl: photoUrl,
       photoBytes: photoBytes,
       frame: frame,
+      motif: motif,
     );
     return key == null ? card : RepaintBoundary(key: key, child: card);
   }
@@ -800,6 +935,8 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
   List<Widget> _designTab(BuildContext context, AppState state, EventDetails e) {
     final hasPhoto = photoBytes != null || photoUrl.isNotEmpty;
     return [
+      _templates(e),
+      const SizedBox(height: 18),
       Stack(
         children: [
           _card(e, state, key: _cardKey),
@@ -823,12 +960,14 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(minimumSize: const Size(0, 50), side: const BorderSide(color: HC.line)),
               onPressed: () => tabs.animateTo(1),
-              icon: const Icon(Icons.send_rounded, size: 18, color: HC.violet),
+              icon: Icon(Icons.send_rounded, size: 18, color: HC.violet),
               label: Text('Send', style: body(15, weight: FontWeight.w600)),
             ),
           ),
         ],
       ),
+      const SizedBox(height: 24),
+      _videoSection(e, state),
       const SizedBox(height: 24),
       const SectionLabel('Photo'),
       Row(
@@ -837,7 +976,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(minimumSize: const Size(0, 46), side: const BorderSide(color: HC.line)),
               onPressed: uploading ? null : _pickPhoto,
-              icon: const Icon(Icons.add_photo_alternate_outlined, size: 20, color: HC.violet),
+              icon: Icon(Icons.add_photo_alternate_outlined, size: 20, color: HC.violet),
               label: Text(hasPhoto ? 'Change photo' : 'Add a photo', style: body(14, weight: FontWeight.w600)),
             ),
           ),
@@ -847,7 +986,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(minimumSize: const Size(0, 46), side: const BorderSide(color: HC.line)),
                 onPressed: uploading ? null : _adjustPhoto,
-                icon: const Icon(Icons.crop_rounded, size: 20, color: HC.violet),
+                icon: Icon(Icons.crop_rounded, size: 20, color: HC.violet),
                 label: Text('Adjust', style: body(14, weight: FontWeight.w600)),
               ),
             ),
@@ -900,6 +1039,17 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
           },
         ),
       ),
+      if (motif.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: InputChip(
+            label: Text('Decoration  $motif', style: body(13)),
+            onDeleted: () => _changed(() => motif = ''),
+            deleteButtonTooltipMessage: 'Remove decoration',
+          ),
+        ),
+      ],
       const SizedBox(height: 20),
       const SectionLabel('Title'),
       TextField(
@@ -1084,7 +1234,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(minimumSize: const Size(0, 46), side: const BorderSide(color: HC.line)),
                 onPressed: _pickContacts,
-                icon: const Icon(Icons.contacts_rounded, size: 18, color: HC.violet),
+                icon: Icon(Icons.contacts_rounded, size: 18, color: HC.violet),
                 label: Text('Pick contacts', style: body(14, weight: FontWeight.w600)),
               ),
             ),
@@ -1094,7 +1244,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(minimumSize: const Size(0, 46), side: const BorderSide(color: HC.line)),
               onPressed: _typeContacts,
-              icon: const Icon(Icons.keyboard_rounded, size: 18, color: HC.violet),
+              icon: Icon(Icons.keyboard_rounded, size: 18, color: HC.violet),
               label: Text('Type numbers / emails', style: body(14, weight: FontWeight.w600)),
             ),
           ),
@@ -1191,7 +1341,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44), side: const BorderSide(color: HC.line)),
                       onPressed: () => _remindAllPending(shown),
-                      icon: const Icon(Icons.notifications_active_outlined, size: 18, color: HC.violet),
+                      icon: Icon(Icons.notifications_active_outlined, size: 18, color: HC.violet),
                       label: Text('Remind everyone who hasn\'t replied', style: body(14, weight: FontWeight.w600)),
                     ),
                   ),
@@ -1530,13 +1680,13 @@ class _SendButtons extends StatelessWidget {
           IconButton(
             tooltip: '$verb a text',
             onPressed: () => onSend('sms'),
-            icon: const Icon(Icons.sms_outlined, size: 20, color: HC.violet),
+            icon: Icon(Icons.sms_outlined, size: 20, color: HC.violet),
           ),
         if (p.email.isNotEmpty)
           IconButton(
             tooltip: '$verb an email',
             onPressed: () => onSend('email'),
-            icon: const Icon(Icons.mail_outline_rounded, size: 20, color: HC.violet),
+            icon: Icon(Icons.mail_outline_rounded, size: 20, color: HC.violet),
           ),
       ],
     );
@@ -1726,7 +1876,7 @@ class _SharePicker extends StatelessWidget {
   const _SharePicker({required this.hasImage});
   final bool hasImage;
 
-  static const _apps = <(String, String, Color, IconData?, String?)>[
+  static final _apps = <(String, String, Color, IconData?, String?)>[
     ('whatsapp', 'WhatsApp', Color(0xFF25D366), Icons.chat_rounded, null),
     ('instagram', 'Instagram', Color(0xFFE1306C), Icons.camera_alt_rounded, null),
     ('facebook', 'Facebook', Color(0xFF1877F2), null, 'f'),

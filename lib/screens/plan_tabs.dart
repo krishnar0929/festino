@@ -66,7 +66,7 @@ Future<(String, int)?> _taskDialog(BuildContext context, {required String headin
             const SizedBox(height: 12),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.event_rounded, color: HC.violet),
+              leading: Icon(Icons.event_rounded, color: HC.violet),
               title: Text('Due ${DateFormat('EEE, MMM d').format(due)}'),
               subtitle: Text(_daysLabel(party.difference(due).inDays)),
               trailing: const Text('Change'),

@@ -56,7 +56,13 @@ class QuoteRequest {
     this.reply = '',
     this.createdAt,
     this.repliedAt,
+    this.dealPercent = 0,
+    this.dealCode = '',
   });
+
+  /// The provider's Hoopla deal the customer claimed with this request (0 = none).
+  final int dealPercent;
+  final String dealCode;
 
   final String id;
   final String customerUid;
@@ -121,6 +127,8 @@ class QuoteRequest {
         reply: m['reply'] as String? ?? '',
         createdAt: (m['createdAt'] as Timestamp?)?.toDate(),
         repliedAt: (m['repliedAt'] as Timestamp?)?.toDate(),
+        dealPercent: (m['dealPercent'] as num?)?.toInt() ?? 0,
+        dealCode: m['dealCode'] as String? ?? '',
       );
 }
 
@@ -131,6 +139,10 @@ String defaultQuoteMessage(EventDetails e, ProviderProfile p) {
       'for about ${e.guests} guests, ${e.indoor ? 'indoors' : 'outdoors'}. '
       'Are you available, and could you share a quote?';
 }
+
+/// The line added to a quote or WhatsApp message when the provider has a Hoopla deal.
+String dealLine(ProviderProfile p, String customerUid) =>
+    p.hasDeal ? ' I\'d like to use my Hoopla deal: ${p.dealPercent}% off (code ${p.dealCodeFor(customerUid)}).' : '';
 
 /// Lead numbers for a provider's home screen.
 class LeadStats {
@@ -198,6 +210,8 @@ class QuoteService {
       'message': text,
       'status': 'new',
       'reply': '',
+      if (provider.hasDeal) 'dealPercent': provider.dealPercent,
+      if (provider.hasDeal) 'dealCode': provider.dealCodeFor(u.uid),
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });

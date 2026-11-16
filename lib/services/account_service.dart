@@ -178,6 +178,13 @@ class AccountService {
     }, SetOptions(merge: true));
   }
 
+  /// Saves small preferences (like the app color) on the account.
+  Future<void> saveProfileFields(Map<String, Object?> fields) async {
+    final u = user;
+    if (u == null || u.isAnonymous) return;
+    await _userDoc(u.uid).set(fields, SetOptions(merge: true));
+  }
+
   // ---------- free trial ----------
 
   /// Starts the one 3-day free trial of a plan ('basic' or 'pro').

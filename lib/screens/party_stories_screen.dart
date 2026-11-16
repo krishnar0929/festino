@@ -464,7 +464,7 @@ class PartyStoryScreen extends StatelessWidget {
                         children: [
                           for (final h in s.helpers)
                             Chip(
-                              avatar: const Icon(Icons.storefront_outlined, size: 16, color: HC.violet),
+                              avatar: Icon(Icons.storefront_outlined, size: 16, color: HC.violet),
                               label: Text(h),
                               backgroundColor: HC.card,
                               side: const BorderSide(color: HC.line),

@@ -7,6 +7,7 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import 'event_actions.dart';
+import 'guest_notice.dart';
 
 const _danger = Color(0xFFB42318);
 
@@ -56,7 +57,9 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
       return;
     }
     await state.restoreEvent(e.id);
-    if (mounted) toast(context, '"${e.title}" is back in Upcoming.');
+    if (!mounted) return;
+    toast(context, '"${e.title}" is back in Upcoming.');
+    await offerGuestNotice(context, e, 'back');
   }
 
   Future<void> _planAgain(AppState state, EventDetails e) async {

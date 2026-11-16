@@ -171,7 +171,7 @@ Future<(String, String, int)?> _editDialog(BuildContext context, {String title =
                   Expanded(child: Text('How long', style: body(14, weight: FontWeight.w600))),
                   IconButton(onPressed: mins > 5 ? () => setD(() => mins -= 5) : null, icon: const Icon(Icons.remove_circle_outline_rounded)),
                   Text('$mins min', style: body(15, weight: FontWeight.w700)),
-                  IconButton(onPressed: mins < 240 ? () => setD(() => mins += 5) : null, icon: const Icon(Icons.add_circle_outline_rounded, color: HC.violet)),
+                  IconButton(onPressed: mins < 240 ? () => setD(() => mins += 5) : null, icon: Icon(Icons.add_circle_outline_rounded, color: HC.violet)),
                 ],
               ),
             ],

@@ -9,6 +9,7 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/place_picker.dart';
+import 'guest_notice.dart';
 import 'nearby_screen.dart';
 import 'setup_screen.dart';
 
@@ -68,8 +69,12 @@ class _RainPlanScreenState extends State<RainPlanScreen> {
     if (ok != true || !mounted) return;
     await AppScope.of(context).update((e) => e.date = DateTime(d.date.year, d.date.month, d.date.day));
     if (!mounted) return;
-    toast(context, 'Party moved to ${DateFormat('EEE, MMM d').format(d.date)}. Send your guests an update from Invitation.');
+    final state = AppScope.of(context);
+    final nav = Navigator.of(context, rootNavigator: true);
+    toast(context, 'Party moved to ${DateFormat('EEE, MMM d').format(d.date)}.');
     Navigator.of(context).pop();
+    final ev = state.event;
+    if (ev != null) await offerGuestNotice(nav.context, ev, 'updated');
   }
 
   Future<void> _changeVenue() async {
@@ -207,7 +212,7 @@ class _RainPlanScreenState extends State<RainPlanScreen> {
                                   ),
                                 ),
                                 Text('Pick', style: body(13, color: HC.violet, weight: FontWeight.w700)),
-                                const Icon(Icons.chevron_right_rounded, color: HC.violet),
+                                Icon(Icons.chevron_right_rounded, color: HC.violet),
                               ],
                             ),
                           ),

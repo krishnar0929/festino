@@ -92,7 +92,7 @@ class _GamesScreenState extends State<GamesScreen> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.bolt_rounded, size: 18, color: HC.violet),
+                  Icon(Icons.bolt_rounded, size: 18, color: HC.violet),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(

@@ -9,6 +9,7 @@ import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/locked.dart';
 import '../widgets/reminder_ui.dart';
+import '../widgets/task_guide.dart';
 import '../widgets/timeline_editor.dart';
 import '../widgets/weather_card.dart';
 import 'account_sheet.dart';
@@ -175,7 +176,7 @@ class _PlanScreenState extends State<PlanScreen> {
                     title: 'Your checklist',
                     message: 'Sign in free to get a to-do list with due dates for invites, bookings and supplies.',
                   )
-                : const _Checklist(),
+                : _Checklist(onNavigate: widget.onNavigate),
             3 => const MyListTab(),
             _ => !state.limitedGuest
                 ? const BudgetTab()
@@ -194,7 +195,7 @@ class _PlanScreenState extends State<PlanScreen> {
               padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
               child: Row(
                 children: [
-                  const Icon(Icons.cloud_done_outlined, color: HC.violet),
+                  Icon(Icons.cloud_done_outlined, color: HC.violet),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text('Sign in free to keep this plan on all your devices.', style: body(13)),
@@ -209,22 +210,34 @@ class _PlanScreenState extends State<PlanScreen> {
           child: CardBox(
             color: HC.lime,
             padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('This plan needs ${plan.helpers.length} helpers', style: body(14, weight: FontWeight.w600)),
-                      Text(plan.helpers.join(' · '), style: body(12, color: const Color(0xFF2F3A10))),
-                    ],
-                  ),
+                Row(
+                  children: [
+                    const Text('🎁', style: TextStyle(fontSize: 30)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Book helpers with Hoopla, save up to 20%', style: body(15, weight: FontWeight.w800)),
+                          const SizedBox(height: 2),
+                          Text('Your plan needs ${plan.helpers.length}: ${plan.helpers.join(' · ')}', style: body(12, color: const Color(0xFF2F3A10))),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: HC.ink, minimumSize: const Size(0, 44), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                const SizedBox(height: 8),
+                Text('Look for the 🎁 Hoopla deal badge. Your discount code is added when you ask for a quote.',
+                    style: body(12, color: const Color(0xFF2F3A10))),
+                const SizedBox(height: 10),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(backgroundColor: HC.ink, minimumSize: const Size(0, 46), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                   onPressed: () => widget.onNavigate(1),
-                  child: Text('Find nearby', style: body(13, color: Colors.white, weight: FontWeight.w600)),
+                  icon: const Icon(Icons.local_offer_outlined, size: 18, color: HC.lime),
+                  label: Text('Find helpers and deals', style: body(14, color: Colors.white, weight: FontWeight.w700)),
                 ),
               ],
             ),
@@ -373,58 +386,28 @@ class _Timeline extends StatelessWidget {
 }
 
 class _Checklist extends StatelessWidget {
-  const _Checklist();
+  const _Checklist({required this.onNavigate});
+  final ValueChanged<int> onNavigate;
 
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
     final e = state.event!;
     final tasks = state.plan.tasks;
-    final fmt = DateFormat('MMM d');
+    final open = [for (final t in tasks) if (!e.doneTasks.contains(t.id)) t];
+    final finished = [for (final t in tasks) if (e.doneTasks.contains(t.id)) t];
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        ChecklistProgress(done: finished.length, total: tasks.length),
         const RemindersCard(),
-        for (final t in tasks)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: CardBox(
-              radius: 14,
-              padding: const EdgeInsets.fromLTRB(4, 2, 14, 2),
-              child: CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
-                activeColor: HC.violet,
-                value: e.doneTasks.contains(t.id),
-                onChanged: (v) => state.update((ev) {
-                  if (v == true) {
-                    ev.doneTasks.add(t.id);
-                  } else {
-                    ev.doneTasks.remove(t.id);
-                  }
-                }),
-                title: Text(t.label,
-                    style: body(14, weight: FontWeight.w500, color: e.doneTasks.contains(t.id) ? HC.muted : HC.ink).copyWith(
-                      decoration: e.doneTasks.contains(t.id) ? TextDecoration.lineThrough : null,
-                    )),
-                secondary: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('By ${fmt.format(e.date.subtract(Duration(days: t.daysBefore)))}', style: body(12, color: HC.muted)),
-                    if (!e.doneTasks.contains(t.id)) TaskReminderButton(task: t, event: e),
-                    PopupMenuButton<String>(
-                      tooltip: 'Edit or remove',
-                      icon: const Icon(Icons.more_vert_rounded, size: 20, color: HC.muted),
-                      onSelected: (v) => v == 'edit' ? editTask(context, t) : removeTask(context, t),
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(value: 'edit', child: Text('Edit task or due date')),
-                        PopupMenuItem(value: 'remove', child: Text('Remove')),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+        for (final t in open) TaskTile(task: t, switchTab: onNavigate),
+        if (finished.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text('DONE (${finished.length})', style: overline()),
+          const SizedBox(height: 8),
+          for (final t in finished) TaskTile(task: t, switchTab: onNavigate),
+        ],
         const ChecklistFooter(),
       ],
     );

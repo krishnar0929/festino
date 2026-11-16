@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 
 import '../models/event_details.dart';
+import '../models/invite_video.dart';
 import '../models/photo_frame.dart';
 
 /// Someone the host invited (from contacts, or typed in).
@@ -346,7 +347,25 @@ class InviteInfo {
     this.theme = 'midnight',
     this.photoFrame = const PhotoFrame(),
     this.extra = '',
+    this.motif = '',
+    this.video = const InviteVideo(),
+    this.status = 'active',
+    this.notice = '',
+    this.noticeKind = '',
   });
+
+  /// 'active' or 'cancelled' (then RSVPs are closed).
+  final String status;
+  bool get cancelled => status == 'cancelled';
+
+  /// The host's news for guests, and what it's about ('cancelled', 'updated', 'back' or '').
+  final String notice;
+  final String noticeKind;
+
+  final String motif;
+
+  /// The invitation video guests watch on the invite page.
+  final InviteVideo video;
 
   /// Extra text under the message (dress code, parking, …).
   final String extra;
@@ -402,6 +421,11 @@ class InviteInfo {
         hostUid: m['hostUid'] as String? ?? '',
         hostName: m['hostName'] as String? ?? '',
         extra: m['extra'] as String? ?? '',
+        motif: m['motif'] as String? ?? '',
+        status: m['status'] as String? ?? 'active',
+        notice: m['notice'] as String? ?? '',
+        noticeKind: m['noticeKind'] as String? ?? '',
+        video: InviteVideo.fromMap(m['video']),
         title: m['title'] as String? ?? 'A party',
         occasion: m['occasion'] as String? ?? '',
         date: DateTime.tryParse(m['date'] as String? ?? '') ?? DateTime.now(),
@@ -433,7 +457,7 @@ String inviteText(EventDetails e, String url, {String hostName = '', String mess
     '🗓 $when$where',
     if (message.trim().isNotEmpty) '\n${message.trim()}',
     if (e.inviteExtra.trim().isNotEmpty) e.inviteExtra.trim(),
-    '\nPlease RSVP here: $url',
+    e.inviteVideo.isEmpty ? '\nPlease RSVP here: $url' : '\n🎬 Watch our invitation video and RSVP here: $url',
     if (hostName.isNotEmpty) '— $hostName',
   ].join('\n');
 }
@@ -454,6 +478,11 @@ class InviteService {
       'eventId': e.id,
       'hostName': hostName.trim(),
       'extra': e.inviteExtra.trim(),
+      'motif': e.inviteMotif,
+      'status': e.status,
+      'notice': e.guestNotice,
+      'noticeKind': e.noticeKind,
+      'video': e.inviteVideo.toMap(),
       'title': e.inviteHeadline,
       'photoUrl': e.invitePhoto,
       'theme': e.inviteTheme,

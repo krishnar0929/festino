@@ -1,10 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// A main color people can pick for the app (Account → App color).
+class AppColor {
+  const AppColor(this.id, this.name, this.color);
+  final String id;
+  final String name;
+  final Color color;
+}
+
+const appColors = [
+  AppColor('violet', 'Violet', Color(0xFF6C4CF5)),
+  AppColor('ocean', 'Ocean', Color(0xFF1F6FEB)),
+  AppColor('forest', 'Forest', Color(0xFF13895C)),
+  AppColor('rose', 'Rose', Color(0xFFD6336C)),
+  AppColor('tangerine', 'Tangerine', Color(0xFFE8590C)),
+  AppColor('grape', 'Grape', Color(0xFF8E2FC4)),
+  AppColor('teal', 'Teal', Color(0xFF0E8C94)),
+  AppColor('midnight', 'Midnight', Color(0xFF34318A)),
+];
+
+AppColor appColorFor(String? id) => appColors.firstWhere((c) => c.id == id, orElse: () => appColors.first);
+
+/// Switches the app's main color. Call [refreshAllScreens] afterwards.
+void applyAppColor(String? id) => HC.violet = appColorFor(id).color;
+
+/// Redraws every screen so a new app color shows everywhere right away.
+void refreshAllScreens() {
+  void walk(Element e) {
+    e.markNeedsBuild();
+    e.visitChildren(walk);
+  }
+
+  final root = WidgetsBinding.instance.rootElement;
+  if (root != null) walk(root);
+}
+
 /// Hoopla colors, taken from the approved design.
 class HC {
   static const ink = Color(0xFF17142B);
-  static const violet = Color(0xFF6C4CF5);
+
+  /// The app's main color (buttons, links, highlights). Violet unless the
+  /// person picked another in Account → App color.
+  static Color violet = const Color(0xFF6C4CF5);
   static const lime = Color(0xFFC8F560);
   static const coral = Color(0xFFFF6B4A);
   static const ground = Color(0xFFF6F5FB);
@@ -64,7 +102,7 @@ ThemeData buildTheme() {
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: HC.line)),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: HC.line)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: HC.violet, width: 1.5)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: HC.violet, width: 1.5)),
     ),
   );
 }

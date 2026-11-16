@@ -362,7 +362,7 @@ class _PlanCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.check_circle_rounded, size: 18, color: HC.violet),
+                  Icon(Icons.check_circle_rounded, size: 18, color: HC.violet),
                   const SizedBox(width: 8),
                   Expanded(child: Text(f, style: body(14))),
                 ],

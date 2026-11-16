@@ -304,7 +304,7 @@ class _Step extends StatelessWidget {
             width: 26,
             height: 26,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(color: HC.violet, shape: BoxShape.circle),
+            decoration: BoxDecoration(color: HC.violet, shape: BoxShape.circle),
             child: Text(n, style: body(13, color: Colors.white, weight: FontWeight.w700)),
           ),
           const SizedBox(width: 10),
