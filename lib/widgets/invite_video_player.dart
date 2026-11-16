@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 
 import '../models/invite_video.dart';
 import '../theme.dart';
@@ -21,7 +22,11 @@ class InviteVideoPlayer extends StatefulWidget {
     this.when = '',
     this.motif = '',
     this.autoplay = true,
+    this.music = 'none',
   });
+
+  /// Background music: a built-in track id, 'none', or an https link to a song.
+  final String music;
 
   /// Each item is a download link (String) or picked bytes (Uint8List).
   final List<Object> photos;
@@ -63,24 +68,72 @@ class _InviteVideoPlayerState extends State<InviteVideoPlayer> with SingleTicker
     ];
   }
 
+  VideoPlayerController? audio;
+  bool muted = false;
+
   @override
   void initState() {
     super.initState();
-    clock.addStatusListener((_) => setState(() {}));
+    clock.addStatusListener((s) {
+      if (s == AnimationStatus.completed) audio?.pause();
+      setState(() {});
+    });
+    _loadMusic();
+    // Browsers only allow sound after a tap, so on the web the video waits for one.
     if (widget.autoplay) clock.forward();
+  }
+
+  Future<void> _loadMusic() async {
+    final m = widget.music;
+    if (m.isEmpty || m == 'none') return;
+    final c = m.startsWith('https://')
+        ? VideoPlayerController.networkUrl(Uri.parse(m))
+        : VideoPlayerController.asset(InviteVideo.tracks[m]?.$2 ?? InviteVideo.tracks.values.first.$2);
+    audio = c;
+    try {
+      await c.initialize();
+      await c.setVolume(muted ? 0 : 1);
+      if (!mounted || audio != c) return;
+      if (clock.isAnimating) await _syncMusic();
+    } catch (_) {
+      if (audio == c) audio = null;
+      c.dispose();
+    }
+    if (mounted) setState(() {});
+  }
+
+  /// Keeps the music at the same moment as the pictures.
+  Future<void> _syncMusic() async {
+    final c = audio;
+    if (c == null || !c.value.isInitialized) return;
+    if (clock.isAnimating) {
+      final at = Duration(milliseconds: (clock.value * InviteVideo.seconds * 1000).round());
+      final len = c.value.duration;
+      await c.seekTo(len > Duration.zero && at > len ? Duration(milliseconds: at.inMilliseconds % len.inMilliseconds) : at);
+      await c.play();
+    } else {
+      await c.pause();
+    }
   }
 
   @override
   void didUpdateWidget(InviteVideoPlayer old) {
     super.didUpdateWidget(old);
+    if (old.music != widget.music) {
+      audio?.dispose();
+      audio = null;
+      _loadMusic();
+    }
     if (old.photos.length != widget.photos.length || old.style != widget.style) {
       segments = _segments();
       clock.forward(from: 0);
+      _syncMusic();
     }
   }
 
   @override
   void dispose() {
+    audio?.dispose();
     clock.dispose();
     super.dispose();
   }
@@ -93,7 +146,13 @@ class _InviteVideoPlayerState extends State<InviteVideoPlayer> with SingleTicker
     } else {
       clock.forward();
     }
+    _syncMusic();
     setState(() {});
+  }
+
+  void _toggleMute() {
+    setState(() => muted = !muted);
+    audio?.setVolume(muted ? 0 : 1);
   }
 
   /// Zoom range and fade length for the chosen style.
@@ -248,19 +307,42 @@ class _InviteVideoPlayerState extends State<InviteVideoPlayer> with SingleTicker
                       ],
                     ),
                   ),
+                  if (widget.music != 'none' && widget.music.isNotEmpty)
+                    Positioned(
+                      right: 8,
+                      top: 20,
+                      child: IconButton(
+                        tooltip: muted ? 'Sound on' : 'Mute',
+                        onPressed: _toggleMute,
+                        style: IconButton.styleFrom(backgroundColor: Colors.black.withValues(alpha: 0.35)),
+                        icon: Icon(muted ? Icons.volume_off_rounded : Icons.volume_up_rounded, color: Colors.white, size: 20),
+                      ),
+                    ),
                   if (!clock.isAnimating)
                     Container(
                       color: Colors.black.withValues(alpha: 0.25),
                       alignment: Alignment.center,
-                      child: Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                        child: Icon(
-                          clock.isCompleted ? Icons.replay_rounded : Icons.play_arrow_rounded,
-                          size: 36,
-                          color: HC.ink,
-                          semanticLabel: clock.isCompleted ? 'Replay' : 'Play',
-                        ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                            child: Icon(
+                              clock.isCompleted ? Icons.replay_rounded : Icons.play_arrow_rounded,
+                              size: 36,
+                              color: HC.ink,
+                              semanticLabel: clock.isCompleted ? 'Replay' : 'Play',
+                            ),
+                          ),
+                          if (clock.value == 0) ...[
+                            const SizedBox(height: 10),
+                            Text(
+                              widget.music != 'none' && widget.music.isNotEmpty ? 'Tap to play with music 🎵' : 'Tap to play',
+                              style: body(14, color: Colors.white, weight: FontWeight.w700),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                 ],

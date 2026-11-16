@@ -223,6 +223,8 @@ class _RsvpScreenState extends State<RsvpScreen> {
                       title: info.title,
                       when: info.whenLabel,
                       motif: info.motif,
+                      music: info.video.music,
+                      autoplay: false,
                     ),
                     const SizedBox(height: 14),
                   ],

@@ -459,7 +459,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
                     Text(
                       v.isEmpty
                           ? 'Turn 6–10 photos into a 30-second video guests watch when they open your invite.'
-                          : '${v.photos.length} photos · ${InviteVideo.styles[v.style]} style · plays on your invite page',
+                          : '${v.photos.length} photos · ${InviteVideo.styles[v.style]} · 🎵 ${v.musicLabel} · plays on your invite page',
                       style: body(12, color: HC.muted),
                     ),
                   ],
@@ -478,6 +478,7 @@ class _InviteScreenState extends State<InviteScreen> with SingleTickerProviderSt
               when: '${DateFormat('EEE, MMM d').format(e.date)} · ${clockAmPm(e.startMinutes)}',
               motif: motif,
               autoplay: false,
+              music: v.music,
             ),
           ],
           const SizedBox(height: 12),

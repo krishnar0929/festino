@@ -69,6 +69,11 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
   final slides = <_Slide>[];
   final removed = <String>[];
   String style = 'fun';
+  String music = InviteVideo.defaultMusic;
+
+  /// False while the host reviews the photos; true once the video is made.
+  bool generated = false;
+  bool making = false;
   bool busy = false;
   bool changed = false;
   int version = 0;
@@ -82,6 +87,8 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
     final e = AppScope.of(context).event!;
     final v = e.inviteVideo;
     style = v.isEmpty ? suggestedVideoStyle(e.occasion) : v.style;
+    music = v.isEmpty ? InviteVideo.defaultMusic : v.music;
+    generated = !v.isEmpty;
     for (var i = 0; i < v.photos.length; i++) {
       slides.add(_Slide(url: v.photos[i], caption: v.captionAt(i)));
     }
@@ -193,6 +200,7 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
         photos: [for (final s in slides) s.url!],
         captions: [for (final s in slides) s.caption],
         style: style,
+        music: music,
       );
       await state.update((ev) => ev.inviteVideo = video);
       await InviteService.publish(state.event!, hostName: state.event!.inviteHost, message: state.event!.inviteMessage);
@@ -208,6 +216,131 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
     } finally {
       if (mounted) setState(() => busy = false);
     }
+  }
+
+  /// From reviewed photos to the video, with a short "making it" moment.
+  Future<void> _make() async {
+    setState(() => making = true);
+    await Future<void>.delayed(const Duration(milliseconds: 1200));
+    if (!mounted) return;
+    setState(() {
+      making = false;
+      generated = true;
+      changed = true;
+      version++;
+    });
+  }
+
+  Future<void> _songLink() async {
+    final ctrl = TextEditingController(text: music.startsWith('https://') ? music : '');
+    final url = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Use a song from online'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Paste a direct link to an MP3 or M4A file. The first 30 seconds play with your video.', style: body(13, color: HC.muted)),
+            const SizedBox(height: 10),
+            TextField(controller: ctrl, autofocus: true, keyboardType: TextInputType.url, decoration: const InputDecoration(hintText: 'https://…/song.mp3')),
+            const SizedBox(height: 10),
+            Text('Free party music you can use: Pixabay Music (download, then upload it anywhere that gives a link, like Google Drive or Dropbox). Only use songs you have the right to share.',
+                style: body(12, color: HC.muted)),
+            TextButton(
+              style: TextButton.styleFrom(padding: EdgeInsets.zero),
+              onPressed: () => openLink(ctx, Uri.parse('https://pixabay.com/music/search/party/')),
+              child: const Text('Browse free party music ›'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(style: FilledButton.styleFrom(backgroundColor: HC.violet), onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('Use this song')),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (url == null || url.isEmpty) return;
+    final u = Uri.tryParse(url);
+    if (u == null || u.scheme != 'https' || url.length > 500) {
+      if (mounted) toast(context, 'That doesn\'t look like a song link. It should start with https://');
+      return;
+    }
+    _edit(() => music = url);
+    if (mounted) toast(context, 'Song added. Play the video to hear it.');
+  }
+
+  Widget _musicPicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionLabel('Music'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final t in InviteVideo.tracks.entries)
+              Pill(
+                label: '🎵 ${t.value.$1}${t.key == InviteVideo.defaultMusic ? ' (default)' : ''}',
+                small: true,
+                selected: music == t.key,
+                selectedColor: HC.violet,
+                onTap: () => _edit(() => music = t.key),
+              ),
+            Pill(
+              label: music.startsWith('https://') ? '🔗 Your song ✓' : '🔗 Song from online',
+              small: true,
+              selected: music.startsWith('https://'),
+              selectedColor: HC.violet,
+              onTap: _songLink,
+            ),
+            Pill(label: '🔇 No music', small: true, selected: music == 'none', selectedColor: HC.violet, onTap: () => _edit(() => music = 'none')),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text('Guests tap play to hear it, and can mute it anytime.', style: body(12, color: HC.muted)),
+      ],
+    );
+  }
+
+  Widget _review(EventDetails e) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(child: Text('Your photos (${slides.length}/${InviteVideo.maxPhotos})', style: display(18))),
+            if (slides.length < InviteVideo.maxPhotos) TextButton.icon(onPressed: busy ? null : _addPhotos, icon: const Icon(Icons.add_rounded), label: const Text('Add more')),
+          ],
+        ),
+        Text('Check your photos before making the video. Tap one to add a caption, move it or remove it. The first is the cover.', style: body(12, color: HC.muted)),
+        const SizedBox(height: 10),
+        GridView.count(
+          crossAxisCount: 3,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 0.78,
+          children: [for (var i = 0; i < slides.length; i++) _thumb(i, e.occasion, size: double.infinity)],
+        ),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          style: FilledButton.styleFrom(backgroundColor: HC.violet, minimumSize: const Size(0, 54)),
+          onPressed: making ? null : _make,
+          icon: making
+              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+              : const Icon(Icons.auto_awesome_rounded, color: HC.lime),
+          label: Text(making ? 'Making your video…' : 'Make my video (${slides.length} photos)'),
+        ),
+        if (slides.length < 6)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text('Tip: 6–10 photos make the best video. You have ${slides.length}.', textAlign: TextAlign.center, style: body(12, color: HC.muted)),
+          ),
+      ],
+    );
   }
 
   Future<bool> _confirmLeave() async {
@@ -242,8 +375,8 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
         leadingWidth: 60,
         title: const Text('Invitation video'),
         actions: [
-          if (slides.isNotEmpty || !e.inviteVideo.isEmpty)
-            TextButton(onPressed: busy || slides.isEmpty ? null : _save, child: Text(busy ? 'Saving…' : 'Save')),
+          if (generated && slides.isNotEmpty)
+            TextButton(onPressed: busy ? null : _save, child: Text(busy ? 'Saving…' : 'Save')),
         ],
       ),
       body: Center(
@@ -258,8 +391,11 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
               const SizedBox(height: 16),
               if (slides.isEmpty)
                 _emptyState(e)
+              else if (!generated)
+                _review(e)
               else ...[
                 InviteVideoPlayer(
+                  music: music,
                   key: ValueKey(version),
                   photos: [for (final s in slides) s.source],
                   captions: [for (final s in slides) s.caption],
@@ -306,8 +442,10 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
               const SizedBox(height: 4),
               Text('⭐ suggested for a ${e.occasion.toLowerCase()}. Fun: lively zooms. Elegant: slow fades. Calm: gentle drift.', style: body(12, color: HC.muted)),
               const SizedBox(height: 20),
+              _musicPicker(),
+              const SizedBox(height: 20),
               _ideas(e),
-              if (slides.isNotEmpty) ...[
+              if (slides.isNotEmpty && generated) ...[
                 const SizedBox(height: 20),
                 FilledButton(
                   style: FilledButton.styleFrom(backgroundColor: HC.violet, minimumSize: const Size(0, 52)),
@@ -348,12 +486,12 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
     );
   }
 
-  Widget _thumb(int i, String occasion) {
+  Widget _thumb(int i, String occasion, {double size = 92}) {
     final s = slides[i];
     return GestureDetector(
       onTap: () => _slideMenu(i, occasion),
       child: SizedBox(
-        width: 92,
+        width: size,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -361,9 +499,8 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: SizedBox(
-                    width: 92,
-                    height: 92,
+                  child: AspectRatio(
+                    aspectRatio: 1,
                     child: s.bytes != null
                         ? Image.memory(s.bytes!, fit: BoxFit.cover)
                         : Image.network(s.url!, fit: BoxFit.cover, webHtmlElementStrategy: WebHtmlElementStrategy.fallback),
