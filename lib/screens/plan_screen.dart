@@ -9,6 +9,7 @@ import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/locked.dart';
 import '../widgets/reminder_ui.dart';
+import '../widgets/task_guide.dart';
 import '../widgets/timeline_editor.dart';
 import '../widgets/weather_card.dart';
 import 'account_sheet.dart';
@@ -175,7 +176,7 @@ class _PlanScreenState extends State<PlanScreen> {
                     title: 'Your checklist',
                     message: 'Sign in free to get a to-do list with due dates for invites, bookings and supplies.',
                   )
-                : const _Checklist(),
+                : _Checklist(onNavigate: widget.onNavigate),
             3 => const MyListTab(),
             _ => !state.limitedGuest
                 ? const BudgetTab()
@@ -373,58 +374,28 @@ class _Timeline extends StatelessWidget {
 }
 
 class _Checklist extends StatelessWidget {
-  const _Checklist();
+  const _Checklist({required this.onNavigate});
+  final ValueChanged<int> onNavigate;
 
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
     final e = state.event!;
     final tasks = state.plan.tasks;
-    final fmt = DateFormat('MMM d');
+    final open = [for (final t in tasks) if (!e.doneTasks.contains(t.id)) t];
+    final finished = [for (final t in tasks) if (e.doneTasks.contains(t.id)) t];
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        ChecklistProgress(done: finished.length, total: tasks.length),
         const RemindersCard(),
-        for (final t in tasks)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: CardBox(
-              radius: 14,
-              padding: const EdgeInsets.fromLTRB(4, 2, 14, 2),
-              child: CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
-                activeColor: HC.violet,
-                value: e.doneTasks.contains(t.id),
-                onChanged: (v) => state.update((ev) {
-                  if (v == true) {
-                    ev.doneTasks.add(t.id);
-                  } else {
-                    ev.doneTasks.remove(t.id);
-                  }
-                }),
-                title: Text(t.label,
-                    style: body(14, weight: FontWeight.w500, color: e.doneTasks.contains(t.id) ? HC.muted : HC.ink).copyWith(
-                      decoration: e.doneTasks.contains(t.id) ? TextDecoration.lineThrough : null,
-                    )),
-                secondary: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('By ${fmt.format(e.date.subtract(Duration(days: t.daysBefore)))}', style: body(12, color: HC.muted)),
-                    if (!e.doneTasks.contains(t.id)) TaskReminderButton(task: t, event: e),
-                    PopupMenuButton<String>(
-                      tooltip: 'Edit or remove',
-                      icon: const Icon(Icons.more_vert_rounded, size: 20, color: HC.muted),
-                      onSelected: (v) => v == 'edit' ? editTask(context, t) : removeTask(context, t),
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(value: 'edit', child: Text('Edit task or due date')),
-                        PopupMenuItem(value: 'remove', child: Text('Remove')),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+        for (final t in open) TaskTile(task: t, switchTab: onNavigate),
+        if (finished.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text('DONE (${finished.length})', style: overline()),
+          const SizedBox(height: 8),
+          for (final t in finished) TaskTile(task: t, switchTab: onNavigate),
+        ],
         const ChecklistFooter(),
       ],
     );
