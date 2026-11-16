@@ -162,6 +162,40 @@ class _PlanScreenState extends State<PlanScreen> {
             ),
           ),
         ),
+        // Helpers, without scrolling to the bottom.
+        if (plan.helpers.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+            child: Material(
+              color: HC.lime,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => widget.onNavigate(1),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+                  child: Row(
+                    children: [
+                      const Text('🎁', style: TextStyle(fontSize: 22)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Need helpers for this party?', style: body(14, weight: FontWeight.w700)),
+                            Text('${plan.helpers.length} suggested · save up to 20% with Hoopla deals',
+                                maxLines: 1, overflow: TextOverflow.ellipsis, style: body(12, color: const Color(0xFF2F3A10))),
+                          ],
+                        ),
+                      ),
+                      Text('Find', style: body(13, weight: FontWeight.w800)),
+                      const Icon(Icons.chevron_right_rounded, color: HC.ink),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
           child: Segmented(options: const ['Timeline', 'Checklist', 'Budget', 'My list'], selected: tab, height: 40, onChanged: (i) => setState(() => tab = i)),
