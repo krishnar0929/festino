@@ -20,7 +20,12 @@ class ProviderProfile {
     this.lat,
     this.lng,
     this.verified = false,
+    this.dealPercent = 0,
+    this.dealTerms = '',
   });
+
+  /// Choices for the Hoopla deal (0 = no deal).
+  static const dealChoices = [0, 10, 15, 20, 25];
 
   /// Most featured post links (reels, videos) a provider can show.
   static const maxFeatured = 6;
@@ -63,6 +68,23 @@ class ProviderProfile {
   /// Set only by you (the admin) in the Firebase console.
   final bool verified;
 
+  /// Hoopla deal: % off the provider gives customers who book through Hoopla (0 = none).
+  final int dealPercent;
+
+  /// Fine print for the deal, e.g. "On bookings over $300".
+  final String dealTerms;
+
+  bool get hasDeal => dealPercent > 0;
+
+  /// "20% off with Hoopla"
+  String get dealLabel => '$dealPercent% off with Hoopla';
+
+  /// The code a customer shows the provider: HOOPLA20-AB12 (same customer, same code).
+  String dealCodeFor(String customerUid) {
+    final tag = customerUid.replaceAll(RegExp(r'[^A-Za-z0-9]'), '').toUpperCase();
+    return 'HOOPLA$dealPercent-${tag.length >= 4 ? tag.substring(0, 4) : tag.padRight(4, 'X')}';
+  }
+
   Uri? get instagramUrl => instagram.isEmpty ? null : Uri.https('www.instagram.com', '/$instagram/');
 
   Uri? get websiteUrl {
@@ -104,6 +126,8 @@ class ProviderProfile {
         'featured': featured,
         if (lat != null) 'lat': lat,
         if (lng != null) 'lng': lng,
+        'dealPercent': dealPercent,
+        'dealTerms': dealTerms,
       };
 
   factory ProviderProfile.fromMap(Map<String, dynamic> m) => ProviderProfile(
@@ -125,6 +149,8 @@ class ProviderProfile {
         lat: (m['lat'] as num?)?.toDouble(),
         lng: (m['lng'] as num?)?.toDouble(),
         verified: m['verified'] as bool? ?? false,
+        dealPercent: ((m['dealPercent'] as num?)?.toInt() ?? 0).clamp(0, 30),
+        dealTerms: m['dealTerms'] as String? ?? '',
       );
 }
 

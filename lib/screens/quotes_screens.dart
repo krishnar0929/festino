@@ -67,7 +67,8 @@ class _RequestSheetState extends State<_RequestSheet> {
   void initState() {
     super.initState();
     final state = widget.state;
-    messageCtrl = TextEditingController(text: defaultQuoteMessage(state.event!, widget.provider));
+    messageCtrl = TextEditingController(
+        text: defaultQuoteMessage(state.event!, widget.provider) + dealLine(widget.provider, state.accounts?.user?.uid ?? ''));
     final profile = state.profile;
     nameCtrl = TextEditingController(text: (profile?['name'] as String?) ?? state.accounts?.user?.displayName ?? '');
     phoneCtrl = TextEditingController(text: (profile?['phone'] as String?) ?? '');
@@ -139,6 +140,10 @@ class _RequestSheetState extends State<_RequestSheet> {
               Text('Request a quote', style: display(24)),
               const SizedBox(height: 4),
               Text('From ${widget.provider.businessName} · free', style: body(13, color: HC.muted)),
+              if (widget.provider.hasDeal) ...[
+                const SizedBox(height: 12),
+                _DealBox(provider: widget.provider, customerUid: state.accounts?.user?.uid ?? ''),
+              ],
               const SizedBox(height: 14),
               CardBox(
                 radius: 14,
@@ -571,6 +576,15 @@ class _QuoteTile extends StatelessWidget {
             const SizedBox(height: 6),
             Text(q.eventSummary, style: body(12, weight: FontWeight.w600)),
             if (q.createdAt != null) Text('Sent ${DateFormat('MMM d, h:mm a').format(q.createdAt!)}', style: body(11, color: HC.muted)),
+            if (q.dealPercent > 0) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: const Color(0xFFF1FBD9), borderRadius: BorderRadius.circular(12), border: Border.all(color: HC.lime)),
+                child: Text('🎁 Hoopla deal claimed: ${q.dealPercent}% off · code ${q.dealCode}', style: body(13, weight: FontWeight.w700)),
+              ),
+            ],
             const SizedBox(height: 8),
             Text(q.message, style: body(14)),
             if (q.reply.isNotEmpty) ...[
@@ -592,6 +606,32 @@ class _QuoteTile extends StatelessWidget {
             if (actions.isNotEmpty) Wrap(spacing: 0, children: actions),
           ],
         ),
+      ),
+    );
+  }
+}
+
+
+/// The deal a customer gets by booking this provider through Hoopla.
+class _DealBox extends StatelessWidget {
+  const _DealBox({required this.provider, required this.customerUid});
+  final ProviderProfile provider;
+  final String customerUid;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = provider;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: const Color(0xFFF1FBD9), borderRadius: BorderRadius.circular(14), border: Border.all(color: HC.lime)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('🎁 Your Hoopla deal: ${p.dealPercent}% off', style: body(15, weight: FontWeight.w700)),
+          const SizedBox(height: 2),
+          Text('Code ${p.dealCodeFor(customerUid)} is added to your request. Mention it when you book.', style: body(12)),
+          if (p.dealTerms.isNotEmpty) Text(p.dealTerms, style: body(12, color: HC.muted)),
+        ],
       ),
     );
   }

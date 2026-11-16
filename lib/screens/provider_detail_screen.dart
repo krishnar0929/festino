@@ -72,6 +72,23 @@ class ProviderDetailScreen extends StatelessWidget {
               RatingBadge(providerUid: p.uid),
               const SizedBox(height: 4),
               Text([p.city, if (p.priceRange.isNotEmpty) p.priceRange].join(' · '), style: body(14, color: HC.muted)),
+              if (p.hasDeal) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(color: const Color(0xFFF1FBD9), borderRadius: BorderRadius.circular(16), border: Border.all(color: HC.lime)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DealBadge(percent: p.dealPercent, large: true),
+                      const SizedBox(height: 6),
+                      Text('Book through Hoopla: tap "Get quote" and your deal code is added for you.', style: body(13)),
+                      if (p.dealTerms.isNotEmpty) Text(p.dealTerms, style: body(12, color: HC.muted)),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 14),
               Wrap(
                 spacing: 8,

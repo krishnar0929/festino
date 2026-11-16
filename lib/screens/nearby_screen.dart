@@ -43,6 +43,9 @@ class _NearbyScreenState extends State<NearbyScreen> {
   late String selected = widget.initialCategory ?? helperCategories.first.label;
   late bool withinBudget = widget.startWithinBudget;
 
+  /// Only providers with a Hoopla deal.
+  bool dealsOnly = false;
+
   /// Where to search: the venue, the current location, or an address the user picked.
   Place? near;
   bool _nearSet = false;
@@ -79,7 +82,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
   List<ProviderProfile> _arrange(List<ProviderProfile> list, AppState state) {
     final cap = withinBudget ? _budgetFor(state) : null;
     final e = state.event!;
-    final kept = [for (final p in list) if (cap == null || fitsBudget(p, e, cap)) p];
+    final kept = [for (final p in list) if ((cap == null || fitsBudget(p, e, cap)) && (!dealsOnly || p.hasDeal)) p];
     final n = near;
     if (n == null) return kept;
     double d(ProviderProfile p) => (p.lat == null || p.lng == null) ? double.infinity : milesBetween(n.lat, n.lng, p.lat!, p.lng!);
@@ -345,6 +348,18 @@ class _NearbyScreenState extends State<NearbyScreen> {
                 onSelected: (v) => setState(() => withinBudget = v),
               ),
             ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: FilterChip(
+              selected: dealsOnly,
+              showCheckmark: true,
+              selectedColor: HC.lime,
+              backgroundColor: HC.card,
+              side: const BorderSide(color: HC.line),
+              label: const Text('🎁 Hoopla deals only'),
+              onSelected: (v) => setState(() => dealsOnly = v),
+            ),
+          ),
           if (state.isSignedIn) const MyQuotesLink(),
           Text('ON HOOPLA', style: overline()),
           const SizedBox(height: 8),
@@ -534,7 +549,7 @@ class _ProviderCard extends StatelessWidget {
     final hasPhone = digits.isNotEmpty;
     final quote = 'Hi ${p.businessName}, I found you on Hoopla. I\'m planning "${e.title}" on ${DateFormat('EEE, MMM d').format(e.date)} '
         'at ${clockAmPm(e.startMinutes)} for about ${e.guests} guests (${e.indoor ? 'indoor' : 'outdoor'}). '
-        'Are you available, and could you share a quote?';
+        'Are you available, and could you share a quote?${dealLine(p, state.accounts?.user?.uid ?? '')}';
     final saved = e.shortlist.any((v) => v.id == p.uid);
     final details = [
       if (miles != null) distanceLabel(miles!) else p.city,
@@ -609,6 +624,11 @@ class _ProviderCard extends StatelessWidget {
                     ],
                   ),
                   RatingBadge(providerUid: p.uid),
+                  if (p.hasDeal) ...[
+                    const SizedBox(height: 4),
+                    DealBadge(percent: p.dealPercent),
+                    const SizedBox(height: 2),
+                  ],
                   if (details.isNotEmpty) Text(details, style: body(12, color: HC.muted)),
                   if (estimate.isNotEmpty) Text(estimate, style: body(12, color: HC.violet, weight: FontWeight.w600)),
                   if (p.about.isNotEmpty)

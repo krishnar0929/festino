@@ -68,9 +68,16 @@ service cloud.firestore {
     match /providers/{uid} {
       allow read: if signedIn();
       allow delete: if isOwner(uid);
-      allow create: if isOwner(uid) && request.resource.data.get('verified', false) == false;
+      // Hoopla deal: 0–30% off for customers who book through Hoopla, with short fine print.
+      function validDeal(d) {
+        return d.get('dealPercent', 0) is int && d.get('dealPercent', 0) >= 0 && d.get('dealPercent', 0) <= 30
+          && d.get('dealTerms', '') is string && d.get('dealTerms', '').size() <= 120;
+      }
+      allow create: if isOwner(uid) && request.resource.data.get('verified', false) == false
+        && validDeal(request.resource.data);
       allow update: if isOwner(uid)
-        && request.resource.data.get('verified', false) == resource.data.get('verified', false);
+        && request.resource.data.get('verified', false) == resource.data.get('verified', false)
+        && validDeal(request.resource.data);
 
       // Ratings & reviews: one per customer per provider (doc id = reviewer's uid).
       // Anyone using the app can read them. Only the reviewer writes stars and
@@ -153,7 +160,9 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/providers/$(q().providerUid))
         && q().keys().hasOnly(['customerUid', 'customerName', 'customerEmail', 'customerPhone', 'providerUid',
              'providerName', 'serviceType', 'eventId', 'eventTitle', 'occasion', 'eventDate', 'startMinutes',
-             'guests', 'indoor', 'message', 'status', 'reply', 'createdAt', 'updatedAt'])
+             'guests', 'indoor', 'message', 'status', 'reply', 'dealPercent', 'dealCode', 'createdAt', 'updatedAt'])
+        && q().get('dealPercent', 0) is int && q().get('dealPercent', 0) <= 30
+        && q().get('dealCode', '') is string && q().get('dealCode', '').size() <= 20
         && q().status == 'new'
         && q().reply == ''
         && q().message is string && q().message.size() > 0 && q().message.size() <= 1500
@@ -202,6 +211,10 @@ service cloud.firestore {
         && request.resource.data.hostName is string && request.resource.data.hostName.size() <= 80
         && (!('photoUrl' in request.resource.data) || (request.resource.data.photoUrl is string && request.resource.data.photoUrl.size() <= 600))
         && (!('extra' in request.resource.data) || (request.resource.data.extra is string && request.resource.data.extra.size() <= 300))
+        && (!('motif' in request.resource.data) || (request.resource.data.motif is string && request.resource.data.motif.size() <= 40))
+        && (!('video' in request.resource.data) || (request.resource.data.video is map
+            && request.resource.data.video.get('photos', []) is list && request.resource.data.video.get('photos', []).size() <= 10
+            && request.resource.data.video.get('captions', []) is list && request.resource.data.video.get('captions', []).size() <= 10))
         && (!('theme' in request.resource.data) || (request.resource.data.theme is string && request.resource.data.theme.size() <= 20));
       allow delete: if signedIn() && resource.data.hostUid == request.auth.uid;
 

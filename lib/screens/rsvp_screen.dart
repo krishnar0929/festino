@@ -7,6 +7,7 @@ import '../theme.dart';
 import '../widgets/celebration.dart';
 import '../widgets/common.dart';
 import '../widgets/invitation_card.dart';
+import '../widgets/invite_video_player.dart';
 
 /// What a guest sees when they open an invite link
 /// (https://hoopla-894ca.web.app/?invite=...): the invite card and an RSVP form.
@@ -213,7 +214,20 @@ class _RsvpScreenState extends State<RsvpScreen> {
                     const Align(alignment: Alignment.centerLeft, child: BackArrow()),
                     const SizedBox(height: 10),
                   ],
+                  if (!info.video.isEmpty) ...[
+                    InviteVideoPlayer(
+                      photos: info.video.photos,
+                      captions: info.video.captions,
+                      style: info.video.style,
+                      theme: inviteThemeFor(info.theme),
+                      title: info.title,
+                      when: info.whenLabel,
+                      motif: info.motif,
+                    ),
+                    const SizedBox(height: 14),
+                  ],
                   InvitationCard(
+                    motif: info.motif,
                     theme: inviteThemeFor(info.theme),
                     title: info.title,
                     hostName: info.hostName,
