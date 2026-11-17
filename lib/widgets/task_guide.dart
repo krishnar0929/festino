@@ -107,6 +107,9 @@ TaskGuide guideFor(PlanTask t, EventDetails e, {ValueChanged<int>? switchTab}) {
   };
 }
 
+/// Emoji for a helper category (📸 Photographers, 🎂 Cakes…).
+String serviceEmoji(String category) => _serviceEmoji[category] ?? '🤝';
+
 const _serviceEmoji = {
   'Photographers': '📸',
   'Videographers': '🎥',

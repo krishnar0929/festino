@@ -12,6 +12,7 @@ import 'account_sheet.dart';
 import 'cost_estimate_screen.dart';
 import 'event_actions.dart';
 import 'home_shell.dart';
+import 'nearby_screen.dart';
 import 'setup_screen.dart';
 import 'weather_screen.dart';
 
@@ -176,7 +177,7 @@ class HomeScreen extends StatelessWidget {
                 icon: Icons.card_giftcard_rounded,
                 color: const Color(0xFF13895C),
                 title: 'Helpers',
-                detail: helpersLeft == 0 ? 'All booked' : '$helpersLeft needed',
+                detail: helpersLeft == 0 ? 'All booked' : '$helpersLeft to book',
                 onTap: () => onNavigate(HomeTab.find),
               ),
             ),
@@ -192,6 +193,7 @@ class HomeScreen extends StatelessWidget {
             ),
           ],
         ),
+        _HelpersNeeded(onSeeAll: () => onNavigate(HomeTab.find)),
         const SizedBox(height: 10),
         Row(
           children: [
@@ -486,6 +488,99 @@ class _Tile extends StatelessWidget {
               Text(detail, maxLines: 1, overflow: TextOverflow.ellipsis, style: body(12, color: HC.muted)),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The helpers this party needs (photographer, cake, decorator…), each with
+/// its book-by date or a tick when booked. Tap one to see that kind nearby.
+class _HelpersNeeded extends StatelessWidget {
+  const _HelpersNeeded({required this.onSeeAll});
+  final VoidCallback onSeeAll;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+    final e = state.event!;
+    final tasks = [for (final t in state.plan.tasks) if (t.id.startsWith('book_')) t];
+    if (tasks.isEmpty) return const SizedBox.shrink();
+    final booked = tasks.where((t) => e.doneTasks.contains(t.id)).length;
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text('HELPERS FOR YOUR PARTY · $booked OF ${tasks.length} BOOKED', style: overline())),
+              TextButton(onPressed: onSeeAll, child: const Text('See all')),
+            ],
+          ),
+          Container(
+            decoration: BoxDecoration(color: HC.card, borderRadius: BorderRadius.circular(20), border: Border.all(color: HC.line)),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                for (final (i, t) in tasks.indexed) ...[
+                  if (i > 0) const Divider(height: 1, color: HC.line),
+                  _HelperRow(task: t),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HelperRow extends StatelessWidget {
+  const _HelperRow({required this.task});
+  final PlanTask task;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+    final e = state.event!;
+    final category = task.id.substring('book_'.length);
+    final done = e.doneTasks.contains(task.id);
+    final (_, _, fg, dueLabel) = dueInfo(task, e, done);
+    final name = task.label.startsWith('Book ') ? task.label.substring(5) : category;
+    final title = name.isEmpty ? category : '${name[0].toUpperCase()}${name.substring(1)}';
+    return InkWell(
+      onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => NearbyScreen(initialCategory: category, standalone: true),
+      )),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: const Color(0xFFEEEAFE), borderRadius: BorderRadius.circular(12)),
+              child: Text(serviceEmoji(category), style: const TextStyle(fontSize: 20)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: body(15, weight: FontWeight.w600)),
+                  Text(done ? 'Booked' : dueLabel, style: body(12, color: done ? const Color(0xFF1F8A4C) : fg, weight: FontWeight.w600)),
+                ],
+              ),
+            ),
+            IconButton(
+              tooltip: done ? 'Mark not booked' : 'Mark booked',
+              onPressed: () => toggleTask(state, task.id),
+              icon: Icon(done ? Icons.check_circle_rounded : Icons.check_circle_outline_rounded, color: done ? const Color(0xFF1F8A4C) : HC.muted),
+            ),
+            if (!done) const Icon(Icons.chevron_right_rounded, color: HC.muted),
+          ],
         ),
       ),
     );
