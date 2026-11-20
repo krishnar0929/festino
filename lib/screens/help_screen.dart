@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../services/feedback_service.dart';
-import '../state/app_state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import 'feedback_sheet.dart';
@@ -29,7 +27,6 @@ class _HelpScreenState extends State<HelpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = AppScope.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Help & feedback')),
       body: Center(
@@ -43,27 +40,10 @@ class _HelpScreenState extends State<HelpScreen> {
               Text('A real person reads every message, usually within a day.', style: body(14, color: HC.muted)),
               const SizedBox(height: 20),
               _Row(
-                icon: Icons.mail_outline_rounded,
-                title: 'Email us',
-                subtitle: supportEmail,
-                onTap: () => openLink(
-                  context,
-                  FeedbackService.mailto(
-                    body: '\n\n---\nApp version: $version · Plan: ${state.tier.label}${state.email != null ? ' · ${state.email}' : ''}',
-                  ),
-                ),
-              ),
-              _Row(
-                icon: Icons.chat_bubble_outline_rounded,
-                title: 'Send feedback',
-                subtitle: 'Ideas, problems, or what you loved',
+                icon: Icons.support_agent_rounded,
+                title: 'Contact us',
+                subtitle: 'Questions, problems or ideas: send us a message',
                 onTap: () => showFeedbackSheet(context),
-              ),
-              _Row(
-                icon: Icons.bug_report_outlined,
-                title: 'Report a problem',
-                subtitle: 'Something not working? Tell us what happened',
-                onTap: () => showFeedbackSheet(context, type: FeedbackType.problem),
               ),
               _Row(
                 icon: Icons.star_outline_rounded,

@@ -102,13 +102,17 @@ service cloud.firestore {
       }
     }
 
-    // Feedback and ratings from the app (Help & feedback). Guests can send it too.
+    // Contact us messages and ratings from the app (Help & feedback). Guests can send them too.
     // The app can add feedback but never read, change or delete it. Read it in the console.
     match /feedback/{id} {
       allow create: if signedIn()
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.keys().hasOnly(['uid', 'type', 'rating', 'message', 'email', 'plan', 'platform', 'appVersion', 'createdAt'])
-        && request.resource.data.type in ['idea', 'problem', 'praise', 'other']
+        && request.resource.data.keys().hasOnly(['uid', 'type', 'rating', 'message', 'email', 'plan', 'platform', 'appVersion',
+            'location', 'country', 'timezone', 'locale', 'clientTime', 'status', 'createdAt'])
+        && request.resource.data.type in ['question', 'problem', 'idea', 'account', 'helpers', 'deals', 'praise', 'other']
+        && request.resource.data.get('status', 'new') == 'new'
+        && request.resource.data.get('location', '') is string && request.resource.data.get('location', '').size() <= 200
+        && request.resource.data.get('timezone', '') is string && request.resource.data.get('timezone', '').size() <= 80
         && request.resource.data.rating is int
         && request.resource.data.rating >= 0 && request.resource.data.rating <= 5
         && request.resource.data.message is string

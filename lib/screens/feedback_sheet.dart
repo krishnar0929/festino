@@ -8,7 +8,8 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 
-/// Feedback form: what kind, a star rating, comments and (for guests) an email.
+/// Contact us: what it's about, a message and the person's email (to reply).
+/// Saved to the `feedback` collection with their location and the time.
 Future<void> showFeedbackSheet(BuildContext context, {int rating = 0, FeedbackType? type}) {
   return showModalBottomSheet<void>(
     context: context,
@@ -163,12 +164,21 @@ class _FeedbackSheet extends StatefulWidget {
 }
 
 class _FeedbackSheetState extends State<_FeedbackSheet> {
-  late FeedbackType type = widget.type ?? FeedbackType.idea;
+  late FeedbackType type = widget.type ?? FeedbackType.question;
   late int rating = widget.rating;
   final messageCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
   bool busy = false;
   String? error;
+  bool _filled = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_filled) return;
+    _filled = true;
+    emailCtrl.text = AppScope.of(context).email ?? '';
+  }
 
   @override
   void dispose() {
@@ -178,17 +188,28 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
   }
 
   String get _hint => switch (type) {
-        FeedbackType.idea => 'What would make Festino better for your party?',
+        FeedbackType.question => 'What would you like to know?',
         FeedbackType.problem => 'What went wrong? What were you trying to do?',
+        FeedbackType.idea => 'What would make Festino better for your party?',
+        FeedbackType.account => 'What\'s happening with your account or sign-in?',
+        FeedbackType.helpers => 'Tell us about the helper or your listing',
+        FeedbackType.deals => 'Which deal or payment is this about?',
         FeedbackType.praise => 'What did you love?',
         FeedbackType.other => 'Tell us anything',
       };
 
+  static final _emailOk = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
   Future<void> _send() async {
     final state = AppScope.of(context);
     final message = messageCtrl.text.trim();
+    final email = emailCtrl.text.trim();
     if (message.isEmpty) {
       setState(() => error = 'Write a few words first.');
+      return;
+    }
+    if (!_emailOk.hasMatch(email)) {
+      setState(() => error = 'Add your email so we can reply.');
       return;
     }
     final nav = Navigator.of(context);
@@ -199,32 +220,29 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
     });
     try {
       if (!state.usingCloud) throw StateError('offline');
+      final venue = state.event?.venue;
       await FeedbackService.send(
         type: type,
         rating: rating,
         message: message.length > 2000 ? message.substring(0, 2000) : message,
-        email: state.email ?? emailCtrl.text,
+        email: email,
         plan: state.tier.name,
+        location: venue?.label ?? '',
+        country: venue?.countryCode ?? '',
       );
       nav.pop();
-      messenger.showSnackBar(const SnackBar(content: Text('Thanks! We read every message. 💜')));
+      messenger.showSnackBar(const SnackBar(content: Text('Thanks! We got your message and will reply by email. 💜')));
     } catch (_) {
-      // No connection to Firebase: send it by email instead.
       if (!mounted) return;
-      setState(() => busy = false);
-      await openLink(
-        context,
-        FeedbackService.mailto(
-          subject: 'Festino ${type.label.toLowerCase()}${rating > 0 ? ' ($rating★)' : ''}',
-          body: message,
-        ),
-      );
+      setState(() {
+        busy = false;
+        error = 'Couldn\'t send right now. Check your connection and try again.';
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = AppScope.of(context);
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(20, 20, 20, 16 + MediaQuery.of(context).viewInsets.bottom),
@@ -233,27 +251,23 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Send feedback', style: display(22)),
+              Text('Contact us', style: display(22)),
               const SizedBox(height: 4),
-              Text('Ideas, problems, kind words: it all goes straight to the Festino team.', style: body(13, color: HC.muted)),
+              Text('A real person reads every message, usually within a day.', style: body(13, color: HC.muted)),
               const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final t in FeedbackType.values)
-                    ChoiceChip(
-                      label: Text(t.label),
-                      selected: t == type,
-                      selectedColor: HC.lime,
-                      onSelected: (_) => setState(() => type = t),
-                    ),
-                ],
+              DropdownButtonFormField<FeedbackType>(
+                value: type,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'What is it about?'),
+                items: [for (final t in FeedbackType.values) DropdownMenuItem(value: t, child: Text(t.label))],
+                onChanged: (t) => setState(() => type = t ?? type),
               ),
+              if (widget.rating > 0) ...[
+                const SizedBox(height: 12),
+                Text('Your rating', textAlign: TextAlign.center, style: body(13, color: HC.muted)),
+                _Stars(value: rating, size: 32, onChanged: (v) => setState(() => rating = v == rating ? 0 : v)),
+              ],
               const SizedBox(height: 12),
-              Text('Your rating (optional)', textAlign: TextAlign.center, style: body(13, color: HC.muted)),
-              _Stars(value: rating, size: 32, onChanged: (v) => setState(() => rating = v == rating ? 0 : v)),
-              const SizedBox(height: 8),
               TextField(
                 controller: messageCtrl,
                 minLines: 4,
@@ -262,15 +276,13 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
                 textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(hintText: _hint),
               ),
-              if (state.email == null) ...[
-                const SizedBox(height: 4),
-                TextField(
-                  controller: emailCtrl,
-                  keyboardType: TextInputType.emailAddress,
-                  autocorrect: false,
-                  decoration: const InputDecoration(labelText: 'Your email, if you\'d like a reply (optional)'),
-                ),
-              ],
+              const SizedBox(height: 4),
+              TextField(
+                controller: emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                decoration: const InputDecoration(labelText: 'Your email (so we can reply)'),
+              ),
               if (error != null) ...[
                 const SizedBox(height: 8),
                 Text(error!, style: body(13, color: const Color(0xFFB42318), weight: FontWeight.w500)),
