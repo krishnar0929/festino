@@ -83,6 +83,9 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
   String _savedClip = '';
   bool clipAutoplay = true;
   bool sendClip = true;
+  String clipTheme = 'none';
+  String clipMusic = 'original';
+  bool clipVoice = true;
   bool uploadingClip = false;
   bool busy = false;
   bool changed = false;
@@ -104,6 +107,9 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
     _savedClip = v.clip;
     clipAutoplay = v.clipAutoplay;
     sendClip = v.sendClip;
+    clipTheme = v.clipTheme;
+    clipMusic = v.clipMusic;
+    clipVoice = v.clipVoice;
     mode = v.hasClip ? 1 : 0;
     for (var i = 0; i < v.photos.length; i++) {
       slides.add(_Slide(url: v.photos[i], caption: v.captionAt(i)));
@@ -226,6 +232,9 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
         clip: keepClip,
         clipAutoplay: clipAutoplay,
         sendClip: sendClip,
+        clipTheme: clipTheme,
+        clipMusic: clipMusic,
+        clipVoice: clipVoice,
       );
       await state.update((ev) => ev.inviteVideo = video);
       _savedClip = keepClip;
@@ -257,8 +266,9 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
     });
   }
 
-  Future<void> _songLink() async {
-    final ctrl = TextEditingController(text: music.startsWith('https://') ? music : '');
+  Future<void> _songLink({bool forClip = false}) async {
+    final now = forClip ? clipMusic : music;
+    final ctrl = TextEditingController(text: now.startsWith('https://') ? now : '');
     final url = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -293,7 +303,13 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
       if (mounted) toast(context, 'That doesn\'t look like a song link. It should start with https://');
       return;
     }
-    _edit(() => music = url);
+    _edit(() {
+      if (forClip) {
+        clipMusic = url;
+      } else {
+        music = url;
+      }
+    });
     if (mounted) toast(context, 'Song added. Play the video to hear it.');
   }
 
@@ -432,7 +448,17 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
             ),
           )
         else ...[
-          InviteClipPlayer(url: clip, autoplay: false),
+          InviteClipPlayer(
+            url: clip,
+            autoplay: false,
+            theme: clipTheme,
+            music: clipMusic,
+            keepVoice: clipVoice,
+            title: e.inviteTitle.trim().isEmpty ? e.title : e.inviteTitle.trim(),
+            when: '${DateFormat('EEE, MMM d').format(e.date)} · ${clockAmPm(e.startMinutes)}',
+          ),
+          const SizedBox(height: 6),
+          Text('This is your preview. Tap play to see the theme and hear the music.', textAlign: TextAlign.center, style: body(12, color: HC.muted)),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -442,6 +468,10 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
               if (uploadingClip) const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
             ],
           ),
+          const SizedBox(height: 10),
+          _clipThemePicker(),
+          const SizedBox(height: 16),
+          _clipMusicPicker(),
         ],
         const SizedBox(height: 14),
         CardBox(
@@ -484,6 +514,64 @@ class _InviteVideoScreenState extends State<InviteVideoScreen> {
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  /// Fun themes for the host's own video; the player above previews them live.
+  Widget _clipThemePicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionLabel('Make it fun'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final t in InviteVideo.clipThemes.entries)
+              Pill(label: t.value, small: true, selected: clipTheme == t.key, selectedColor: HC.violet, onTap: () => _edit(() => clipTheme = t.key)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text('Confetti, comic "WOW!" bursts, a party frame with your title, a movie-star marquee, hearts or an old-film look.',
+            style: body(12, color: HC.muted)),
+      ],
+    );
+  }
+
+  /// Background music for the host's own video.
+  Widget _clipMusicPicker() {
+    final hasMusic = clipMusic != 'original';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionLabel('Background music'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            Pill(label: '🎤 Video sound only', small: true, selected: !hasMusic, selectedColor: HC.violet, onTap: () => _edit(() => clipMusic = 'original')),
+            for (final t in InviteVideo.tracks.entries)
+              Pill(label: '🎵 ${t.value.$1}', small: true, selected: clipMusic == t.key, selectedColor: HC.violet, onTap: () => _edit(() => clipMusic = t.key)),
+            Pill(
+              label: clipMusic.startsWith('https://') ? '🔗 Your song ✓' : '🔗 Song from online',
+              small: true,
+              selected: clipMusic.startsWith('https://'),
+              selectedColor: HC.violet,
+              onTap: () => _songLink(forClip: true),
+            ),
+          ],
+        ),
+        if (hasMusic)
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: clipVoice,
+            activeTrackColor: HC.violet,
+            title: Text('Keep my voice', style: body(14, weight: FontWeight.w600)),
+            subtitle: Text(clipVoice ? 'Music plays softly under your video\'s sound' : 'Only the music plays', style: body(12, color: HC.muted)),
+            onChanged: (v) => _edit(() => clipVoice = v),
+          ),
+        Text('Themes and music play on your invite page. A shared video file goes as recorded.', style: body(12, color: HC.muted)),
       ],
     );
   }

@@ -240,7 +240,15 @@ class _RsvpScreenState extends State<RsvpScreen> {
                       by: info.hostName,
                     ),
                   if (info.video.hasClip && !info.cancelled) ...[
-                    InviteClipPlayer(url: info.video.clip, autoplay: info.video.clipAutoplay),
+                    InviteClipPlayer(
+                      url: info.video.clip,
+                      autoplay: info.video.clipAutoplay,
+                      theme: info.video.clipTheme,
+                      music: info.video.clipMusic,
+                      keepVoice: info.video.clipVoice,
+                      title: info.title,
+                      when: info.whenLabel,
+                    ),
                     const SizedBox(height: 14),
                   ] else if (!info.video.isEmpty && !info.cancelled) ...[
                     InviteVideoPlayer(
