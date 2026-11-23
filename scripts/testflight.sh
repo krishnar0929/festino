@@ -35,11 +35,17 @@ name=${current%%+*}
 build=${current##*+}
 [ "$name" = "$current" ] && build=0
 if [ "$BUMP" = 1 ]; then
-  # Year, day of the year, hour and minute (e.g. 263181250 = 2026, day 318, 12:50).
+  # Date and hour, easy to read: 2026112223 = 22 Nov 2026, 11 PM.
+  # Always bigger than the old style (263240006) and below Android's 2,100,000,000 limit.
   # It always goes up, so pubspec.yaml never changes and git stays clean.
-  build=$(date +%y%j%H%M | sed 's/^0*//')
+  build=$(date +%Y%m%d%H)
+  # A second build in the same hour gets the next number so App Store Connect accepts it.
+  last_file="build/.last_build_number"
+  last=$(cat "$last_file" 2>/dev/null || echo 0)
+  if [ "$build" -le "$last" ]; then build=$((last + 1)); fi
+  mkdir -p build && echo "$build" > "$last_file"
 fi
-echo "==> Hoopla ${name} (${build})"
+echo "==> Festino ${name} (${build})"
 
 flutter pub get
 flutter build ipa --release --build-number="$build"
