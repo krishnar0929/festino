@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Festino Admin</title>
+<link rel="icon" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --coral: #FF6B4A; --coral-soft: #FFE9E3;
+    --violet: #6B4EFF; --violet-soft: #EEEAFF; --violet-ink: #4A31D6;
+    --ink: #14121F; --ink-2: #4B4860; --ink-3: #85829A;
+    --line: #E9E7F0; --bg: #F6F5FA; --card: #FFFFFF;
+    --good: #1E8E5A; --good-soft: #E3F5EC;
+    --warn: #B7791F; --warn-soft: #FDF2DC;
+    --bad: #C2413B; --bad-soft: #FCE6E4;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(20,18,31,.04), 0 4px 16px rgba(20,18,31,.04);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: Inter, system-ui, -apple-system, sans-serif; color: var(--ink); background: var(--bg); font-size: 14px; }
+  h1, h2, h3 { font-family: "Space Grotesk", Inter, sans-serif; margin: 0; letter-spacing: -.01em; }
+  button { font: inherit; cursor: pointer; }
+  input, select, textarea { font: inherit; color: inherit; }
+  a { color: var(--violet-ink); }
+  .hidden { display: none !important; }
+
+  /* ---------- sign in ---------- */
+  #signin { min-height: 100%; display: grid; place-items: center; padding: 24px;
+    background: radial-gradient(1200px 600px at 10% -10%, #FFD9CF 0%, transparent 60%), radial-gradient(900px 500px at 110% 110%, #DCD4FF 0%, transparent 60%), var(--bg); }
+  .signin-card { width: 100%; max-width: 400px; background: var(--card); border-radius: 20px; padding: 32px; box-shadow: 0 10px 40px rgba(20,18,31,.08); text-align: center; }
+  .logo { width: 56px; height: 56px; border-radius: 14px; background: var(--coral); display: inline-grid; place-items: center; font-size: 28px; }
+  .signin-card h1 { margin: 16px 0 4px; font-size: 24px; }
+  .signin-card p { color: var(--ink-2); margin: 0 0 24px; line-height: 1.5; }
+  .btn { text-decoration: none; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 10px; padding: 9px 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
+  .btn:hover { border-color: #D6D3E2; background: #FBFAFD; }
+  .btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .btn.primary:hover { background: #2A2738; }
+  .btn.violet { background: var(--violet); color: #fff; border-color: var(--violet); }
+  .btn.small { padding: 6px 10px; font-size: 13px; }
+  .btn.block { width: 100%; justify-content: center; padding: 12px; }
+  .err { color: var(--bad); margin-top: 14px; font-size: 13px; line-height: 1.5; }
+  .muted { color: var(--ink-3); }
+
+  /* ---------- shell ---------- */
+  #app { display: grid; grid-template-columns: 232px 1fr; min-height: 100%; }
+  aside { background: var(--ink); color: #fff; padding: 20px 14px; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 22px; }
+  .brand .logo { width: 34px; height: 34px; border-radius: 9px; font-size: 18px; }
+  .brand b { font-family: "Space Grotesk"; font-size: 18px; }
+  .brand span { display: block; font-size: 11px; color: #A9A6BC; letter-spacing: .08em; text-transform: uppercase; }
+  nav button { width: 100%; text-align: left; background: none; border: 0; color: #CFCDE0; padding: 10px 12px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-weight: 500; }
+  nav button:hover { background: #24212F; color: #fff; }
+  nav button.active { background: #2C2840; color: #fff; }
+  nav button .count { margin-left: auto; background: var(--coral); color: #fff; border-radius: 999px; font-size: 11px; padding: 1px 7px; font-weight: 700; }
+  nav .ico { width: 18px; text-align: center; }
+  .me { margin-top: auto; border-top: 1px solid #2A2738; padding: 14px 8px 0; font-size: 12px; color: #A9A6BC; }
+  .me b { display: block; color: #fff; font-size: 13px; word-break: break-all; }
+  .me button { margin-top: 10px; background: none; border: 1px solid #3A364B; color: #CFCDE0; border-radius: 8px; padding: 6px 10px; }
+
+  main { padding: 24px 28px 60px; min-width: 0; }
+  .top { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .top h1 { font-size: 24px; margin-right: auto; }
+  .seg { display: inline-flex; background: #ECEAF3; border-radius: 10px; padding: 3px; }
+  .seg button { border: 0; background: none; padding: 6px 12px; border-radius: 8px; color: var(--ink-2); font-weight: 600; font-size: 13px; }
+  .seg button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .search { position: relative; }
+  .search input { border: 1px solid var(--line); background: #fff; border-radius: 10px; padding: 8px 12px 8px 32px; width: 260px; }
+  .search::before { content: "⌕"; position: absolute; left: 11px; top: 6px; color: var(--ink-3); font-size: 16px; }
+  .updated { font-size: 12px; color: var(--ink-3); }
+  .demo-banner { background: var(--warn-soft); color: #7A5212; border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; }
+
+  /* ---------- cards ---------- */
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .card-h { display: flex; align-items: center; gap: 10px; padding: 16px 18px 6px; }
+  .card-h h3 { font-size: 15px; }
+  .card-h .sub { margin-left: auto; font-size: 12px; color: var(--ink-3); }
+  .card-b { padding: 8px 18px 18px; }
+
+  .kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; margin-bottom: 16px; }
+  .kpi { padding: 16px 18px; }
+  .kpi .label { font-size: 12px; color: var(--ink-2); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .kpi .value { font-family: "Space Grotesk"; font-size: 30px; font-weight: 700; margin: 6px 0 2px; }
+  .kpi .delta { font-size: 12px; color: var(--ink-3); }
+  .kpi .delta b { color: var(--good); }
+  .kpi.alert .value { color: var(--coral); }
+
+  .grid2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; margin-bottom: 14px; }
+
+  /* ---------- charts ---------- */
+  .chart { position: relative; }
+  .chart svg { display: block; width: 100%; overflow: visible; }
+  .chart .axis text { font-size: 11px; fill: var(--ink-3); }
+  .chart .grid line { stroke: #EFEDF5; }
+  .chart .bar { fill: var(--violet); }
+  .chart .bar:hover, .chart .hit:hover + .bar { fill: var(--violet-ink); }
+  .hbars { display: flex; flex-direction: column; gap: 9px; }
+  .hbar { display: grid; grid-template-columns: 120px 1fr 40px; gap: 10px; align-items: center; font-size: 13px; }
+  .hbar .name { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hbar .track { display: block; height: 10px; background: #F1EFF7; border-radius: 4px; overflow: hidden; }
+  .hbar .fill { display: block; height: 100%; background: var(--violet); border-radius: 0 4px 4px 0; }
+  .hbar .num { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tip { position: absolute; pointer-events: none; background: var(--ink); color: #fff; font-size: 12px; padding: 6px 9px; border-radius: 8px; white-space: nowrap; transform: translate(-50%, -110%); opacity: 0; transition: opacity .08s; }
+  .tip.show { opacity: 1; }
+  .empty { color: var(--ink-3); font-size: 13px; padding: 18px 0; text-align: center; }
+
+  /* ---------- lists ---------- */
+  .attn { list-style: none; margin: 0; padding: 0; }
+  .attn li { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); cursor: pointer; }
+  .attn li:first-child { border-top: 0; }
+  .attn .t { font-weight: 600; }
+  .attn .d { color: var(--ink-2); font-size: 13px; margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .attn .when { margin-left: auto; font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+
+  /* ---------- tables ---------- */
+  .toolbar { display: flex; gap: 10px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .toolbar .grow { flex: 1; }
+  .toolbar select { border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; background: #fff; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 12px; font-weight: 600; color: var(--ink-3); padding: 10px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; cursor: pointer; user-select: none; background: #FCFBFE; position: sticky; top: 0; }
+  th.sorted::after { content: " ↓"; } th.sorted.asc::after { content: " ↑"; }
+  td { padding: 11px 14px; border-bottom: 1px solid #F2F0F7; vertical-align: middle; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: #FAF9FD; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .who { display: flex; align-items: center; gap: 10px; min-width: 200px; }
+  .av { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 12px; color: var(--violet-ink); background: var(--violet-soft); flex: none; overflow: hidden; }
+  .av img { width: 100%; height: 100%; object-fit: cover; }
+  .who b { display: block; font-weight: 600; }
+  .who span { color: var(--ink-3); font-size: 12px; }
+  .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: #F1EFF7; color: var(--ink-2); white-space: nowrap; }
+  .pill.violet { background: var(--violet-soft); color: var(--violet-ink); }
+  .pill.coral { background: var(--coral-soft); color: #B4401F; }
+  .pill.good { background: var(--good-soft); color: var(--good); }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.bad { background: var(--bad-soft); color: var(--bad); }
+  .foot { padding: 12px 16px; color: var(--ink-3); font-size: 12px; }
+
+  /* ---------- inbox ---------- */
+  .msgs { display: flex; flex-direction: column; }
+  .msg { padding: 16px 18px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr 240px; gap: 18px; }
+  .msg:first-child { border-top: 0; }
+  .msg .head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .msg .body { white-space: pre-wrap; line-height: 1.55; }
+  .msg .meta { font-size: 12px; color: var(--ink-3); margin-top: 10px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .msg .side { display: flex; flex-direction: column; gap: 8px; }
+  .msg textarea { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; resize: vertical; min-height: 60px; font-size: 13px; }
+  .msg select { border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; background: #fff; }
+
+  /* ---------- drawer ---------- */
+  #drawer-bg { position: fixed; inset: 0; background: rgba(20,18,31,.35); z-index: 10; }
+  #drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100%); background: #fff; z-index: 11; box-shadow: -10px 0 40px rgba(20,18,31,.15); overflow-y: auto; padding: 24px; }
+  #drawer .close { position: absolute; top: 16px; right: 16px; border: 0; background: #F1EFF7; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; }
+  .dl { display: grid; grid-template-columns: 130px 1fr; gap: 8px 14px; margin: 16px 0; font-size: 13px; }
+  .dl dt { color: var(--ink-3); } .dl dd { margin: 0; word-break: break-word; }
+  .sec { margin-top: 22px; }
+  .sec h3 { font-size: 14px; margin-bottom: 8px; }
+  .mini { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px; }
+  .mini b { font-weight: 600; }
+  .photos { display: flex; gap: 6px; flex-wrap: wrap; }
+  .photos img { width: 84px; height: 84px; object-fit: cover; border-radius: 8px; }
+
+  #loading { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(246,245,250,.7); z-index: 20; font-weight: 600; color: var(--ink-2); }
+
+  @media (max-width: 1200px) { .kpis { grid-template-columns: repeat(3, 1fr); } .grid3 { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 860px) {
+    #app { grid-template-columns: minmax(0, 1fr); }
+    main { padding: 16px; }
+    .search { flex: 1 1 100%; order: 3; }
+    aside { position: static; height: auto; }
+    nav { display: flex; overflow-x: auto; gap: 4px; } nav button { width: auto; white-space: nowrap; }
+    .me { display: none; }
+    .grid2, .grid3 { grid-template-columns: minmax(0, 1fr); }
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .msg { grid-template-columns: 1fr; }
+    .search input { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Sign in -->
+<section id="signin" class="hidden">
+  <div class="signin-card">
+    <div class="logo">🎉</div>
+    <h1>Festino Admin</h1>
+    <p>Sign in with an admin Google account to see users, providers and messages.</p>
+    <button class="btn primary block" id="google-btn">
+      <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+      Sign in with Google
+    </button>
+    <div class="err hidden" id="signin-err"></div>
+  </div>
+</section>
+
+<!-- Dashboard -->
+<div id="app" class="hidden">
+  <aside>
+    <div class="brand"><div class="logo">🎉</div><div><b>Festino</b><span>Admin</span></div></div>
+    <nav id="nav">
+      <button data-view="overview" class="active"><span class="ico">◧</span>Overview</button>
+      <button data-view="users"><span class="ico">☺</span>Users</button>
+      <button data-view="providers"><span class="ico">✦</span>Providers <span class="count hidden" id="n-pending"></span></button>
+      <button data-view="events"><span class="ico">✶</span>Events</button>
+      <button data-view="messages"><span class="ico">✉</span>Contact us <span class="count hidden" id="n-new"></span></button>
+      <button data-view="activity"><span class="ico">↯</span>Activity</button>
+    </nav>
+    <div class="me"><span>Signed in as</span><b id="me-email"></b><button id="signout">Sign out</button></div>
+  </aside>
+
+  <main>
+    <div id="demo-banner" class="demo-banner hidden">Sample data. This preview shows made-up people so you can see the layout. Sign in at <b>festino.web.app/admin</b> to see real data.</div>
+    <div class="top">
+      <h1 id="title">Overview</h1>
+      <div class="search"><input id="q" placeholder="Search name, email, city…" autocomplete="off"></div>
+      <div class="seg" id="range">
+        <button data-days="7">7 days</button><button data-days="30" class="on">30 days</button><button data-days="90">90 days</button><button data-days="0">All</button>
+      </div>
+      <button class="btn small" id="refresh">↻ Refresh</button>
+    </div>
+    <div class="updated" id="updated" style="margin:-12px 0 16px"></div>
+
+    <!-- Overview -->
+    <section data-page="overview">
+      <div class="kpis" id="kpis"></div>
+      <div class="grid2">
+        <div class="card"><div class="card-h"><h3>New accounts per day</h3><span class="sub" id="signup-sub"></span></div><div class="card-b"><div class="chart" id="ch-signups"></div></div></div>
+        <div class="card"><div class="card-h"><h3>Needs attention</h3></div><div class="card-b"><ul class="attn" id="attn"></ul></div></div>
+      </div>
+      <div class="grid3">
+        <div class="card"><div class="card-h"><h3>Events by occasion</h3></div><div class="card-b" id="ch-occasions"></div></div>
+        <div class="card"><div class="card-h"><h3>Providers by service</h3></div><div class="card-b" id="ch-services"></div></div>
+        <div class="card"><div class="card-h"><h3>How customers reach providers</h3></div><div class="card-b" id="ch-leads"></div></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><div class="card-h"><h3>Quote requests by status</h3></div><div class="card-b" id="ch-quotes"></div></div>
+        <div class="card"><div class="card-h"><h3>Top searches</h3></div><div class="card-b" id="ch-searches"></div></div>
+      </div>
+    </section>
+
+    <!-- Users -->
+    <section data-page="users" class="hidden">
+      <div class="card">
+        <div class="toolbar">
+          <div class="seg" id="user-filter">
+            <button data-f="all" class="on">All</button><button data-f="accounts">Accounts</button><button data-f="guests">Guests</button><button data-f="customer">Customers</button><button data-f="provider">Providers</button>
+          </div>
+          <div class="grow"></div>
+          <button class="btn small" data-csv="users">⇩ Export CSV</button>
+        </div>
+        <div class="table-wrap"><table id="t-users"></table></div>
+        <div class="foot" id="f-users"></div>
+      </div>
+    </section>
+
+    <!-- Providers -->
+    <section data-page="providers" class="hidden">
+      <div class="card">
+        <div class="toolbar">
+          <div class="seg" id="prov-filter">
+            <button data-f="all" class="on">All</button><button data-f="pending">Waiting for check</button><button data-f="verified">Verified</button>
+          </div>
+          <select id="prov-service"><option value="">All services</option></select>
+          <div class="grow"></div>
+          <button class="btn small" data-csv="providers">⇩ Export CSV</button>
+        </div>
+        <div class="table-wrap"><table id="t-providers"></table></div>
+        <div class="foot" id="f-providers"></div>
+      </div>
+    </section>
+
+    <!-- Events -->
+    <section data-page="events" class="hidden">
+      <div class="card">
+        <div class="toolbar">
+          <div class="seg" id="event-filter">
+            <button data-f="all" class="on">All</button><button data-f="upcoming">Upcoming</button><button data-f="past">Past</button><button data-f="cancelled">Cancelled</button>
+          </div>
+          <select id="event-occasion"><option value="">All occasions</option></select>
+          <div class="grow"></div>
+          <button class="btn small" data-csv="events">⇩ Export CSV</button>
+        </div>
+        <div class="table-wrap"><table id="t-events"></table></div>
+        <div class="foot" id="f-events"></div>
+      </div>
+    </section>
+
+    <!-- Contact us -->
+    <section data-page="messages" class="hidden">
+      <div class="card">
+        <div class="toolbar">
+          <div class="seg" id="msg-filter">
+            <button data-f="open" class="on">To do</button><button data-f="new">New</button><button data-f="resolved">Resolved</button><button data-f="all">All</button>
+          </div>
+          <select id="msg-type"><option value="">All query types</option></select>
+          <div class="grow"></div>
+          <button class="btn small" data-csv="messages">⇩ Export CSV</button>
+        </div>
+        <div class="msgs" id="msgs"></div>
+      </div>
+    </section>
+
+    <!-- Activity -->
+    <section data-page="activity" class="hidden">
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-h"><h3>Quote requests</h3><span class="sub">Customers asking providers for a price</span></div>
+        <div class="table-wrap"><table id="t-quotes"></table></div>
+        <div class="foot" id="f-quotes"></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><div class="card-h"><h3>Recent searches</h3></div><div class="table-wrap"><table id="t-searches"></table></div></div>
+        <div class="card"><div class="card-h"><h3>Refer a friend</h3></div><div class="table-wrap"><table id="t-referrals"></table></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="drawer-bg" class="hidden"></div>
+<div id="drawer" class="hidden" role="dialog" aria-modal="true"><button class="close" id="drawer-close" aria-label="Close">✕</button><div id="drawer-body"></div></div>
+<div id="loading" class="hidden">Loading Festino data…</div>
+
+<script type="module">
+// ======================================================================
+// Festino admin dashboard. Data comes straight from Firestore; the rules
+// only let admin Google accounts read it (see isAdmin() in firestore.rules).
+// Open with ?demo=1 to see the layout with made-up data, no sign-in.
+// ======================================================================
+
+const firebaseConfig = {
+  apiKey: 'AIzaSyAcw0neEX-OpFRZU7moI8dZnn0ZVojONCI',
+  appId: '1:376055601845:web:c97690a068fcc4a0713cfc',
+  messagingSenderId: '376055601845',
+  projectId: 'hoopla-894ca',
+  authDomain: 'hoopla-894ca.firebaseapp.com',
+  storageBucket: 'hoopla-894ca.firebasestorage.app',
+};
+const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+const DEMO = new URLSearchParams(location.search).has('demo');
+
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const show = (el, on = true) => el.classList.toggle('hidden', !on);
+
+// ---------- dates ----------
+function toDate(v) {
+  if (!v) return null;
+  if (v instanceof Date) return v;
+  if (typeof v.toDate === 'function') return v.toDate();
+  if (typeof v === 'object' && 'seconds' in v) return new Date(v.seconds * 1000);
+  const d = new Date(v);
+  return isNaN(d) ? null : d;
+}
+const DAY = 864e5;
+const fmtDate = (d) => d ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: d.getFullYear() === new Date().getFullYear() ? undefined : 'numeric' }) : '—';
+const fmtDateTime = (d) => d ? d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—';
+function ago(d) {
+  if (!d) return '—';
+  const s = (Date.now() - d) / 1000;
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  if (s < 86400 * 30) return `${Math.floor(s / 86400)}d ago`;
+  return fmtDate(d);
+}
+const initials = (name, email) => (String(name || email || '?').trim().split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('')) || '?';
+
+// ---------- state ----------
+const state = {
+  days: 30, view: 'overview', q: '',
+  authUsers: null, users: [], providers: [], events: [], feedback: [], quotes: [], leadTaps: [],
+  searches: [], referrals: [], reviews: [], invites: [],
+  sort: {}, filters: { users: 'all', providers: 'all', events: 'all', messages: 'open' },
+};
+let fb = null; // Firebase helpers once loaded
+
+// ======================================================================
+// Data loading
+// ======================================================================
+async function loadFirebase() {
+  const [{ initializeApp }, auth, fs, fn] = await Promise.all([
+    import(SDK + 'firebase-app.js'), import(SDK + 'firebase-auth.js'),
+    import(SDK + 'firebase-firestore.js'), import(SDK + 'firebase-functions.js'),
+  ]);
+  const app = initializeApp(firebaseConfig);
+  fb = { app, auth, fs, fn, a: auth.getAuth(app), db: fs.getFirestore(app), functions: fn.getFunctions(app, 'us-central1') };
+}
+
+async function fetchAll() {
+  const { fs, db } = fb;
+  const read = async (label, q) => {
+    try { return (await fs.getDocs(q)).docs; } catch (e) { console.warn(label, e); state.errors.push(label); return []; }
+  };
+  state.errors = [];
+  const col = (n) => fs.collection(db, n);
+  const [users, providers, events, feedback, quotes, leadTaps, searches, referrals, reviews, invites, authUsers] = await Promise.all([
+    read('users', col('users')),
+    read('providers', col('providers')),
+    read('events', fs.collectionGroup(db, 'events')),
+    read('feedback', fs.query(col('feedback'), fs.orderBy('createdAt', 'desc'), fs.limit(1000))),
+    read('quotes', fs.query(col('quotes'), fs.limit(3000))),
+    read('leadTaps', fs.query(col('leadTaps'), fs.limit(10000))),
+    read('search_logs', fs.query(col('search_logs'), fs.orderBy('createdAt', 'desc'), fs.limit(1000))),
+    read('referrals', col('referrals')),
+    read('reviews', fs.collectionGroup(db, 'reviews')),
+    read('invites', fs.query(col('invites'), fs.limit(3000))),
+    fn_adminUsers(),
+  ]);
+  const withId = (docs) => docs.map((d) => ({ id: d.id, ...d.data() }));
+  state.users = withId(users);
+  state.providers = withId(providers);
+  state.events = events.map((d) => ({ id: d.id, ownerUid: d.ref.parent.parent?.id, ...d.data() }));
+  state.feedback = feedback.map((d) => ({ id: d.id, _ref: d.ref, ...d.data() }));
+  state.quotes = withId(quotes);
+  state.leadTaps = withId(leadTaps);
+  state.searches = withId(searches);
+  state.referrals = withId(referrals);
+  state.reviews = reviews.map((d) => ({ id: d.id, providerUid: d.ref.parent.parent?.id, ...d.data() }));
+  state.invites = withId(invites);
+  state.authUsers = authUsers;
+}
+
+async function fn_adminUsers() {
+  try {
+    const res = await fb.fn.httpsCallable(fb.functions, 'adminUsers')();
+    return res.data.users;
+  } catch (e) {
+    console.warn('adminUsers function not available yet', e);
+    return null;
+  }
+}
+
+// ---------- write actions ----------
+async function setVerified(uid, verified) {
+  const p = state.providers.find((x) => x.id === uid);
+  if (DEMO) { p.verified = verified; return; }
+  const { fs, db } = fb;
+  await fs.updateDoc(fs.doc(db, 'providers', uid), { verified, verifiedAt: fs.serverTimestamp() });
+  p.verified = verified;
+}
+async function setMessage(id, status, adminNote) {
+  const m = state.feedback.find((x) => x.id === id);
+  if (!DEMO) {
+    const { fs, db } = fb;
+    await fs.updateDoc(fs.doc(db, 'feedback', id), { status, adminNote, statusAt: fs.serverTimestamp() });
+  }
+  m.status = status; m.adminNote = adminNote; m.statusAt = new Date();
+}
+
+// ======================================================================
+// Join the data into people, providers and events
+// ======================================================================
+function model() {
+  const byUid = new Map();
+  const person = (uid) => {
+    if (!uid) return null;
+    if (!byUid.has(uid)) byUid.set(uid, { uid, events: [], quotes: [], messages: [], providerOf: null });
+    return byUid.get(uid);
+  };
+  for (const a of state.authUsers || []) Object.assign(person(a.uid), {
+    email: a.email, name: a.name, phone: a.phone, photo: a.photo, providers: a.providers, anonymous: a.anonymous,
+    disabled: a.disabled, created: toDate(a.created), lastActive: toDate(a.lastActive),
+  });
+  for (const u of state.users) {
+    const p = person(u.id);
+    p.profile = u;
+    p.email = p.email || u.email; p.name = p.name || u.name; p.phone = p.phone || u.phone;
+    p.role = u.role;
+    p.lastActive = p.lastActive || toDate(u.updatedAt);
+    if (!state.authUsers) p.created = p.created || toDate(u.createdAt) || toDate(u.updatedAt);
+  }
+  for (const e of state.events) {
+    e._date = toDate(e.date); e._updated = toDate(e.updatedAt);
+    const p = person(e.ownerUid); if (p) { p.events.push(e); e._owner = p; }
+    if (p && !state.authUsers && (!p.created || e._updated < p.created)) p.created = p.created || e._updated;
+  }
+  for (const q of state.quotes) { q._created = toDate(q.createdAt); person(q.customerUid)?.quotes.push(q); }
+  for (const m of state.feedback) { m._created = toDate(m.createdAt); m.status = m.status || 'new'; const p = person(m.uid); if (p) { p.messages.push(m); m._user = p; } }
+  for (const s of state.searches) s._created = toDate(s.createdAt);
+  for (const t of state.leadTaps) t._created = toDate(t.createdAt);
+
+  const providers = state.providers.map((pr) => {
+    const owner = person(pr.id); owner.providerOf = pr; owner.role = owner.role || 'provider';
+    const taps = state.leadTaps.filter((t) => t.providerUid === pr.id);
+    const quotes = state.quotes.filter((q) => q.providerUid === pr.id);
+    const reviews = state.reviews.filter((r) => r.providerUid === pr.id);
+    const rating = reviews.length ? reviews.reduce((s, r) => s + (r.stars || 0), 0) / reviews.length : null;
+    return { ...pr, _owner: owner, _taps: taps, _quotes: quotes, _reviews: reviews, _rating: rating, _updated: toDate(pr.updatedAt) };
+  });
+  const people = [...byUid.values()].map((p) => ({
+    ...p,
+    anonymous: p.anonymous ?? (!p.email && !p.profile),
+    signIn: signInLabel(p),
+    plan: planLabel(p.profile),
+  }));
+  return { people, providers };
+}
+function signInLabel(p) {
+  const ids = p.providers || [];
+  if (ids.includes('apple.com')) return 'Apple';
+  if (ids.includes('google.com')) return 'Google';
+  if (ids.includes('password')) return 'Email';
+  if (ids.includes('phone')) return 'Phone';
+  if (p.anonymous || (!p.email && !p.profile)) return 'Guest';
+  return p.email ? 'Account' : 'Guest';
+}
+function planLabel(u) {
+  if (!u) return '';
+  if (u.premium || u.plan) return String(u.plan || 'premium');
+  if (u.trialPlan && !u.trialCancelled) {
+    const start = toDate(u.trialStartedAt);
+    if (start && Date.now() - start < 3 * DAY) return `${u.trialPlan} trial`;
+  }
+  return '';
+}
+
+// ======================================================================
+// Rendering
+// ======================================================================
+let M = { people: [], providers: [] };
+const since = () => { if (!state.days) return 0; const t = new Date(); t.setHours(0, 0, 0, 0); return t.getTime() - (state.days - 1) * DAY; };
+const inRange = (d) => !!d && d.getTime() >= since();
+const rangeText = () => (state.days ? `last ${state.days} days` : 'all time');
+const match = (...vals) => !state.q || vals.some((v) => String(v ?? '').toLowerCase().includes(state.q));
+
+function render() {
+  M = model();
+  const pending = M.providers.filter((p) => !p.verified).length;
+  const fresh = state.feedback.filter((m) => m.status === 'new').length;
+  $('#n-pending').textContent = pending; show($('#n-pending'), pending > 0);
+  $('#n-new').textContent = fresh; show($('#n-new'), fresh > 0);
+  ({ overview: renderOverview, users: renderUsers, providers: renderProviders, events: renderEvents, messages: renderMessages, activity: renderActivity })[state.view]();
+}
+
+function kpi(label, value, delta, cls = '') {
+  return `<div class="card kpi ${cls}"><div class="label">${label}</div><div class="value">${value}</div><div class="delta">${delta}</div></div>`;
+}
+const plural = (n, w) => `${n.toLocaleString()} ${w}${n === 1 ? '' : 's'}`;
+
+function renderOverview() {
+  const people = M.people;
+  const accounts = people.filter((p) => !p.anonymous);
+  const guests = people.length - accounts.length;
+  const newIn = accounts.filter((p) => inRange(p.created)).length;
+  const active = people.filter((p) => inRange(p.lastActive)).length;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const upcoming = state.events.filter((e) => e.status !== 'cancelled' && e._date && e._date >= today).length;
+  const eventsIn = state.events.filter((e) => inRange(e._updated)).length;
+  const verified = M.providers.filter((p) => p.verified).length;
+  const booked = state.quotes.filter((q) => q.status === 'booked').length;
+  const quotesIn = state.quotes.filter((q) => inRange(q._created)).length;
+  const toDo = state.feedback.filter((m) => m.status !== 'resolved').length;
+
+  $('#kpis').innerHTML = [
+    kpi('Accounts', accounts.length.toLocaleString(), `<b>+${newIn}</b> new · ${rangeText()}${guests ? ` · ${plural(guests, 'guest')}` : ''}`),
+    kpi('Active people', active.toLocaleString(), `opened Festino · ${rangeText()} · guests included`),
+    kpi('Events planned', state.events.length.toLocaleString(), `${upcoming} upcoming · ${eventsIn} updated ${rangeText()}`),
+    kpi('Providers', M.providers.length.toLocaleString(), `${verified} verified · ${M.providers.length - verified} waiting`),
+    kpi('Quote requests', state.quotes.length.toLocaleString(), `${booked} booked · ${quotesIn} ${rangeText()}`),
+    kpi('Contact us to do', toDo.toLocaleString(), `${state.feedback.filter((m) => m.status === 'new').length} new · ${state.feedback.length} total`, toDo ? 'alert' : ''),
+  ].join('');
+
+  // New accounts per day
+  const n = state.days || Math.min(180, Math.max(14, Math.ceil((Date.now() - Math.min(Date.now(), ...accounts.map((p) => p.created?.getTime() || Date.now()))) / DAY) + 1));
+  const days = [];
+  for (let i = n - 1; i >= 0; i--) { const d = new Date(today.getTime() - i * DAY); days.push({ d, v: 0 }); }
+  for (const p of accounts) {
+    if (!p.created) continue;
+    const c = new Date(p.created); c.setHours(0, 0, 0, 0);
+    const i = Math.round((c - days[0].d) / DAY);
+    if (i >= 0 && i < days.length) days[i].v++;
+  }
+  $('#signup-sub').textContent = `${days.reduce((s, x) => s + x.v, 0)} new · ${state.days ? rangeText() : `last ${n} days`}`;
+  columnChart($('#ch-signups'), days.map((x) => ({ label: fmtDate(x.d), value: x.v })), 'new accounts');
+
+  hbars($('#ch-occasions'), countBy(state.events, (e) => e.occasion || 'Other'), 'events');
+  hbars($('#ch-services'), countBy(M.providers, (p) => p.serviceType || 'Other'), 'providers');
+  const kinds = { call: 'Call', whatsapp: 'WhatsApp', instagram: 'Instagram', website: 'Website', facebook: 'Facebook', youtube: 'YouTube', tiktok: 'TikTok', reviews: 'Reviews link' };
+  hbars($('#ch-leads'), countBy(state.leadTaps.filter((t) => !state.days || inRange(t._created)), (t) => kinds[t.kind] || t.kind), 'taps', `No taps ${rangeText()}`);
+  const qs = { new: 'New', seen: 'Seen', replied: 'Replied', booked: 'Booked', declined: 'Declined', cancelled: 'Cancelled' };
+  hbars($('#ch-quotes'), countBy(state.quotes, (q) => qs[q.status] || q.status), 'requests', 'No quote requests yet', false);
+  hbars($('#ch-searches'), countBy(state.searches.filter((s) => s.query && (!state.days || inRange(s._created))), (s) => String(s.query).trim().toLowerCase()), 'searches', `No searches ${rangeText()}`);
+
+  // Needs attention
+  const items = [
+    ...state.feedback.filter((m) => m.status === 'new').map((m) => ({ when: m._created, html: `<span class="pill coral">${esc(typeLabel(m.type))}</span><div style="min-width:0"><div class="t">${esc(m.email || m._user?.email || 'Someone')}</div><div class="d">${esc(m.message)}</div></div>`, go: () => { state.filters.messages = 'new'; go('messages'); } })),
+    ...M.providers.filter((p) => !p.verified).map((p) => ({ when: p._updated, html: `<span class="pill warn">Verify</span><div style="min-width:0"><div class="t">${esc(p.businessName || 'Unnamed business')}</div><div class="d">${esc([p.serviceType, p.city].filter(Boolean).join(' · '))}</div></div>`, go: () => openProvider(p.id) })),
+  ].sort((a, b) => (b.when || 0) - (a.when || 0)).slice(0, 6);
+  $('#attn').innerHTML = items.length ? items.map((x, i) => `<li data-i="${i}">${x.html}<span class="when">${ago(x.when)}</span></li>`).join('') : '<div class="empty">All caught up 🎉</div>';
+  $$('#attn li').forEach((li) => li.onclick = () => items[+li.dataset.i].go());
+}
+
+function countBy(list, key) {
+  const m = new Map();
+  for (const x of list) { const k = key(x); if (k) m.set(k, (m.get(k) || 0) + 1); }
+  return [...m.entries()].sort((a, b) => b[1] - a[1]);
+}
+function hbars(el, entries, unit, emptyText = 'Nothing yet', limit = true) {
+  const rows = limit ? entries.slice(0, 7) : entries;
+  if (!rows.length) { el.innerHTML = `<div class="empty">${emptyText}</div>`; return; }
+  const max = Math.max(...rows.map((r) => r[1]));
+  const rest = limit ? entries.slice(7).reduce((s, r) => s + r[1], 0) : 0;
+  el.innerHTML = `<div class="hbars">${rows.map(([k, v]) => `<div class="hbar" title="${esc(k)}: ${v} ${unit}"><span class="name">${esc(k)}</span><span class="track"><span class="fill" style="width:${Math.max(2, (v / max) * 100)}%"></span></span><span class="num">${v}</span></div>`).join('')}${rest ? `<div class="muted" style="font-size:12px">+ ${rest} more in other groups</div>` : ''}</div>`;
+}
+function columnChart(el, data, unit) {
+  const W = 640, H = 300, padL = 28, padB = 22, padT = 8;
+  const max = Math.max(4, ...data.map((d) => d.value));
+  const step = Math.ceil(max / 4);
+  const top = step * 4;
+  const bw = (W - padL) / data.length;
+  const y = (v) => padT + (H - padT - padB) * (1 - v / top);
+  const every = Math.ceil(data.length / 7);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="New accounts per day"><g class="grid">`;
+  for (let i = 0; i <= 4; i++) s += `<line x1="${padL}" x2="${W}" y1="${y(i * step)}" y2="${y(i * step)}"/>`;
+  s += `</g><g class="axis">`;
+  for (let i = 0; i <= 4; i++) s += `<text x="${padL - 6}" y="${y(i * step) + 4}" text-anchor="end">${i * step}</text>`;
+  data.forEach((d, i) => { if ((data.length - 1 - i) % every === 0) s += `<text x="${padL + i * bw + bw / 2}" y="${H - 4}" text-anchor="middle">${esc(d.label)}</text>`; });
+  s += `</g>`;
+  const gap = bw > 6 ? 2 : 1;
+  data.forEach((d, i) => {
+    const x = padL + i * bw + gap / 2, w = Math.max(1, bw - gap), h = (H - padT - padB) - (y(d.value) - padT);
+    const r = Math.min(4, w / 2);
+    if (d.value > 0) s += `<path class="bar" d="M${x},${y(0)} V${y(d.value) + r} q0,-${r} ${r},-${r} H${x + w - r} q${r},0 ${r},${r} V${y(0)} Z"/>`;
+    s += `<rect class="hit" data-i="${i}" x="${padL + i * bw}" y="${padT}" width="${bw}" height="${H - padT - padB}" fill="transparent"/>`;
+  });
+  s += `</svg><div class="tip"></div>`;
+  el.innerHTML = s;
+  const tip = $('.tip', el), svg = $('svg', el);
+  $$('.hit', el).forEach((r) => {
+    r.onmouseenter = () => {
+      const d = data[+r.dataset.i];
+      const box = svg.getBoundingClientRect(), sc = box.width / W;
+      tip.innerHTML = `<b>${d.value}</b> ${unit} · ${esc(d.label)}`;
+      tip.style.left = `${(padL + (+r.dataset.i + .5) * bw) * sc}px`;
+      tip.style.top = `${y(d.value) * sc}px`;
+      tip.classList.add('show');
+    };
+    r.onmouseleave = () => tip.classList.remove('show');
+  });
+}
+
+// ---------- generic sortable table ----------
+function table(id, cols, rows, onClick, defaultSort) {
+  const t = $('#' + id);
+  const s = state.sort[id] || defaultSort || { key: cols[0].key, asc: true };
+  state.sort[id] = s;
+  const col = cols.find((c) => c.key === s.key) || cols[0];
+  const val = col.sort || ((r) => r[col.key]);
+  rows = [...rows].sort((a, b) => {
+    const x = val(a), y = val(b);
+    if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1;
+    return (x > y ? 1 : x < y ? -1 : 0) * (s.asc ? 1 : -1);
+  });
+  t.innerHTML = `<thead><tr>${cols.map((c) => `<th data-k="${c.key}" class="${c.num ? 'num' : ''} ${c.key === s.key ? 'sorted' + (s.asc ? ' asc' : '') : ''}">${c.label}</th>`).join('')}</tr></thead>
+    <tbody>${rows.slice(0, 500).map((r, i) => `<tr data-i="${i}">${cols.map((c) => `<td class="${c.num ? 'num' : ''}">${c.html(r)}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${cols.length}"><div class="empty">Nothing matches.</div></td></tr>`}</tbody>`;
+  $$('th', t).forEach((th) => th.onclick = () => {
+    const k = th.dataset.k; state.sort[id] = { key: k, asc: s.key === k ? !s.asc : !cols.find((c) => c.key === k).num && !cols.find((c) => c.date === true && c.key === k) };
+    render();
+  });
+  if (onClick) $$('tbody tr[data-i]', t).forEach((tr) => tr.onclick = () => onClick(rows[+tr.dataset.i]));
+  return rows;
+}
+const whoCell = (name, sub, photo) => `<div class="who"><div class="av">${photo ? `<img src="${esc(photo)}" alt="" referrerpolicy="no-referrer">` : esc(initials(name, sub))}</div><div><b>${esc(name || 'No name')}</b><span>${esc(sub || '')}</span></div></div>`;
+const signPill = (s) => `<span class="pill ${s === 'Guest' ? '' : 'violet'}">${s === 'Apple' ? '' : s === 'Google' ? 'G' : s === 'Guest' ? '◌' : '✉'} ${s}</span>`;
+const rolePill = (r) => r ? `<span class="pill ${r === 'provider' ? 'coral' : ''}">${r === 'provider' ? 'Provider' : 'Customer'}</span>` : '<span class="muted">—</span>';
+
+// ---------- users ----------
+let lastUsers = [];
+function renderUsers() {
+  const f = state.filters.users;
+  const rows = M.people.filter((p) =>
+    (f === 'all' || (f === 'accounts' && !p.anonymous) || (f === 'guests' && p.anonymous) || p.role === f)
+    && match(p.name, p.email, p.phone, p.uid, p.providerOf?.businessName));
+  lastUsers = table('t-users', [
+    { key: 'name', label: 'Person', html: (p) => whoCell(p.name || (p.anonymous ? 'Guest' : ''), p.email || p.uid.slice(0, 10), p.photo), sort: (p) => (p.name || p.email || '~').toLowerCase() },
+    { key: 'signIn', label: 'Sign-in', html: (p) => signPill(p.signIn) },
+    { key: 'role', label: 'Role', html: (p) => rolePill(p.role) },
+    { key: 'plan', label: 'Plan', html: (p) => p.plan ? `<span class="pill good">${esc(p.plan)}</span>` : '<span class="muted">Free</span>' },
+    { key: 'events', label: 'Events', num: true, html: (p) => p.events.length, sort: (p) => p.events.length },
+    { key: 'quotes', label: 'Quotes', num: true, html: (p) => p.quotes.length, sort: (p) => p.quotes.length },
+    { key: 'created', label: 'Joined', date: true, html: (p) => fmtDate(p.created), sort: (p) => p.created?.getTime() },
+    { key: 'lastActive', label: 'Last active', date: true, html: (p) => ago(p.lastActive), sort: (p) => p.lastActive?.getTime() },
+  ], rows, (p) => openUser(p.uid), { key: 'created', asc: false });
+  $('#f-users').textContent = `${rows.length.toLocaleString()} of ${M.people.length.toLocaleString()} people${state.authUsers ? '' : ' · Sign-in details appear once the adminUsers function is deployed'}`;
+}
+function openUser(uid) {
+  const p = M.people.find((x) => x.uid === uid); if (!p) return;
+  drawer(`
+    <div class="who" style="margin-right:40px">${whoCell(p.name || (p.anonymous ? 'Guest' : ''), p.email || '', p.photo).replace('class="who"', 'class="who" style="transform:scale(1.1);transform-origin:left"')}</div>
+    <dl class="dl">
+      <dt>Sign-in</dt><dd>${signPill(p.signIn)} ${p.disabled ? '<span class="pill bad">Disabled</span>' : ''}</dd>
+      <dt>Role</dt><dd>${rolePill(p.role)}</dd>
+      <dt>Plan</dt><dd>${esc(p.plan || 'Free')}</dd>
+      <dt>Phone</dt><dd>${esc(p.phone || '—')}</dd>
+      <dt>Joined</dt><dd>${fmtDateTime(p.created)}</dd>
+      <dt>Last active</dt><dd>${fmtDateTime(p.lastActive)} (${ago(p.lastActive)})</dd>
+      <dt>User ID</dt><dd><code>${esc(p.uid)}</code></dd>
+      ${p.profile?.referredBy ? `<dt>Referred by</dt><dd>${esc(p.profile.referredBy)}</dd>` : ''}
+    </dl>
+    ${p.email ? `<a class="btn small" href="mailto:${esc(p.email)}">✉ Email</a>` : ''}
+    ${p.providerOf ? `<button class="btn small" id="to-prov">✦ Provider listing</button>` : ''}
+    <div class="sec"><h3>Events (${p.events.length})</h3>${p.events.map(eventMini).join('') || '<div class="muted">No events.</div>'}</div>
+    <div class="sec"><h3>Quote requests (${p.quotes.length})</h3>${p.quotes.map(quoteMini).join('') || '<div class="muted">None.</div>'}</div>
+    <div class="sec"><h3>Contact us (${p.messages.length})</h3>${p.messages.map((m) => `<div class="mini"><b>${esc(typeLabel(m.type))}</b> · ${fmtDate(m._created)} · ${statusPill(m.status)}<div style="margin-top:4px;white-space:pre-wrap">${esc(m.message)}</div></div>`).join('') || '<div class="muted">None.</div>'}</div>`);
+  if (p.providerOf) $('#to-prov').onclick = () => openProvider(uid);
+}
+const eventMini = (e) => `<div class="mini"><b>${esc(e.title || e.occasion || 'Event')}</b> · ${esc(e.occasion || '')}<br><span class="muted">${fmtDate(e._date)} · ${e.guests ?? '?'} guests${e.venue?.label || e.venue?.address ? ' · ' + esc(e.venue.label || e.venue.address) : ''}</span> ${e.status === 'cancelled' ? '<span class="pill bad">Cancelled</span>' : ''}</div>`;
+const quoteMini = (q) => `<div class="mini"><b>${esc(q.providerName || 'Provider')}</b> · ${esc(q.serviceType || '')} ${quotePill(q.status)}<br><span class="muted">${esc(q.customerName || '')} · ${esc(q.eventTitle || q.occasion || '')} · asked ${fmtDate(q._created)}</span>${q.message ? `<div style="margin-top:4px">${esc(q.message)}</div>` : ''}</div>`;
+const quotePill = (s) => `<span class="pill ${{ booked: 'good', declined: 'bad', cancelled: 'bad', replied: 'violet', new: 'coral' }[s] || ''}">${esc(s || 'new')}</span>`;
+
+// ---------- providers ----------
+function renderProviders() {
+  const f = state.filters.providers, svc = $('#prov-service').value;
+  fillSelect($('#prov-service'), [...new Set(M.providers.map((p) => p.serviceType).filter(Boolean))].sort(), 'All services');
+  const rows = M.providers.filter((p) =>
+    (f === 'all' || (f === 'verified') === !!p.verified) && (!svc || p.serviceType === svc)
+    && match(p.businessName, p.city, p.serviceType, p.phone, p._owner?.email));
+  table('t-providers', [
+    { key: 'businessName', label: 'Business', html: (p) => whoCell(p.businessName, p._owner?.email || p.phone, p.photos?.[0]), sort: (p) => (p.businessName || '~').toLowerCase() },
+    { key: 'serviceType', label: 'Service', html: (p) => esc(p.serviceType || '—') },
+    { key: 'city', label: 'City', html: (p) => esc(p.city || '—') },
+    { key: 'dealPercent', label: 'Deal', num: true, html: (p) => p.dealPercent ? `<span class="pill coral">${p.dealPercent}% off</span>` : '<span class="muted">—</span>' },
+    { key: 'leads', label: 'Leads', num: true, html: (p) => p._taps.length, sort: (p) => p._taps.length },
+    { key: 'quotes', label: 'Quotes', num: true, html: (p) => `${p._quotes.length}${p._quotes.some((q) => q.status === 'booked') ? ` <span class="muted">(${p._quotes.filter((q) => q.status === 'booked').length} booked)</span>` : ''}`, sort: (p) => p._quotes.length },
+    { key: 'rating', label: 'Rating', num: true, html: (p) => p._rating ? `★ ${p._rating.toFixed(1)} <span class="muted">(${p._reviews.length})</span>` : '<span class="muted">—</span>', sort: (p) => p._rating },
+    { key: 'verified', label: 'Status', html: (p) => `<button class="btn small" data-verify="${esc(p.id)}">${p.verified ? '<span class="pill good">✓ Verified</span>' : '<span class="pill warn">Verify</span>'}</button>`, sort: (p) => (p.verified ? 1 : 0) },
+    { key: '_updated', label: 'Updated', date: true, html: (p) => ago(p._updated), sort: (p) => p._updated?.getTime() },
+  ], rows, (p) => openProvider(p.id), { key: '_updated', asc: false });
+  $$('[data-verify]').forEach((b) => b.onclick = (ev) => { ev.stopPropagation(); toggleVerify(b.dataset.verify); });
+  $('#f-providers').textContent = `${rows.length} of ${M.providers.length} providers · Leads = taps on Call, WhatsApp, Instagram and other buttons`;
+}
+async function toggleVerify(uid) {
+  const p = M.providers.find((x) => x.id === uid);
+  const next = !p.verified;
+  if (!confirm(next ? `Mark “${p.businessName}” as verified? Customers will see the Verified badge.` : `Remove the Verified badge from “${p.businessName}”?`)) return;
+  try { await setVerified(uid, next); render(); if (!$('#drawer').classList.contains('hidden')) openProvider(uid); }
+  catch (e) { alert('Could not save: ' + e.message + '\n\nDeploy the latest Firestore rules first.'); }
+}
+function openProvider(uid) {
+  const p = M.providers.find((x) => x.id === uid); if (!p) return;
+  const kinds = countBy(p._taps, (t) => t.kind);
+  const links = [['Instagram', p.instagram && `https://www.instagram.com/${p.instagram}/`], ['Website', p.website && (p.website.startsWith('http') ? p.website : 'https://' + p.website)], ['Facebook', p.facebook], ['YouTube', p.youtube], ['TikTok', p.tiktok], ['Reviews', p.reviewsLink]].filter((x) => x[1]);
+  drawer(`
+    <h2 style="font-size:22px;margin-right:40px">${esc(p.businessName || 'Unnamed business')}</h2>
+    <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">${p.verified ? '<span class="pill good">✓ Verified</span>' : '<span class="pill warn">Waiting for check</span>'}<span class="pill">${esc(p.serviceType || '—')}</span>${p.dealPercent ? `<span class="pill coral">${p.dealPercent}% off with Festino</span>` : ''}</div>
+    <dl class="dl">
+      <dt>City</dt><dd>${esc(p.city || '—')}</dd>
+      <dt>Phone</dt><dd>${esc(p.phone || '—')}</dd>
+      <dt>Owner</dt><dd>${esc(p._owner?.name || '')} ${esc(p._owner?.email || '')}</dd>
+      <dt>Price range</dt><dd>${esc(p.priceRange || '—')}</dd>
+      ${p.dealTerms ? `<dt>Deal terms</dt><dd>${esc(p.dealTerms)}</dd>` : ''}
+      <dt>Links</dt><dd>${links.map(([n, u]) => `<a href="${esc(/^https?:/.test(u) ? u : 'https://' + u)}" target="_blank" rel="noopener">${n}</a>`).join(' · ') || '—'}</dd>
+      <dt>Updated</dt><dd>${fmtDateTime(p._updated)}</dd>
+      <dt>Provider ID</dt><dd><code>${esc(p.id)}</code></dd>
+    </dl>
+    <button class="btn ${p.verified ? '' : 'violet'}" id="dv">${p.verified ? 'Remove Verified badge' : '✓ Mark as verified'}</button>
+    ${p.about ? `<div class="sec"><h3>About</h3><div style="white-space:pre-wrap;line-height:1.55">${esc(p.about)}</div></div>` : ''}
+    ${p.photos?.length ? `<div class="sec"><h3>Photos (${p.photos.length})</h3><div class="photos">${p.photos.slice(0, 12).map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" alt=""></a>`).join('')}</div></div>` : ''}
+    <div class="sec"><h3>Leads (${p._taps.length})</h3>${kinds.length ? `<div class="hbars" id="pk"></div>` : '<div class="muted">No taps yet.</div>'}</div>
+    <div class="sec"><h3>Quote requests (${p._quotes.length})</h3>${p._quotes.map(quoteMini).join('') || '<div class="muted">None yet.</div>'}</div>
+    <div class="sec"><h3>Reviews (${p._reviews.length})</h3>${p._reviews.map((r) => `<div class="mini"><b>${'★'.repeat(r.stars || 0)}</b> ${esc(r.name || '')} · ${esc(r.eventType || '')}<div style="margin-top:4px">${esc(r.comment || '')}</div>${r.reply ? `<div class="muted" style="margin-top:4px">Reply: ${esc(r.reply)}</div>` : ''}</div>`).join('') || '<div class="muted">None yet.</div>'}</div>`);
+  if (kinds.length) hbars($('#pk'), kinds, 'taps');
+  $('#dv').onclick = () => toggleVerify(uid);
+}
+
+// ---------- events ----------
+function renderEvents() {
+  const f = state.filters.events, occ = $('#event-occasion').value;
+  fillSelect($('#event-occasion'), [...new Set(state.events.map((e) => e.occasion).filter(Boolean))].sort(), 'All occasions');
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const rows = state.events.filter((e) => {
+    const c = e.status === 'cancelled';
+    const ok = f === 'all' || (f === 'cancelled' ? c : !c && (f === 'upcoming' ? e._date >= today : e._date < today));
+    return ok && (!occ || e.occasion === occ) && match(e.title, e.occasion, e._owner?.email, e._owner?.name, e.venue?.label, e.venue?.address);
+  });
+  table('t-events', [
+    { key: 'title', label: 'Event', html: (e) => `<b>${esc(e.title || '(no title)')}</b><br><span class="muted">${esc(e.occasion || '')}</span>`, sort: (e) => (e.title || '~').toLowerCase() },
+    { key: 'owner', label: 'Host', html: (e) => esc(e._owner?.email || e._owner?.name || (e.ownerUid || '').slice(0, 10)), sort: (e) => e._owner?.email },
+    { key: '_date', label: 'Party date', date: true, html: (e) => fmtDate(e._date), sort: (e) => e._date?.getTime() },
+    { key: 'guests', label: 'Guests', num: true, html: (e) => e.guests ?? '—' },
+    { key: 'venue', label: 'Where', html: (e) => esc(e.venue?.label || e.venue?.address || '—'), sort: (e) => e.venue?.label },
+    { key: 'status', label: 'Status', html: (e) => e.status === 'cancelled' ? '<span class="pill bad">Cancelled</span>' : e._date >= today ? '<span class="pill violet">Upcoming</span>' : '<span class="pill">Done</span>' },
+    { key: '_updated', label: 'Updated', date: true, html: (e) => ago(e._updated), sort: (e) => e._updated?.getTime() },
+  ], rows, (e) => e.ownerUid && openUser(e.ownerUid), { key: '_updated', asc: false });
+  $('#f-events').textContent = `${rows.length} of ${state.events.length} events · Click a row to see the host`;
+}
+
+// ---------- contact us ----------
+const TYPES = { question: 'Question', problem: 'Something isn’t working', idea: 'Idea', account: 'Account', helpers: 'Helpers & providers', deals: 'Deals', praise: 'Praise', other: 'Other' };
+const typeLabel = (t) => TYPES[t] || t || 'Message';
+const statusPill = (s) => `<span class="pill ${{ new: 'coral', open: 'warn', resolved: 'good' }[s] || ''}">${{ new: 'New', open: 'In progress', resolved: 'Resolved' }[s] || esc(s)}</span>`;
+function renderMessages() {
+  const f = state.filters.messages, type = $('#msg-type').value;
+  fillSelect($('#msg-type'), Object.keys(TYPES), 'All query types', typeLabel);
+  const rows = state.feedback.filter((m) =>
+    (f === 'all' || (f === 'open' ? m.status !== 'resolved' : m.status === f)) && (!type || m.type === type)
+    && match(m.message, m.email, m.location, m.country, m._user?.name)).sort((a, b) => (b._created || 0) - (a._created || 0));
+  $('#msgs').innerHTML = rows.map((m) => `
+    <div class="msg" data-id="${esc(m.id)}">
+      <div>
+        <div class="head"><span class="pill violet">${esc(typeLabel(m.type))}</span>${statusPill(m.status)}${m.rating ? `<span class="pill">${'★'.repeat(m.rating)}</span>` : ''}<b>${esc(m.email || m._user?.email || 'No email')}</b><span class="muted">${fmtDateTime(m._created)}</span></div>
+        <div class="body">${esc(m.message)}</div>
+        <div class="meta">${[m.location && '📍 ' + m.location, m.country, m.timezone, m.platform && m.platform + (m.appVersion ? ' · v' + m.appVersion : ''), m.plan && 'Plan: ' + m.plan].filter(Boolean).map(esc).map((x) => `<span>${x}</span>`).join('')}</div>
+      </div>
+      <div class="side">
+        <select>${['new', 'open', 'resolved'].map((s) => `<option value="${s}" ${m.status === s ? 'selected' : ''}>${{ new: 'New', open: 'In progress', resolved: 'Resolved' }[s]}</option>`).join('')}</select>
+        <textarea placeholder="Private note (only admins see this)">${esc(m.adminNote || '')}</textarea>
+        <div style="display:flex;gap:8px"><button class="btn small primary" data-save>Save</button>${m.email ? `<a class="btn small" href="mailto:${esc(m.email)}?subject=${encodeURIComponent('Re: your Festino message')}&body=${encodeURIComponent('\n\n---\nYou wrote:\n' + (m.message || ''))}">✉ Reply</a>` : ''}</div>
+      </div>
+    </div>`).join('') || '<div class="empty" style="padding:40px">No messages here.</div>';
+  $$('#msgs .msg').forEach((el) => {
+    $('[data-save]', el).onclick = async () => {
+      const btn = $('[data-save]', el); btn.textContent = 'Saving…';
+      try { await setMessage(el.dataset.id, $('select', el).value, $('textarea', el).value.slice(0, 1000)); render(); }
+      catch (e) { btn.textContent = 'Save'; alert('Could not save: ' + e.message + '\n\nDeploy the latest Firestore rules first.'); }
+    };
+  });
+}
+
+// ---------- activity ----------
+function renderActivity() {
+  const rows = state.quotes.filter((q) => match(q.customerName, q.customerEmail, q.providerName, q.serviceType, q.eventTitle));
+  table('t-quotes', [
+    { key: 'customerName', label: 'Customer', html: (q) => whoCell(q.customerName, q.customerEmail || q.customerPhone), sort: (q) => (q.customerName || '~').toLowerCase() },
+    { key: 'providerName', label: 'Provider', html: (q) => `<b>${esc(q.providerName || '—')}</b><br><span class="muted">${esc(q.serviceType || '')}</span>` },
+    { key: 'eventTitle', label: 'Event', html: (q) => `${esc(q.eventTitle || q.occasion || '—')}<br><span class="muted">${fmtDate(toDate(q.eventDate))} · ${q.guests ?? '?'} guests</span>` },
+    { key: 'dealCode', label: 'Deal code', html: (q) => q.dealCode ? `<code>${esc(q.dealCode)}</code>` : '<span class="muted">—</span>' },
+    { key: 'status', label: 'Status', html: (q) => quotePill(q.status) },
+    { key: '_created', label: 'Asked', date: true, html: (q) => ago(q._created), sort: (q) => q._created?.getTime() },
+  ], rows, (q) => q.customerUid && openUser(q.customerUid), { key: '_created', asc: false });
+  $('#f-quotes').textContent = `${rows.length} quote requests`;
+
+  const types = { nearby_search: 'Find search', nearby_category: 'Find category', games_filter: 'Games filter', plan_created: 'Plan created' };
+  table('t-searches', [
+    { key: 'query', label: 'Search', html: (s) => esc(s.query || '—') },
+    { key: 'type', label: 'Where', html: (s) => `<span class="pill">${esc(types[s.type] || s.type)}</span>` },
+    { key: '_created', label: 'When', date: true, html: (s) => ago(s._created), sort: (s) => s._created?.getTime() },
+  ], state.searches.filter((s) => match(s.query, s.type)).slice(0, 200), null, { key: '_created', asc: false });
+
+  const people = new Map(M.people.map((p) => [p.uid, p]));
+  table('t-referrals', [
+    { key: 'friend', label: 'Joined', html: (r) => esc(people.get(r.id)?.email || r.id.slice(0, 10)) },
+    { key: 'ref', label: 'Invited by', html: (r) => esc(people.get(r.referrerUid)?.email || (r.referrerUid || '').slice(0, 10)) },
+    { key: 'code', label: 'Code', html: (r) => `<code>${esc(r.code)}</code>` },
+    { key: 'createdAt', label: 'When', date: true, html: (r) => ago(toDate(r.createdAt)), sort: (r) => toDate(r.createdAt)?.getTime() },
+  ], state.referrals, (r) => openUser(r.id), { key: 'createdAt', asc: false });
+}
+
+// ---------- helpers ----------
+function fillSelect(sel, values, allLabel, label = (v) => v) {
+  const cur = sel.value;
+  const html = `<option value="">${allLabel}</option>` + values.map((v) => `<option value="${esc(v)}">${esc(label(v))}</option>`).join('');
+  if (sel.dataset.h !== html) { sel.innerHTML = html; sel.dataset.h = html; sel.value = cur; }
+}
+function drawer(html) {
+  $('#drawer-body').innerHTML = html;
+  show($('#drawer')); show($('#drawer-bg'));
+  $('#drawer').scrollTop = 0;
+}
+function closeDrawer() { show($('#drawer'), false); show($('#drawer-bg'), false); }
+function go(view) {
+  state.view = view;
+  $$('#nav button').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
+  $$('[data-page]').forEach((s) => show(s, s.dataset.page === view));
+  $('#title').textContent = $(`#nav button[data-view="${view}"]`).childNodes[1].textContent.trim();
+  if (location.hash.slice(1) !== view) history.replaceState(null, '', '#' + view);
+  show($('#range'), view === 'overview');
+  setSeg(`#${{ users: 'user', providers: 'prov', events: 'event', messages: 'msg' }[view]}-filter`, state.filters[view]);
+  closeDrawer();
+  render();
+}
+function setSeg(sel, v) { const el = $(sel); if (el) $$('button', el).forEach((b) => b.classList.toggle('on', b.dataset.f === v)); }
+
+function csv(name) {
+  const cell = (v) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const iso = (d) => d ? d.toISOString() : '';
+  let head = [], rows = [];
+  if (name === 'users') { head = ['uid', 'name', 'email', 'phone', 'sign_in', 'role', 'plan', 'events', 'quotes', 'joined', 'last_active']; rows = M.people.map((p) => [p.uid, p.name, p.email, p.phone, p.signIn, p.role, p.plan, p.events.length, p.quotes.length, iso(p.created), iso(p.lastActive)]); }
+  if (name === 'providers') { head = ['uid', 'business', 'service', 'city', 'phone', 'owner_email', 'verified', 'deal_percent', 'leads', 'quotes', 'booked', 'rating', 'reviews', 'updated']; rows = M.providers.map((p) => [p.id, p.businessName, p.serviceType, p.city, p.phone, p._owner?.email, p.verified ? 'yes' : 'no', p.dealPercent || 0, p._taps.length, p._quotes.length, p._quotes.filter((q) => q.status === 'booked').length, p._rating?.toFixed(2) ?? '', p._reviews.length, iso(p._updated)]); }
+  if (name === 'events') { head = ['event_id', 'host_uid', 'host_email', 'title', 'occasion', 'date', 'guests', 'venue', 'status', 'updated']; rows = state.events.map((e) => [e.id, e.ownerUid, e._owner?.email, e.title, e.occasion, iso(e._date), e.guests, e.venue?.label || e.venue?.address, e.status, iso(e._updated)]); }
+  if (name === 'messages') { head = ['id', 'created', 'status', 'type', 'email', 'message', 'location', 'country', 'timezone', 'platform', 'app_version', 'rating', 'admin_note', 'uid']; rows = state.feedback.map((m) => [m.id, iso(m._created), m.status, m.type, m.email, m.message, m.location, m.country, m.timezone, m.platform, m.appVersion, m.rating, m.adminNote, m.uid]); }
+  const blob = new Blob([[head, ...rows].map((r) => r.map(cell).join(',')).join('\n')], { type: 'text/csv' });
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `festino-${name}-${new Date().toISOString().slice(0, 10)}.csv` });
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+// ======================================================================
+// Wiring
+// ======================================================================
+$$('#nav button').forEach((b) => b.onclick = () => go(b.dataset.view));
+$$('#range button').forEach((b) => b.onclick = () => { state.days = +b.dataset.days; $$('#range button').forEach((x) => x.classList.toggle('on', x === b)); render(); });
+for (const [sel, key] of [['#user-filter', 'users'], ['#prov-filter', 'providers'], ['#event-filter', 'events'], ['#msg-filter', 'messages']]) {
+  $$(sel + ' button').forEach((b) => b.onclick = () => { state.filters[key] = b.dataset.f; setSeg(sel, b.dataset.f); render(); });
+}
+['#prov-service', '#event-occasion', '#msg-type'].forEach((s) => $(s).onchange = render);
+$('#q').oninput = (e) => { state.q = e.target.value.trim().toLowerCase(); if (state.view === 'overview' && state.q) go('users'); else render(); };
+$$('[data-csv]').forEach((b) => b.onclick = () => csv(b.dataset.csv));
+$('#drawer-bg').onclick = closeDrawer; $('#drawer-close').onclick = closeDrawer;
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
+$('#refresh').onclick = () => refresh();
+
+async function refresh() {
+  show($('#loading'));
+  try {
+    if (DEMO) demoData(); else await fetchAll();
+    const first = !state.loaded; state.loaded = true;
+    const miss = (state.errors || []).filter((x) => x !== 'reviews' && x !== 'invites');
+    $('#updated').textContent = `Updated ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` + (miss.length ? ` · Couldn’t read: ${miss.join(', ')} (deploy the latest Firestore rules)` : '');
+    const h = location.hash.slice(1);
+    if (first && h && h !== state.view && $(`#nav button[data-view="${h}"]`)) go(h); else render();
+  } finally { show($('#loading'), false); }
+}
+
+async function start() {
+  if (DEMO) {
+    show($('#demo-banner')); show($('#app')); $('#me-email').textContent = 'demo@festino.app';
+    $('#signout').onclick = () => (location.search = '');
+    return refresh();
+  }
+  show($('#signin'));
+  const btn = $('#google-btn'); btn.disabled = true;
+  try { await loadFirebase(); }
+  catch (e) { $('#signin-err').textContent = 'Couldn’t load Firebase. Check your internet connection and reload.'; show($('#signin-err')); return; }
+  btn.disabled = false;
+  const { auth, a } = fb;
+  $('#google-btn').onclick = async () => {
+    show($('#signin-err'), false);
+    try { await auth.signInWithPopup(a, new auth.GoogleAuthProvider()); }
+    catch (e) { $('#signin-err').textContent = e.message; show($('#signin-err')); }
+  };
+  $('#signout').onclick = () => auth.signOut(a);
+  auth.onAuthStateChanged(a, async (u) => {
+    const admin = u && !u.isAnonymous && u.email && (await u.getIdTokenResult()).claims.email_verified;
+    if (!u || u.isAnonymous) { show($('#app'), false); show($('#signin')); return; }
+    if (!admin) { show($('#app'), false); show($('#signin')); $('#signin-err').textContent = `${u.email || 'This account'} isn't verified.`; show($('#signin-err')); return; }
+    show($('#signin'), false); show($('#app'));
+    $('#me-email').textContent = u.email;
+    await refresh();
+    if (state.errors.includes('users') && state.errors.includes('providers') && state.errors.includes('feedback')) {
+      show($('#app'), false); show($('#signin'));
+      $('#signin-err').innerHTML = `${esc(u.email)} isn't a Festino admin, or the latest Firestore rules aren't deployed yet. <a href="#" id="so">Use another account</a>`;
+      show($('#signin-err')); $('#so').onclick = (e) => { e.preventDefault(); auth.signOut(a); };
+    }
+  });
+}
+
+// ======================================================================
+// Sample data for ?demo=1 (made-up people, for previewing the layout)
+// ======================================================================
+function demoData() {
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const pick = (a) => a[Math.floor(rnd() * a.length)];
+  const now = Date.now();
+  const first = ['Maya', 'Arjun', 'Priya', 'Leo', 'Sofia', 'Noah', 'Aisha', 'Ethan', 'Zara', 'Ravi', 'Emma', 'Kenji', 'Lucia', 'Omar', 'Chloe', 'Dev', 'Hana', 'Sam', 'Ivy', 'Kai'];
+  const last = ['Patel', 'Garcia', 'Nguyen', 'Smith', 'Reddy', 'Kim', 'Johnson', 'Rossi', 'Khan', 'Brown'];
+  const occ = ['Birthday', 'Baby shower', 'Housewarming', 'Graduation', 'Anniversary', 'Game night', 'Wedding', 'Potluck', 'Diwali party', 'Retirement'];
+  const svc = ['Photographers', 'Decorators', 'Cake makers', 'Caterers', 'DJs', 'Panthulu / priest', 'Balloon artists'];
+  const cities = ['Evans, GA', 'Augusta, GA', 'Atlanta, GA', 'Charlotte, NC', 'Columbia, SC'];
+  state.authUsers = []; state.users = []; state.events = []; state.providers = []; state.quotes = []; state.leadTaps = []; state.feedback = []; state.searches = []; state.referrals = []; state.reviews = []; state.errors = [];
+  for (let i = 0; i < 140; i++) {
+    const guest = rnd() < .22;
+    const f = pick(first), l = pick(last);
+    const created = new Date(now - Math.pow(rnd(), 1.6) * 75 * DAY);
+    const uid = 'demo' + String(i).padStart(4, '0') + 'x' + Math.floor(rnd() * 1e6);
+    const prov = guest ? [] : [pick(['google.com', 'google.com', 'apple.com', 'password'])];
+    state.authUsers.push({ uid, email: guest ? null : `${f}.${l}${i}@example.com`.toLowerCase(), name: guest ? null : `${f} ${l}`, providers: prov, anonymous: guest, created: created.toISOString(), lastActive: new Date(created.getTime() + rnd() * (now - created.getTime())).toISOString() });
+    if (guest) continue;
+    const isProv = rnd() < .14;
+    state.users.push({ id: uid, role: isProv ? 'provider' : 'customer', email: `${f}.${l}${i}@example.com`.toLowerCase(), name: `${f} ${l}`, ...(rnd() < .08 ? { plan: 'pro', premium: true } : {}) });
+    const ne = isProv ? 0 : Math.floor(rnd() * 3.2);
+    for (let k = 0; k < ne; k++) {
+      const o = pick(occ);
+      state.events.push({ id: uid + 'e' + k, ownerUid: uid, title: `${f}'s ${o.toLowerCase()}`, occasion: o, date: new Date(now + (rnd() * 120 - 40) * DAY).toISOString(), guests: 10 + Math.floor(rnd() * 70), venue: { label: pick(cities) }, status: rnd() < .08 ? 'cancelled' : 'active', updatedAt: new Date(Math.min(now - rnd() * DAY, created.getTime() + rnd() * 20 * DAY)).toISOString() });
+    }
+    if (isProv) {
+      const s = pick(svc);
+      state.providers.push({ id: uid, businessName: `${pick(['Bright', 'Golden', 'Happy', 'Lotus', 'Sunny', 'Velvet'])} ${pick(['Lens', 'Events', 'Bakes', 'Beats', 'Blooms', 'Studio'])}`, serviceType: s, city: pick(cities), phone: '(706) 555-0' + String(100 + i).slice(-3), verified: rnd() < .55, dealPercent: pick([0, 0, 10, 15, 20]), priceRange: pick(['$', '$$', '$$$']), about: 'Sample listing for the dashboard preview.', updatedAt: new Date(created.getTime() + rnd() * 10 * DAY).toISOString() });
+    }
+  }
+  const custs = state.users.filter((u) => u.role === 'customer');
+  for (const p of state.providers) {
+    const taps = Math.floor(rnd() * 25);
+    for (let k = 0; k < taps; k++) state.leadTaps.push({ id: p.id + 't' + k, providerUid: p.id, kind: pick(['call', 'whatsapp', 'whatsapp', 'instagram', 'website']), createdAt: new Date(now - rnd() * 60 * DAY).toISOString() });
+    const nq = Math.floor(rnd() * 5);
+    for (let k = 0; k < nq; k++) { const c = pick(custs); state.quotes.push({ id: p.id + 'q' + k, customerUid: c.id, customerName: c.name, customerEmail: c.email, providerUid: p.id, providerName: p.businessName, serviceType: p.serviceType, eventTitle: `${c.name.split(' ')[0]}'s party`, eventDate: new Date(now + rnd() * 60 * DAY).toISOString(), guests: 20 + Math.floor(rnd() * 50), status: pick(['new', 'seen', 'replied', 'replied', 'booked', 'declined']), message: 'Are you free that afternoon? Looking for a quote.', createdAt: new Date(now - rnd() * 45 * DAY).toISOString() }); }
+    const nr = Math.floor(rnd() * 4);
+    for (let k = 0; k < nr; k++) state.reviews.push({ id: 'r' + k, providerUid: p.id, stars: 3 + Math.floor(rnd() * 3), name: pick(first), eventType: pick(occ), comment: 'Lovely work, everyone noticed!' });
+  }
+  const msgs = [['problem', 'The invite video plays without sound on my phone.'], ['question', 'Can I plan two events at the same time?'], ['idea', 'Please add a potluck sign-up sheet that guests can edit.'], ['praise', 'Planned my daughter’s birthday in 10 minutes. Love it!'], ['helpers', 'How do I list my bakery on Festino?'], ['account', 'I signed up with Apple and can’t find my old events.'], ['deals', 'The 15% deal code wasn’t accepted by the decorator.']];
+  msgs.forEach(([type, message], k) => { const c = pick(state.users); state.feedback.push({ id: 'm' + k, uid: c.id, type, message, email: c.email, location: pick(cities), country: 'US', timezone: 'America/New_York', platform: pick(['ios', 'web']), appVersion: '1.0.0', rating: type === 'praise' ? 5 : 0, status: k < 3 ? 'new' : k < 5 ? 'open' : 'resolved', createdAt: new Date(now - k * 1.7 * DAY - rnd() * DAY).toISOString() }); });
+  for (let k = 0; k < 120; k++) state.searches.push({ id: 's' + k, type: pick(['nearby_search', 'nearby_category', 'games_filter']), query: pick(['photographer', 'cake', 'balloon decor', 'dj', 'caterer near me', 'kids games', 'mehendi artist', 'face painter']), createdAt: new Date(now - rnd() * 40 * DAY).toISOString() });
+  for (let k = 0; k < 9; k++) { const a = pick(custs), b = pick(custs); state.referrals.push({ id: a.id, referrerUid: b.id, code: 'K7Q2M' + k, createdAt: new Date(now - rnd() * 30 * DAY).toISOString() }); }
+}
+
+start();
+</script>
+</body>
+</html>
