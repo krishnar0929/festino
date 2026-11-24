@@ -1,6 +1,7 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { getAuth } = require("firebase-admin/auth");
 
 initializeApp();
 
@@ -147,4 +148,46 @@ exports.invitePreview = onRequest({ region: "us-central1", memory: "256MiB", max
 <p>Opening your invitation… <a href="${esc(target)}">Tap here</a> if nothing happens.</p>
 <script>location.replace(${JSON.stringify(target)});</script>
 </body></html>`);
+});
+
+// Festino admins. Keep this list in step with isAdmin() in firestore.rules.
+const ADMIN_EMAILS = new Set(["northbitapps@gmail.com", "krishna.mula9@gmail.com", "krishnar0929@gmail.com"]);
+
+function isAdmin(auth) {
+  const t = auth && auth.token;
+  return !!t && t.email_verified === true && ADMIN_EMAILS.has(String(t.email || "").toLowerCase());
+}
+
+/**
+ * Admin dashboard: every sign-in account (including guests), with how they
+ * signed in, when they joined and when they were last seen. Only admins.
+ */
+exports.adminUsers = onCall({ region: "us-central1", cors: true }, async (request) => {
+  if (!isAdmin(request.auth)) {
+    throw new HttpsError("permission-denied", "Admins only.");
+  }
+  const users = [];
+  let pageToken;
+  do {
+    const page = await getAuth().listUsers(1000, pageToken);
+    for (const u of page.users) {
+      const providers = u.providerData.map((p) => p.providerId);
+      users.push({
+        uid: u.uid,
+        email: u.email || null,
+        name: u.displayName || null,
+        phone: u.phoneNumber || null,
+        photo: u.photoURL || null,
+        providers,
+        anonymous: providers.length === 0 && !u.email,
+        disabled: u.disabled,
+        emailVerified: u.emailVerified,
+        created: u.metadata.creationTime || null,
+        lastSignIn: u.metadata.lastSignInTime || null,
+        lastActive: u.metadata.lastRefreshTime || u.metadata.lastSignInTime || null,
+      });
+    }
+    pageToken = page.pageToken;
+  } while (pageToken && users.length < 20000);
+  return { users };
 });

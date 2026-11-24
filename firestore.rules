@@ -8,6 +8,25 @@ service cloud.firestore {
     function isOwner(uid) {
       return signedIn() && request.auth.uid == uid;
     }
+    // Festino admins (the admin dashboard at festino.web.app/admin). Signed in with
+    // Google, so the email is verified. Keep this list in step with ADMIN_EMAILS in
+    // functions/index.js.
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['northbitapps@gmail.com', 'krishna.mula9@gmail.com', 'krishnar0929@gmail.com'];
+    }
+
+    // Admin dashboard: read every event, RSVP and provider review across all accounts.
+    match /{path=**}/events/{eventId} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/rsvps/{guestUid} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/reviews/{reviewerUid} {
+      allow read: if isAdmin();
+    }
     function validReview(d) {
       return d.keys().hasOnly(['stars', 'comment', 'name', 'eventType', 'createdAt', 'updatedAt', 'reply'])
         && d.stars is int && d.stars >= 1 && d.stars <= 5
@@ -45,7 +64,8 @@ service cloud.firestore {
     // Profile: role, name, email. `plan` ('basic' | 'pro') and `premium` are set
     // only by you in the console (later by the payment system), never by the app.
     match /users/{uid} {
-      allow read, delete: if isOwner(uid);
+      allow read: if isOwner(uid) || isAdmin();
+      allow delete: if isOwner(uid);
       allow create: if isOwner(uid)
         && !('premium' in request.resource.data)
         && !('plan' in request.resource.data)
@@ -75,9 +95,13 @@ service cloud.firestore {
       }
       allow create: if isOwner(uid) && request.resource.data.get('verified', false) == false
         && validDeal(request.resource.data);
-      allow update: if isOwner(uid)
+      allow update: if (isOwner(uid)
         && request.resource.data.get('verified', false) == resource.data.get('verified', false)
-        && validDeal(request.resource.data);
+        && validDeal(request.resource.data))
+        || (isAdmin()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['verified', 'verifiedAt'])
+          && request.resource.data.verified is bool
+          && request.resource.data.verifiedAt == request.time);
 
       // Ratings & reviews: one per customer per provider (doc id = reviewer's uid).
       // Anyone using the app can read them. Only the reviewer writes stars and
@@ -119,7 +143,14 @@ service cloud.firestore {
         && request.resource.data.message.size() > 0 && request.resource.data.message.size() <= 2000
         && (request.resource.data.email == null || (request.resource.data.email is string && request.resource.data.email.size() <= 200))
         && request.resource.data.createdAt == request.time;
-      allow read, update, delete: if false;
+      allow read: if isAdmin();
+      // Admins track each message: new → open → resolved, with a private note.
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'adminNote', 'statusAt'])
+        && request.resource.data.status in ['new', 'open', 'resolved']
+        && request.resource.data.get('adminNote', '') is string && request.resource.data.get('adminNote', '').size() <= 1000
+        && request.resource.data.statusAt == request.time;
+      allow delete: if false;
     }
 
     // Refer a friend: who owns each invite code. Codes are never changed or reused.
@@ -137,7 +168,7 @@ service cloud.firestore {
     // a week of Pro from createdAt (server time). The friend who shared the code
     // can see who joined with it.
     match /referrals/{friendUid} {
-      allow read: if isOwner(friendUid)
+      allow read: if isAdmin() || isOwner(friendUid)
         || (signedIn() && resource.data.referrerUid == request.auth.uid);
       allow create: if isOwner(friendUid) && hasAccount()
         && request.resource.data.keys().hasOnly(['code', 'referrerUid', 'createdAt'])
@@ -155,8 +186,8 @@ service cloud.firestore {
     // cancel, or send it again after it was cancelled or declined.
     match /quotes/{id} {
       function q() { return request.resource.data; }
-      allow read: if signedIn()
-        && (resource.data.customerUid == request.auth.uid || resource.data.providerUid == request.auth.uid);
+      allow read: if isAdmin() || (signedIn()
+        && (resource.data.customerUid == request.auth.uid || resource.data.providerUid == request.auth.uid));
       allow create: if hasAccount()
         && q().customerUid == request.auth.uid
         && q().providerUid != request.auth.uid
@@ -198,7 +229,7 @@ service cloud.firestore {
         && request.resource.data.providerUid != request.auth.uid
         && request.resource.data.kind in ['call', 'whatsapp', 'instagram', 'facebook', 'youtube', 'tiktok', 'reviews', 'website']
         && request.resource.data.createdAt == request.time;
-      allow read: if signedIn() && resource.data.providerUid == request.auth.uid;
+      allow read: if isAdmin() || (signedIn() && resource.data.providerUid == request.auth.uid);
       allow update, delete: if false;
     }
 
@@ -272,7 +303,8 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['uid', 'type', 'query', 'filters', 'device', 'appVersion', 'ip', 'createdAt'])
         && request.resource.data.ip == null
         && request.resource.data.createdAt == request.time;
-      allow read, update, delete: if false;
+      allow read: if isAdmin();
+      allow update, delete: if false;
     }
   }
 }
